@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gull-egget – storskjerm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #101a14; --moss: #1c2c22; --moss-2: #2f4a39; --gold: #f2c14e;
+    --fox: #e2662a; --cream: #f3ead2; --muted: #a9b8a6; --wall: #4a3428; --floor: #2a3a2e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--night); color: var(--cream);
+    font-family: 'Nunito', system-ui, sans-serif; }
+  h1, h2, h3 { font-family: 'Lilita One', 'Arial Rounded MT Bold', system-ui, sans-serif; font-weight: 400; margin: 0; }
+  .hidden { display: none !important; }
+  button { font: 400 22px 'Lilita One', sans-serif; border: 0; border-radius: 14px; padding: 14px 26px; cursor: pointer; }
+  button:focus-visible, select:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+  .gold { background: var(--gold); color: #3b2805; box-shadow: 0 5px 0 #a57a17; }
+  .gold:disabled { opacity: .4; cursor: not-allowed; }
+  .ghost { background: var(--moss-2); color: var(--cream); box-shadow: 0 5px 0 #0d1611; }
+  button:active:not(:disabled) { transform: translateY(3px); box-shadow: none; }
+
+  /* Lobby */
+  #lobby { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 64px); align-items: center; padding: clamp(24px, 5vw, 72px); max-width: 1400px; margin: 0 auto; }
+  .title { display: flex; align-items: center; gap: 22px; }
+  .egg { flex: 0 0 auto; width: 96px; height: 124px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: radial-gradient(circle at 35% 30%, #fff6c9 0 8%, #f7d46a 22%, #d99a1e 70%, #9a6510 100%);
+    box-shadow: 0 0 60px rgba(242,193,78,.5); animation: wobble 3.5s ease-in-out infinite; transform-origin: 50% 90%; }
+  @keyframes wobble { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+  @media (prefers-reduced-motion: reduce) { .egg { animation: none; } }
+  h1 { font-size: clamp(56px, 7vw, 104px); line-height: .9; color: var(--gold); }
+  .lead { font-size: 21px; line-height: 1.5; color: var(--muted); max-width: 34ch; margin: 22px 0 30px; }
+  .rules { display: grid; gap: 10px; font-size: 18px; margin-bottom: 30px; }
+  .rules div { display: flex; gap: 12px; align-items: baseline; }
+  .settings { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin-bottom: 26px; }
+  label { display: grid; gap: 6px; font-weight: 800; color: var(--muted); font-size: 15px; }
+  select { font: 800 18px 'Nunito', sans-serif; padding: 10px 14px; border-radius: 12px; background: var(--moss);
+    color: var(--cream); border: 2px solid var(--moss-2); }
+
+  .joinbox { background: var(--moss); border-radius: 28px; padding: clamp(20px, 3vw, 36px); text-align: center;
+    border: 3px solid var(--moss-2); }
+  .qr { width: min(100%, 340px); aspect-ratio: 1; background: #fff; border-radius: 18px; padding: 14px; display: block; margin: 0 auto; }
+  .url { font-size: 18px; color: var(--muted); margin: 16px 0 22px; word-break: break-all; }
+  .url b { color: var(--cream); }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 44px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px; border-radius: 99px;
+    background: var(--night); font-weight: 800; font-size: 17px; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); }
+  .empty { color: var(--muted); font-size: 17px; }
+
+  /* Spill */
+  #play { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
+  #mapWrap { position: relative; min-height: 0; display: grid; place-items: center; padding: 20px; }
+  #map { width: 100%; height: 100%; display: block; }
+  aside { background: var(--moss); padding: 24px; display: flex; flex-direction: column; gap: 20px; overflow: auto; }
+  aside h2 { font-size: 30px; color: var(--gold); }
+  .plist { display: grid; gap: 8px; }
+  .prow { display: flex; align-items: center; gap: 10px; background: var(--night); padding: 10px 12px; border-radius: 12px; font-weight: 800; }
+  .prow .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prow.out { opacity: .45; }
+  .log { display: grid; gap: 6px; font-size: 15px; color: var(--muted); }
+  .log div:first-child { color: var(--cream); }
+  .timer { font: 400 22px 'Lilita One', sans-serif; color: var(--muted); }
+
+  #end { position: fixed; inset: 0; background: rgba(10,16,12,.88); display: grid; place-items: center; text-align: center; padding: 24px; }
+  #end .icon { font-size: 110px; }
+  #end h2 { font-size: clamp(44px, 6vw, 84px); color: var(--gold); margin: 10px 0 30px; }
+  #end .btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+  #denied { position: fixed; inset: 0; background: var(--night); display: grid; place-items: center;
+    text-align: center; padding: 24px; z-index: 10; }
+  #denied h2 { font-size: 44px; color: var(--gold); margin-bottom: 12px; }
+  #denied p { font-size: 19px; color: var(--muted); max-width: 40ch; line-height: 1.5; }
+
+  @media (max-width: 860px) {
+    #lobby { grid-template-columns: 1fr; }
+    #play { grid-template-columns: 1fr; grid-template-rows: 60vh auto; }
+  }
+</style>
+</head>
+<body>
+
+<section id="lobby">
+  <div>
+    <div class="title"><div class="egg" aria-hidden="true"></div><h1>Gull-<br>egget</h1></div>
+    <p class="lead">Et gull-egg er gjemt et sted i en helt ny labyrint. Førstemann som finner det, vinner.</p>
+    <div class="rules">
+      <div><span>📱</span><span>Skann koden og styr med pilene på mobilen.</span></div>
+      <div><span>🦊</span><span>Revene leter også. Krasjer du med en rev, mister du et liv.</span></div>
+      <div><span>❤️</span><span>Alle har tre liv. Ser du en rev, snu og løp!</span></div>
+    </div>
+    <div class="settings">
+      <label>Labyrint
+        <select id="size"><option value="liten">Liten</option><option value="middels">Middels</option><option value="stor">Stor</option></select>
+      </label>
+      <label>Rever
+        <select id="foxes"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+      </label>
+      <button id="startBtn" class="gold" disabled>Start runden</button>
+    </div>
+  </div>
+  <div class="joinbox">
+    <img class="qr" src="/qr.png" alt="QR-kode for å bli med">
+    <div class="url">eller gå til <b id="joinUrl"></b></div>
+    <div class="chips" id="chips"></div>
+  </div>
+</section>
+
+<section id="play" class="hidden">
+  <div id="mapWrap"><canvas id="map"></canvas></div>
+  <aside>
+    <div><h2>Gull-egget</h2><div class="timer" id="timer">0:00</div></div>
+    <div class="plist" id="plist"></div>
+    <div class="log" id="log"></div>
+    <button class="ghost" id="stopBtn" style="margin-top:auto">Avslutt runden</button>
+  </aside>
+</section>
+
+<div id="end" class="hidden">
+  <div>
+    <div class="icon" id="endIcon"></div>
+    <h2 id="endTitle"></h2>
+    <div class="btns">
+      <button class="gold" id="againBtn">Ny runde</button>
+      <button class="ghost" id="lobbyBtn">Tilbake til lobbyen</button>
+    </div>
+  </div>
+</div>
+
+<div id="denied" class="hidden">
+  <div>
+    <h2>Storskjermen er låst</h2>
+    <p>Denne serveren krever en vertsnøkkel. Åpne siden med <b>?key=</b> og nøkkelen bak adressen.</p>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const socket = io();
+const hostKey = new URLSearchParams(location.search).get('key') || '';
+socket.on('connect', () => socket.emit('host', { key: hostKey }));
+socket.on('hostDenied', () => $('#denied').classList.remove('hidden'));
+$('#joinUrl').textContent = location.host + '/play';
+
+let lobby = { players: [] }, game = null, state = { players: [], foxes: [] }, startedAt = 0, round = 0;
+const log = [];
+
+function view(id) {
+  $('#lobby').classList.toggle('hidden', id !== 'lobby');
+  $('#play').classList.toggle('hidden', id !== 'play');
+  if (id !== 'end-keep') $('#end').classList.add('hidden');
+}
+
+socket.on('lobby', d => {
+  lobby = d;
+  $('#size').value = d.settings.size; $('#foxes').value = String(d.settings.foxes);
+  const chips = $('#chips');
+  chips.innerHTML = d.players.length ? '' : '<span class="empty">Ingen har blitt med ennå</span>';
+  for (const p of d.players) {
+    const c = document.createElement('span'); c.className = 'chip';
+    c.innerHTML = `<span class="dot" style="background:${p.color}"></span>`;
+    c.append(p.name); chips.append(c);
+  }
+  $('#startBtn').disabled = !d.players.length;
+  if (d.phase === 'lobby') { game = null; view('lobby'); }
+});
+socket.on('game', d => {
+  game = d; startedAt = Date.now() - d.elapsed;
+  if (d.round !== round) { round = d.round; log.length = 0; renderLog(); } // behold loggen ved gjenoppkobling
+  view('play'); resize(); renderTimer();
+  if (d.phase === 'ended' && d.result) showEnd(d.result);
+});
+socket.on('state', d => { state = d; renderPlayers(); });
+socket.on('event', e => { log.unshift(e.text); log.length = Math.min(log.length, 8); renderLog(); });
+socket.on('end', showEnd);
+
+function showEnd(r) {
+  const win = r.type === 'player';
+  $('#endIcon').textContent = win ? '🥚' : '🦊';
+  $('#endTitle').textContent = win ? `${r.name} fant gull-egget!` : r.type === 'fox' ? 'En rev tok gull-egget!' : 'Revene tok alle!';
+  if (win) $('#endTitle').style.color = r.color; else $('#endTitle').style.color = '';
+  $('#end').classList.remove('hidden');
+}
+
+const sendSettings = () => socket.emit('settings', { size: $('#size').value, foxes: $('#foxes').value });
+$('#size').onchange = sendSettings; $('#foxes').onchange = sendSettings;
+$('#startBtn').onclick = () => socket.emit('start');
+$('#againBtn').onclick = () => socket.emit('start');
+$('#lobbyBtn').onclick = () => socket.emit('toLobby');
+$('#stopBtn').onclick = () => { if (confirm('Avslutte runden og gå tilbake til lobbyen?')) socket.emit('toLobby'); };
+
+function renderPlayers() {
+  const el = $('#plist'); el.innerHTML = '';
+  for (const p of state.players) {
+    const r = document.createElement('div'); r.className = 'prow' + (p.out ? ' out' : '');
+    r.innerHTML = `<span class="dot" style="background:${p.color}"></span><span class="n"></span><span>${p.out ? 'Ute' : '❤️'.repeat(p.lives)}</span>`;
+    r.querySelector('.n').textContent = p.name; el.append(r);
+  }
+}
+function renderTimer() {
+  const s = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+  $('#timer').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+function renderLog() {
+  const el = $('#log'); el.innerHTML = '';
+  for (const t of log) { const d = document.createElement('div'); d.textContent = t; el.append(d); }
+}
+
+// ─── Kart sett ovenfra ──────────────────────────────────────────────────
+const cv = $('#map'), ctx = cv.getContext('2d');
+function resize() {
+  const r = $('#mapWrap').getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  if (r.width <= 40 || r.height <= 40) return; // skjult
+  cv.width = (r.width - 40) * dpr; cv.height = (r.height - 40) * dpr;
+}
+new ResizeObserver(resize).observe($('#mapWrap'));
+
+function draw(t) {
+  requestAnimationFrame(draw);
+  if (!game || !game.grid || $('#play').classList.contains('hidden')) return;
+  const g = game.grid, H = g.length, W = g[0].length, dpr = devicePixelRatio || 1;
+  const cell = Math.floor(Math.min(cv.width / W, cv.height / H));
+  const ox = Math.floor((cv.width - cell * W) / 2), oy = Math.floor((cv.height - cell * H) / 2);
+  const P = (x, z) => [ox + x * cell, oy + z * cell];
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#2a3a2e'; ctx.fillRect(ox, oy, cell * W, cell * H);
+  ctx.fillStyle = '#5a3d2c';
+  for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (g[z][x]) ctx.fillRect(ox + x * cell, oy + z * cell, cell, cell);
+
+  // Egget
+  const [ex, ez] = P(game.egg.x, game.egg.z);
+  const pulse = 1 + Math.sin(t / 300) * 0.15;
+  const grd = ctx.createRadialGradient(ex, ez, 0, ex, ez, cell * 1.4 * pulse);
+  grd.addColorStop(0, 'rgba(242,193,78,.7)'); grd.addColorStop(1, 'rgba(242,193,78,0)');
+  ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(ex, ez, cell * 1.4 * pulse, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.ellipse(ex, ez, cell * .22, cell * .3, 0, 0, 7); ctx.fill();
+
+  // Rever
+  for (const f of state.foxes) {
+    const [x, z] = P(f.x, f.z);
+    ctx.save(); ctx.translate(x, z); ctx.rotate(f.a);
+    if (f.c) { ctx.strokeStyle = 'rgba(255,60,40,.9)'; ctx.lineWidth = 3 * dpr; ctx.beginPath(); ctx.arc(0, 0, cell * .45, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = '#e2662a'; ctx.beginPath();
+    ctx.moveTo(cell * .35, 0); ctx.lineTo(-cell * .25, cell * .22); ctx.lineTo(-cell * .25, -cell * .22); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  // Spillere
+  ctx.textAlign = 'center'; ctx.font = `800 ${Math.max(11, cell * .42)}px Nunito, sans-serif`;
+  for (const p of state.players) {
+    const [x, z] = P(p.x, p.z);
+    if (p.out) { ctx.strokeStyle = '#777'; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.moveTo(x - 6, z - 6); ctx.lineTo(x + 6, z + 6); ctx.moveTo(x + 6, z - 6); ctx.lineTo(x - 6, z + 6); ctx.stroke(); continue; }
+    if (p.inv && Math.floor(t / 150) % 2) continue;
+    ctx.fillStyle = p.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * dpr;
+    ctx.beginPath(); ctx.arc(x, z, cell * .3, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, z); ctx.lineTo(x + Math.cos(p.a) * cell * .5, z + Math.sin(p.a) * cell * .5); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.fillText(p.name, x, z - cell * .5);
+  }
+  if ($('#end').classList.contains('hidden')) renderTimer();
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

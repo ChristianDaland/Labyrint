@@ -1,0 +1,17 @@
+{
+  "name": "gullegget",
+  "version": "1.0.0",
+  "description": "Flerspiller 3D-labyrint: finn gull-egget før revene tar deg",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "qrcode": "1.5.4",
+    "socket.io": "4.8.1"
+  }
+}
