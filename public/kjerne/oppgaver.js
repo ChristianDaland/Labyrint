@@ -121,7 +121,7 @@ function wordForPicture(skill, short) {
 
 function nextLetter(skill) {
   const i = rand(ALPHABET.length - 1);
-  return task(skill, `Hvilken bokstav kommer etter ${ALPHABET[i]}?`, ALPHABET[i + 1], others(ALPHABET, ALPHABET[i + 1], 4));
+  return task(skill, `Hvilken bokstav kommer etter ${ALPHABET[i]} i alfabetet?`, ALPHABET[i + 1], others(ALPHABET, ALPHABET[i + 1], 4));
 }
 
 function missingLetter(skill) {

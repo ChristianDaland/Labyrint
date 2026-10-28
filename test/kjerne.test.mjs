@@ -291,6 +291,7 @@ test('lydfilene finnes for alle setningene', { skip: !existsSync(MANIFEST) && 'l
 
 // ─── Labyrinten ─────────────────────────────────────────────────────────
 import { makeLevel, bfs, newFox, updateFox, releaseFox, CONFIG as MAZE } from '../public/spill/labyrint-kart.js';
+import { placeItems, steer } from '../public/spill/slange.js';
 
 const reachable = (grid, blocked, sx, sz) => {
   const seen = new Set([sx + ',' + sz]), q = [[sx, sz]];
@@ -344,4 +345,32 @@ test('reven jager når den ser spilleren, og løper unna etter frislipp', () => 
     if (d >= MAZE.foxRetreat) fled++; else deadEnds++;
   }
   assert.ok(fled + deadEnds > 20, 'for få tilfeller testet');
+});
+
+// ─── Slangen ────────────────────────────────────────────────────────────
+test('slangen: skiltene havner fritt, unna hodet og med avstand til hverandre', () => {
+  for (let k = 0; k < 300; k++) {
+    const cols = 9, rows = 14, snake = [[4, 7], [3, 7], [2, 7], [2, 8], [2, 9]];
+    const items = [{ span: 1 }, { span: 4 }, { span: 2 }];
+    const spots = placeItems(cols, rows, snake, items);
+    assert.ok(spots, 'fant ikke plass');
+    const cells = spots.map((s, i) => Array.from({ length: items[i].span }, (_, j) => [s.c + j, s.r]));
+    for (const cs of cells) for (const [c, r] of cs) {
+      assert.ok(c >= 0 && c < cols && r >= 0 && r < rows, 'utenfor brettet');
+      assert.ok(!snake.some(([x, y]) => x === c && y === r), 'under slangen');
+      assert.ok(Math.abs(c - 4) + Math.abs(r - 7) >= 4, 'for nær hodet');
+    }
+    for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++)
+      for (const [c1, r1] of cells[a]) for (const [c2, r2] of cells[b]) assert.ok(Math.abs(r1 - r2) >= 2 || Math.abs(c1 - c2) >= 2, 'skiltene for tett');
+  }
+});
+
+test('slangen: snur aldri rett bakover og svinger selv ved kanten', () => {
+  const R = [1, 0], L = [-1, 0], U = [0, -1], D = [0, 1];
+  assert.deepEqual(steer(9, 14, [4, 4], R, L), R);      // bakover ignoreres
+  assert.deepEqual(steer(9, 14, [4, 4], R, U), U);
+  assert.deepEqual(steer(9, 14, [8, 2], R, null), D);   // høyre kant, øverst: svinger ned mot midten
+  assert.deepEqual(steer(9, 14, [8, 12], R, null), U);  // høyre kant, nederst: svinger opp
+  assert.deepEqual(steer(9, 14, [8, 0], R, null), D);   // hjørne: eneste vei
+  assert.deepEqual(steer(9, 14, [0, 13], D, null), R);
 });

@@ -62,6 +62,7 @@ Felles grensesnitt: `export default start({ root, profile, store, onExit })`. `o
   - Lyd: knurring fra reven (sterkere jo nærmere, panorert mot revens side, stille mens oppgave er åpen), bjeff når den jager og fanger, knirk når døra åpnes. Oransje kant når en jagende rev er nær.
   - Egget starter som gull og skifter farge (3D, kart og merke øverst) etter stjernene for svarene så langt. Egget (< 0,55) avslutter runden: «Du fant gull-egget!» / sølvegget / bronse-egget, stjerner, tilbake til rommet. Stjerner etter riktige på første forsøk av alle oppgaver (dører og rev).
   - Test: `#test=riktig|feil` (autopilot som går korteste vei til egget og svarer, `window.__labyrint`).
+- **Slangen** (`slange.js`, Canvas 2D): rutebrett (ca. 8 ruter bredt, ruter 30–64 px, bestemt ved start; plass til spørsmålet er satt av øverst). Trykk på brettet svinger slangen mot trykket (aksen med størst avstand fra hodet; trykk rett foran/bak svinger mot siden), piltaster/WASD på PC. Kan ikke krasje: `steer` svinger selv ved kanten (mot midten), og slangen kan krysse seg selv. Tre skilt med svar (`placeItems`: ikke under slangen, minst 4 ruter fra hodet, luft mellom skiltene; lange ord dekker flere ruter), spiselige etter 1,2 s. Riktig: vokser 2 ledd, neste spørsmål. Feil: skiltet blir stein og forsvinner, prøv igjen. 10 spørsmål, 2,4 ruter/s opp til 3,4 ved mange riktige på rad. `placeItems` og `steer` testes i Node. Test: `#test=riktig|feil` (`window.__slange`).
 
 ## Koordinater (labyrinten)
 - `grid[z][x]`, 1 = vegg, 0 = gulv. Størrelse (2n+1)×(2n+1). Ruter på oddetallskoordinater, ganger mellom dem. Dører står i ganger (x og z har ulik paritet); gangen går langs x når x er partall.
@@ -69,6 +70,6 @@ Felles grensesnitt: `export default start({ root, profile, store, onExit })`. `o
 - Retning `a` i radianer: fremover = (cos a, sin a) i (x, z). Økende `a` = snu til høyre. Three.js: `camera.rotation.y = -a - π/2`; modeller bygges med front mot +x og roteres `rotation.y = -a`.
 
 ## Status
-Steg 1–5 i PLAN.md er gjort: kjerne, rommet, Flakse-fuglen, Labyrinten, hjem-skjerm-app, publisering og veiledning.
+Steg 1–5 i PLAN.md er gjort: kjerne, rommet, Flakse-fuglen, Labyrinten, hjem-skjerm-app, publisering og veiledning. Slangen er lagt til som tredje spill.
 Testet med `npm test` og hele runder med autopilot i Chromium (iPhone og iPad, høykant). Ikke testet på ekte enheter av utvikleren ut over korte prøver.
 Neste: innspilte bokstavlyder (steg 6) og flere spill (se PLAN.md, «Senere»).

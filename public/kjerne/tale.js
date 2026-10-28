@@ -6,7 +6,7 @@ import { ANIMALS, COLORS, profileName } from './lagring.js';
 import { SKILLS, skillsOf, skillLabel, makeTask } from './oppgaver.js';
 import { MILESTONES, EGG_KINDS, EGG_NAMES, eggKind } from './belonning.js';
 
-export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten' };
+export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen' };
 const MAX_NUMBER = 300; // tall som finnes som lydfil (større tall leses av enhetens stemme)
 const stars = n => (n === 1 ? 'stjerne.' : 'stjerner.');
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -58,6 +58,9 @@ export const T = {
 
   // Flakse-fuglen
   flapStart: () => ['Trykk for å flakse.', 'Fly gjennom riktig svar!'],
+
+  // Slangen
+  snakeStart: () => ['Trykk der slangen skal gå.', 'Spis riktig svar!'],
   roundDone: n => ['Bra jobba!', 'Du fikk', String(n), stars(n)],
 
   // Labyrinten
@@ -86,7 +89,7 @@ export function taskPhrases(samples = 4000) {
 export function allPhrases(samples) {
   const out = new Set(taskPhrases(samples));
   const add = parts => parts.forEach(p => out.add(p));
-  for (const f of [T.whoAreYou, T.pickAnimalFirst, T.pickAnimalNew, T.emptyFrame, T.emptyEgg, T.flapStart, T.rotate, T.mazeStart, T.foxCaught, T.foxFree]) add(f());
+  for (const f of [T.whoAreYou, T.pickAnimalFirst, T.pickAnimalNew, T.emptyFrame, T.emptyEgg, T.flapStart, T.snakeStart, T.rotate, T.mazeStart, T.foxCaught, T.foxFree]) add(f());
   for (let n = 1; n <= 3; n++) { add(T.foundEgg(EGG_KINDS[n])); add(T.newEggs([{ stars: n }])); }
   for (let mask = 0; mask < 8; mask++) add(T.eggsHave({ gull: mask & 1, solv: mask & 2, bronse: mask & 4 }));
   for (const a of ANIMALS) {
