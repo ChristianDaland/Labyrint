@@ -3,7 +3,8 @@
 Status (28.10.2026): planen er godkjent.
 - **Steg 1 (grunnmur) er ferdig:** `public/kjerne/` med oppgaver, læringsmotor, belønninger, lagring og lyd, testet med `npm test` og i nettleser.
 - **Steg 2 (rommet) er ferdig:** `public/rom.html`, testet i nettleser som iPhone (høykant) og iPad (liggende).
-- **Neste:** steg 3 (Flakse-fuglen).
+- **Steg 3 (Flakse-fuglen og ferdiglaget tale) er bygget:** `public/spill/flakse.js`, `public/kjerne/tale.js`, `verktoy/lag-tale.py` og lydfilene i `public/lyd/tale/`.
+- **Neste:** test med barn, deretter steg 4 (labyrinten).
 
 ## 1. Mål og rammer
 
@@ -107,8 +108,11 @@ Oppgavene ved dørene og fra reven hentes fra læringsmotoren. Å finne egget gi
 
 **Oppgaveformat** (felles for alle spill): `{ ferdighet, spørsmål, bilde, alternativer[], riktig, opplesning }`. Dagens oppgavegenerator i `tasks.js` brukes som utgangspunkt og merkes med ferdighet og nivå.
 
-**Lyd:**
-- Hele spørsmål leses av telefonens norske stemme.
+**Lyd** (besluttet 28.10.2026 etter lydprøver):
+- **Ferdiglagde lydfiler med Piper:** stemmen `no_NO-talesyntese-medium` (CC0, Nasjonalbiblioteket), med innstillingene `--length-scale 1.7 --noise-scale 0.5 --noise-w 0.6 --sentence-silence 0.6`. Det gir sakte og tydelig tale for barn, og stemmen høres lik ut på alle enheter.
+- **Alle setninger lages på forhånd** av et skript: spørsmål, beskjeder, diplomer, tall og ord. Filene hentes bare når de trengs.
+- **Enhetens stemme brukes bare som reserve** hvis en fil mangler. Den var nesten uforståelig på Linux, men bedre på iPhone og iPad.
+- Hele spørsmål leses av den valgte stemmen.
 - Bokstavlyder, som /sss/ og ikke «ess», tas opp av deg senere som lydfiler.
 - Til opptakene er klare, lager vi oppgaver som ikke trenger enkeltlyder.
 

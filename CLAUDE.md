@@ -14,7 +14,9 @@ Ny kjerne i `public/kjerne/` (ES-moduler uten byggesteg, felles for alle spillen
 - `laering.js` – læringsmotoren: nivå per fag, siste 10 svar per ferdighet, opp ved 8/10 og ned ved under 5/10 (med blanke ark), valg ca. 70 % nå / 20 % repetisjon (vektet mot det han bommer på) / 10 % smakebit. `recordAnswer` fører også statistikk per fag og dag.
 - `belonning.js` – stjerner (1–3), gullegg per runde, milepæl-diplomer og diplomer for mestrede ferdigheter.
 - `lagring.js` – profiler (dyr + farge, aldri navn), alt i `localStorage` under nøkkelen `gullegget` med versjonsnummer; tåler ødelagte data, sikkerhetskopi (eksport/import), `requestPersist()`.
-- `lyd.js` – Web Audio-effekter (pling, oops, fanfare, flap, bump, creak, bark, growl) som også kan tas opp offline, opplesning (nb-NO) og plass til innspilte bokstavlyder (`LETTER_FILES`).
+- `lyd.js` – Web Audio-effekter (pling, oops, fanfare, flap, bump, creak, bark, growl) som også kan tas opp offline. `say(...biter)` spiller ferdiglagde setninger (`lyd/tale/manifest.json` → mp3) etter hverandre via Web Audio. Mangler en bit, leses alt av enhetens stemme. `prefetch()` henter på forhånd. Plass til innspilte bokstavlyder (`LETTER_FILES`).
+- `tale.js` – **alt spillet sier**, som funksjoner som gir biter (`T.welcome(p)`, `T.starsHave(n)`, `T.wrong(task)` …). `allPhrases()` lister alle bitene, inkludert alle oppgavesetningene (funnet ved mange trekk) og tall 0–300. **Ny tekst som skal sies, legges inn her**, og så kjøres `verktoy/lag-tale.py`.
+- `ui.js` – `holdButton` (hold inne for å utløse) og `keepAwake` (Wake Lock).
 - Alle stier er relative (siden ligger under `/Labyrint/` på GitHub Pages).
 
 Rommet `public/rom.html` (startskjerm; blir `index.html` i steg 4):
@@ -25,7 +27,22 @@ Rommet `public/rom.html` (startskjerm; blir `index.html` i steg 4):
 - **Feiring:** nye egg og diplomer siden sist feires (fanfare, diplom vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
 - **Voksenmeny:** ⚙️, holdes inne i 3 s. Inneholder bytt/ny/slett figur, fag (begge/matte/norsk), lyd av/på, sikkerhetskopi lagre/hent, og hint om Hjem-skjerm.
 - **Spillene lastes inn som moduler** (`spill/*.js`) i samme side, ikke egne sider, så lyden forblir låst opp. `GAMES` i rom.html; `ready: false` til spillet finnes.
-- Tester: `npm test` (Node, `test/kjerne.test.mjs`).
+- Tester: `npm test` (Node, `test/kjerne.test.mjs`). Testene sjekker også at alt `tale.js` kan si, finnes som lydfil.
+
+Stemme og lydfiler:
+- **Stemme:** Piper med `no_NO-talesyntese-medium` (CC0, Nasjonalbiblioteket), sakte og tydelig for barn: `length_scale 1.7, noise 0.5, noise_w 0.6`, 0,6 s mellom setninger, MP3 40 kbit/s mono.
+- **Lage filene:** `uv run --with piper-tts --with lameenc python verktoy/lag-tale.py`. Henter setningene via `verktoy/fraser.mjs` og lager bare nye filer. Filene heter `sha1(stemme+innstillinger+tekst)`. Ubrukte filer slettes. Stemmen lastes ned til `verktoy/.cache/` (gitignored).
+- **Bakgrunn for valget:** nettleserens egen stemme var uforståelig (espeak på Linux).
+
+Spill (`public/spill/*.js`, lastes inn i rommet med `import()`; `export default start({ root, profile, store, onExit })`; `onExit({ game, right, total })` gir egg i rommet, `onExit(null)` = avbrutt):
+- **Flakse-fuglen** (`flakse.js`, Canvas 2D):
+  - **Styring:** trykk eller mellomrom flakser.
+  - **Spillet:** tre åpninger i en klossvegg med svar på skilt. Fuglen dør aldri: treffer den veggen, spretter veggen unna. Bakken spretter også.
+  - **Runde:** 10 oppgaver fra læringsmotoren. Riktig gir pling, ros og stjerner. Feil gir «Ikke helt. Riktig svar er …», og neste spørsmål kommer etter 3,2 s.
+  - **Tempo:** veggen bruker 6,5 s til fuglen, ned til 70 % ved mange riktige på rad.
+  - **Fuglen** har spillerens farge.
+  - **Avslutte:** ✕ holdes inne 1 s.
+  - **Test:** `#test=riktig|feil` i adressen slår på autopilot og eksponerer `window.__flakse` (brukes av automatiske tester).
 
 ## Spillveiledning – hold den oppdatert
 `public/veiledning.html` (rute `/veiledning`, lenket fra lobbyen og fra «Egne oppgaver») er veiledningen for lærere og foreldre.

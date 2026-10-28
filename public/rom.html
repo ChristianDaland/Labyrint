@@ -276,7 +276,10 @@
 <script type="module">
 import { createStore, requestPersist, downloadBackup, ANIMALS, COLORS, profileName, profileEmoji, profileColor } from './kjerne/lagring.js';
 import { progress } from './kjerne/laering.js';
-import { SKILL_BY_ID, skillsOf, skillLabel } from './kjerne/oppgaver.js';
+import { SKILL_BY_ID } from './kjerne/oppgaver.js';
+import { finishRound } from './kjerne/belonning.js';
+import { holdButton } from './kjerne/ui.js';
+import { T } from './kjerne/tale.js';
 import * as lyd from './kjerne/lyd.js';
 
 const $ = s => document.querySelector(s);
@@ -287,27 +290,12 @@ requestPersist();
 // Spillene lastes inn i denne siden som moduler (ikke egne sider), så lyden forblir låst opp på iPhone/iPad
 // og rommet kan dele ut belønningene. `ready` slås på når spillet finnes (Flakse-fuglen i steg 3, labyrinten i steg 4).
 const GAMES = [
-  { id: 'flakse', emoji: '🐦', name: 'Flakse-fuglen', module: './spill/flakse.js', ready: false },
+  { id: 'flakse', emoji: '🐦', name: 'Flakse-fuglen', module: './spill/flakse.js', ready: true },
   { id: 'labyrint', emoji: '🧱', name: 'Labyrinten', module: './spill/labyrint.js', ready: false },
 ];
-const GAME_NAME = Object.fromEntries(GAMES.map(g => [g.id, g.name]));
 
 function show(id) {
-  for (const s of ['start', 'picker', 'create', 'room']) $('#' + s).classList.toggle('hidden', s !== id);
-}
-
-// Hold inne i `ms` for å utløse (voksenmeny, ny figur): vanskelig å treffe ved et uhell
-function holdButton(el, ms, onDone) {
-  let t0 = 0, raf = 0;
-  const stop = () => { cancelAnimationFrame(raf); t0 = 0; el.style.setProperty('--p', 0); };
-  const tick = t => {
-    const p = Math.min((t - t0) / ms, 1);
-    el.style.setProperty('--p', p);
-    if (p >= 1) { stop(); onDone(); } else raf = requestAnimationFrame(tick);
-  };
-  el.addEventListener('pointerdown', e => { e.preventDefault(); t0 = performance.now(); raf = requestAnimationFrame(tick); });
-  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, stop);
-  el.addEventListener('contextmenu', e => e.preventDefault());
+  for (const s of ['start', 'picker', 'create', 'room']) $('#' + s).classList.toggle('hidden', s !== id); // null: alt skjult (et spill vises)
 }
 
 // ─── Start ──────────────────────────────────────────────────────────────
@@ -340,7 +328,7 @@ function openPicker() {
     grid.append(b);
   }
   show('picker');
-  lyd.speak('Hvem er du? Trykk på figuren din.');
+  lyd.say(T.whoAreYou());
 }
 holdButton($('#pickAdd'), 3000, () => openCreate());
 
@@ -352,12 +340,12 @@ function openCreate() {
   for (const a of ANIMALS) {
     const b = document.createElement('button');
     b.className = 'fig'; b.textContent = a.emoji; b.setAttribute('aria-label', a.name);
-    b.onclick = () => { crAnimal = a.id; crColor = null; renderCreate(); lyd.speak(`${a.name}. Velg en farge.`); };
+    b.onclick = () => { crAnimal = a.id; crColor = null; renderCreate(); lyd.say(T.animalPicked(a)); };
     grid.append(b);
   }
   renderCreate();
   show('create');
-  lyd.speak(store.profiles().length ? 'Lag en ny figur. Velg et dyr.' : 'Hei! Velg et dyr som skal være deg.');
+  lyd.say(store.profiles().length ? T.pickAnimalNew() : T.pickAnimalFirst());
 }
 
 function renderCreate() {
@@ -369,7 +357,7 @@ function renderCreate() {
     b.className = 'sw' + (c.id === crColor ? ' sel' : ''); b.style.background = c.hex;
     b.setAttribute('aria-label', c.name);
     b.disabled = !crAnimal || store.taken(crAnimal, c.id);
-    b.onclick = () => { crColor = c.id; renderCreate(); lyd.speak(profileName({ animal: crAnimal, color: crColor })); };
+    b.onclick = () => { crColor = c.id; renderCreate(); lyd.say(T.figure({ animal: crAnimal, color: crColor })); };
     sw.append(b);
   }
   const pv = $('#crPreview');
@@ -381,7 +369,7 @@ function renderCreate() {
 $('#crOk').onclick = () => {
   const p = store.addProfile(crAnimal, crColor);
   lyd.fanfare();
-  lyd.speak(`Hei, ${profileName(p)}! Dette er rommet ditt.`);
+  lyd.say(T.welcome(p));
   openRoom(false);
 };
 
@@ -406,7 +394,7 @@ function openRoom(greet) {
   if (!p) return next();
   show('room');
   renderRoom(p, true);
-  if (greet) lyd.speak(`Hei, ${profileName(p)}!`);
+  if (greet) lyd.say(T.hello(p));
   setTimeout(() => celebrate(p), greet ? 1200 : 400);
 }
 
@@ -423,13 +411,13 @@ function renderRoom(p, markNew) {
     f.className = 'frame' + (markNew && i >= p.rewards.seenDiplomas ? ' new' : '');
     f.innerHTML = `<span>${diplomaIcon(d)}</span><span class="ribbon">🎀</span>`;
     f.setAttribute('aria-label', d.text);
-    f.onclick = () => lyd.speak(d.text);
+    f.onclick = () => lyd.say(T.diploma(d.text));
     wall.append(f);
   });
   for (let i = 0; i < Math.max(1, 3 - p.rewards.diplomas.length); i++) {
     const f = document.createElement('button');
     f.className = 'frame empty'; f.textContent = '?';
-    f.onclick = () => lyd.speak('Her kan det komme et nytt diplom!');
+    f.onclick = () => lyd.say(T.emptyFrame());
     wall.append(f);
   }
 
@@ -447,10 +435,8 @@ function renderRoom(p, markNew) {
       s.className = 'slot' + (!e ? ' empty' : markNew && idx >= p.rewards.seenEggs ? ' new' : '');
       if (e) s.style.animationDelay = `${(idx - p.rewards.seenEggs) * 0.25}s`;
       s.innerHTML = `<span class="egg"></span>${e ? `<span class="st">${'⭐'.repeat(e.stars)}</span>` : ''}`;
-      s.setAttribute('aria-label', e ? `Gullegg fra ${GAME_NAME[e.game] || 'et spill'}` : 'Plass til neste gullegg');
-      s.onclick = () => lyd.speak(e
-        ? `Gullegg fra ${GAME_NAME[e.game] || 'et spill'}. ${e.stars} ${e.stars === 1 ? 'stjerne' : 'stjerner'}.`
-        : 'Her kommer neste gullegg. Spill for å vinne det!');
+      s.setAttribute('aria-label', e ? T.egg(e).join(' ') : 'Plass til neste gullegg');
+      s.onclick = () => lyd.say(e ? T.egg(e) : T.emptyEgg());
       shelf.append(s);
     }
     shelves.append(shelf);
@@ -468,26 +454,21 @@ function renderRoom(p, markNew) {
     b.innerHTML = `<span class="em">${g.emoji}</span>${g.ready ? '' : '<span class="lock">🔒</span>'}`;
     b.setAttribute('aria-label', g.name);
     b.onclick = () => {
-      if (!g.ready) return lyd.speak(`${g.name} kommer snart!`);
+      if (!g.ready) return lyd.say(T.comingSoon(g.id));
       if (b.classList.contains('sel')) return startGame(g);
       nav.querySelectorAll('.sel').forEach(x => x.classList.remove('sel'));
       b.classList.add('sel');
-      lyd.speak(`${g.name}. Trykk en gang til for å spille.`);
+      lyd.say(T.gameName(g.id));
     };
     nav.append(b);
   }
 }
 
-function subjectText(p, subject) {
-  const list = skillsOf(subject), lvl = p.learning.level[subject];
-  if (lvl >= list.length) return `Du kan alt i ${subject}! Fantastisk!`;
-  return `${subject === 'matte' ? 'Matte' : 'Norsk'}. Nå øver du på ${skillLabel(list[lvl].id)}.`;
-}
-$('#me').onclick = () => { const p = store.active(); lyd.speak(`Hei, ${profileName(p)}!`); };
-$('#stars').onclick = () => { const n = store.active().rewards.stars; lyd.speak(`Du har ${n} ${n === 1 ? 'stjerne' : 'stjerner'}.`); };
-$('#eggCount').onclick = () => { const n = store.active().rewards.eggs.length; lyd.speak(`Du har ${n} gullegg.`); };
-$('#jarMatte').onclick = () => lyd.speak(subjectText(store.active(), 'matte'));
-$('#jarNorsk').onclick = () => lyd.speak(subjectText(store.active(), 'norsk'));
+$('#me').onclick = () => lyd.say(T.hello(store.active()));
+$('#stars').onclick = () => lyd.say(T.starsHave(store.active().rewards.stars));
+$('#eggCount').onclick = () => lyd.say(T.eggsHave(store.active().rewards.eggs.length));
+$('#jarMatte').onclick = () => lyd.say(T.subject('matte', store.active().learning.level.matte));
+$('#jarNorsk').onclick = () => lyd.say(T.subject('norsk', store.active().learning.level.norsk));
 
 // Nye egg og diplomer siden sist: fanfare, og hvert nye diplom vises stort og leses opp
 function celebrate(p) {
@@ -496,7 +477,7 @@ function celebrate(p) {
   if (!newEggs && !newDiplomas.length) return;
   if (newEggs) {
     lyd.fanfare();
-    lyd.speak(newEggs === 1 ? 'Du fikk et nytt gullegg!' : `Du fikk ${newEggs} nye gullegg!`);
+    lyd.say(T.newEggs(newEggs));
   }
   const queue = [...newDiplomas];
   const showNext = () => {
@@ -512,7 +493,7 @@ function celebrate(p) {
     $('#celText').textContent = d.text;
     $('#celebrate').classList.remove('hidden');
     lyd.fanfare();
-    lyd.speak(`Nytt diplom! ${d.text}`);
+    lyd.say(T.newDiploma(d.text));
   };
   $('#celOk').onclick = showNext;
   setTimeout(showNext, newEggs ? 2200 : 0);
@@ -566,9 +547,21 @@ $('#aImport').onchange = async e => {
 // Snur man enheten, får hyllene en annen bredde
 addEventListener('resize', () => { const p = store.active(); if (p && !$('#room').classList.contains('hidden')) renderRoom(p, false); });
 
-// Starter et spill (kobles på i steg 3, når det første spillet finnes)
-function startGame(g) {
-  lyd.speak(`${g.name} kommer snart!`);
+// Starter et spill i denne siden. Når runden er ferdig, får spilleren gullegg og stjerner her,
+// og rommet feirer det nye. Avbrutt runde (✕) gir ikke egg, men svarene er lagret i læringsmotoren.
+async function startGame(g) {
+  const p = store.active();
+  lyd.stopSpeaking();
+  let mod;
+  try { mod = await import(g.module); } catch { return lyd.say(T.comingSoon(g.id)); }
+  const stage = document.createElement('div');
+  document.body.append(stage);
+  show(null);
+  mod.default({ root: stage, profile: p, store, onExit: result => {
+    stage.remove();
+    if (result) { finishRound(p, result); store.save(); }
+    openRoom(false);
+  } });
 }
 </script>
 </body>

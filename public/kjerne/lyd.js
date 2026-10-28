@@ -26,7 +26,7 @@ if (typeof window !== 'undefined') {
 
 export function setMuted(on) {
   muted = !!on;
-  if (muted) globalThis.speechSynthesis?.cancel();
+  if (muted) stopSpeaking();
 }
 export const isMuted = () => muted;
 
@@ -175,6 +175,7 @@ function unlockSpeech() {
   speechSynthesis.speak(new SpeechSynthesisUtterance(''));
 }
 
+// Enhetens stemme: brukes bare som reserve når en setning ikke finnes som lydfil
 export function speak(text, { rate = 0.9 } = {}) {
   if (muted || !canSpeak() || !text) return;
   speechSynthesis.cancel();
@@ -184,8 +185,69 @@ export function speak(text, { rate = 0.9 } = {}) {
   if (v) u.voice = v;
   speechSynthesis.speak(u);
 }
-export const stopSpeaking = () => canSpeak() && speechSynthesis.cancel();
 export const hasSpeech = canSpeak;
+
+// ─── Ferdiglagde setninger (Piper, se verktoy/lag-tale.py) ──────────────
+// manifest.json: { "setning": "fil.mp3" }. Bitene spilles etter hverandre med Web Audio, som allerede er
+// låst opp, så det virker også uten nytt trykk på iPhone/iPad.
+const TALE = new URL('../lyd/tale/', import.meta.url);
+let manifest = null, manifestP = null, sayToken = 0, playing = [];
+const clips = new Map(); // setning -> Promise<AudioBuffer>
+const norm = s => String(s).replace(/\s+/g, ' ').trim();
+
+const loadManifest = () => manifestP ||= fetch(new URL('manifest.json', TALE))
+  .then(r => (r.ok ? r.json() : {})).catch(() => ({})).then(m => (manifest = m));
+
+function clip(ctx, text) {
+  if (!clips.has(text)) {
+    const p = fetch(new URL(manifest[text], TALE)).then(r => {
+      if (!r.ok) throw new Error(r.status);
+      return r.arrayBuffer();
+    }).then(b => ctx.decodeAudioData(b));
+    p.catch(() => clips.delete(text)); // prøv igjen neste gang (f.eks. midlertidig uten nett)
+    clips.set(text, p);
+  }
+  return clips.get(text);
+}
+
+// Henter lydfilene på forhånd, så de spilles uten opphold når de trengs
+export async function prefetch(...parts) {
+  await loadManifest();
+  const ctx = actx;
+  if (!ctx) return;
+  for (const p of parts.flat().filter(Boolean).map(norm)) if (manifest[p]) clip(ctx, p).catch(() => {});
+}
+
+// Sier bitene etter hverandre. Avbryter det som ble sagt før. Mangler en bit, leses alt av enhetens stemme.
+// Returnerer når opplesningen er ferdig (omtrent).
+export async function say(...parts) {
+  parts = parts.flat().filter(p => p !== null && p !== undefined && p !== '').map(norm);
+  const token = ++sayToken;
+  stopSpeaking(false);
+  if (muted || !parts.length) return;
+  await loadManifest();
+  const ctx = actx && actx.state === 'running' ? actx : null;
+  if (ctx && parts.every(p => manifest[p])) {
+    try {
+      const bufs = await Promise.all(parts.map(p => clip(ctx, p)));
+      if (token !== sayToken) return;
+      let t = ctx.currentTime + 0.03;
+      for (const b of bufs) {
+        const s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(t);
+        playing.push(s); t += b.duration + 0.08;
+      }
+      return new Promise(res => setTimeout(res, (t - ctx.currentTime) * 1000));
+    } catch { /* faller tilbake til enhetens stemme */ }
+  }
+  if (token === sayToken) speak(parts.join(' '));
+}
+
+export function stopSpeaking(bump = true) {
+  if (bump) sayToken++;
+  for (const s of playing) try { s.stop(); } catch {}
+  playing = [];
+  if (canSpeak()) speechSynthesis.cancel();
+}
 
 // Bokstavlyder (/sss/, ikke «ess»). Fylles inn når opptakene finnes i ../lyd/, f.eks. { S: 'bokstav-s.m4a' }.
 // Til da leses bokstavnavnet opp.

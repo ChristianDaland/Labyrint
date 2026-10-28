@@ -7,6 +7,9 @@ import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, t
 import { starsFor, finishRound, awardSkills, newRewards } from '../public/kjerne/belonning.js';
 import { createStore, newProfile, profileName, KEY, VERSION } from '../public/kjerne/lagring.js';
 import * as lyd from '../public/kjerne/lyd.js';
+import { T, allPhrases, spoken } from '../public/kjerne/tale.js';
+import { readFileSync, existsSync } from 'node:fs';
+import { ANIMALS, COLORS } from '../public/kjerne/lagring.js';
 
 const memStorage = () => {
   const m = new Map();
@@ -243,4 +246,31 @@ test('nye profiler har alle felt', () => {
   assert.deepEqual(p.learning, newLearning());
   assert.deepEqual(p.stats, newStats());
   assert.deepEqual(p.rewards, newRewards());
+});
+
+// ─── Tale ───────────────────────────────────────────────────────────────
+const MANIFEST = new URL('../public/lyd/tale/manifest.json', import.meta.url);
+
+test('alt spillet kan si, er med i listen over setninger (og dermed som lydfil)', () => {
+  const all = allPhrases(3000);
+  const missing = new Set();
+  const check = parts => parts.forEach(p => all.has(p) || missing.add(p));
+  for (let i = 0; i < 20000; i++) { // ferske, tilfeldige oppgaver: spørsmål, ros og «riktig svar er …»
+    const t = makeTask(SKILLS[i % SKILLS.length].id);
+    check(T.task(t)); check(T.wrong(t)); check(T.right());
+  }
+  const p = { animal: ANIMALS[3].id, color: COLORS[5].id };
+  check(T.welcome(p)); check(T.figure(p)); check(T.hello(p)); check(T.starsHave(1)); check(T.starsHave(57));
+  check(T.newEggs(1)); check(T.newEggs(3)); check(T.egg({ game: 'flakse', stars: 2 })); check(T.subject('norsk', 99));
+  check(T.roundDone(3)); check(T.newDiploma(SKILL_BY_ID.rim.diploma));
+  assert.deepEqual([...missing], []);
+  assert.equal(spoken('KATT'), 'katt'); assert.equal(spoken('S'), 'S'); assert.equal(spoken('12'), '12');
+});
+
+test('lydfilene finnes for alle setningene', { skip: !existsSync(MANIFEST) && 'lydfilene er ikke laget (verktoy/lag-tale.py)' }, () => {
+  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  const missing = [...allPhrases(3000)].filter(p => !manifest[p]);
+  assert.deepEqual(missing.slice(0, 10), [], `${missing.length} setninger mangler lydfil: kjør verktoy/lag-tale.py`);
+  for (const f of new Set(Object.values(manifest)).values())
+    assert.ok(existsSync(new URL('../public/lyd/tale/' + f, import.meta.url)), f);
 });
