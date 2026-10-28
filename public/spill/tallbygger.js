@@ -17,7 +17,7 @@ export default function start({ root, profile, store, onExit }) {
     tileSpeech: n => [n],
     makePuzzle: () => {
       const t = makeMathPuzzle(chooseSkill(profile.learning, 'matte').id);
-      return { ...t, key: t.parts.map(p => 'slot' in p ? `[${p.slot}]` : p.text).join(' ') + (t.pic || ''), speak: [t.speak], done: [] };
+      return { ...t, key: t.parts.map(p => 'slot' in p ? `[${p.slot}]` : p.text).join(' ') + (t.pic || ''), speak: T.task(t), done: [] };
     },
   });
 }

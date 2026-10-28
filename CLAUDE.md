@@ -1,6 +1,6 @@
 # Gull-egget
 
-Læringsspill i lesing, skriving og enkel matte for barn på 1.–2. trinns-nivå, også barn som ikke kan lese ennå:
+Læringsspill i lesing, skriving og matte for barn på 1.–4. trinns-nivå (startnivå velges i voksenmenyen), også barn som ikke kan lese ennå:
 alt leses opp, bilder brukes i stedet for tekst, og oppgavene tilpasser seg barnet. Én spiller, ingen innlogging,
 ingen navn. Laget for iPhone og iPad (høykant), virker også på Android og PC. Plan og status står i `PLAN.md`.
 
@@ -28,12 +28,12 @@ skal stemme med `public/kjerne/` og `public/spill/`.
 - Prøv lokalt: `python3 -m http.server -d public 8080`.
 
 ## Kjernen (`public/kjerne/`, felles for alle spillene)
-- `oppgaver.js` – oppgaver per ferdighet (`SKILLS`, i læringsrekkefølge per fag, hver med diplomtekst). Oppgave: `{skill, q, pic, options[3], answer, speak}`. Staveoppgave (`SPELL_SKILLS`): `{skill, kind: 'stave', word, pic, tiles, ghost, speak}`. `LETTER_ORDER` = rekkefølgen bokstavene innføres i. Oppgaver med bilde sier alltid hva bildet er (f.eks. «Finn ordet tre»).
-- `laering.js` – læringsmotoren: nivå per fag (matte, norsk, stave og setning; «begge» = matte og norsk), siste 10 svar per ferdighet, opp ved 8/10 og ned ved under 5/10 (med blanke ark), valg ca. 70 % nå / 20 % repetisjon (vektet mot det spilleren bommer på) / 10 % smakebit. `recordAnswer` fører også statistikk per fag og dag.
+- `oppgaver.js` – oppgaver per ferdighet (`SKILLS`, i læringsrekkefølge per fag, hver med diplomtekst). Oppgave: `{skill, q, pic, options[3], answer, speak}`. Etter de første ferdighetene kommer 3.–4. trinn: matte (veksling, gange/dele, plassverdi, opp til 1000, gangetabellen), norsk (leseforståelse: `READ_PICTURE`, `READ_TEXT`, teksten leses ikke opp) og rettskriving i staving (ng, kj/sj, stumme bokstaver, sammensatte ord). Store regnestykker har `speak` som biter (`['Hva er', '347', 'pluss', '200']`), så det ikke trengs én lydfil per stykke. Staveoppgave (`SPELL_SKILLS`): `{skill, kind: 'stave', word, pic, tiles, ghost, speak}`. `LETTER_ORDER` = rekkefølgen bokstavene innføres i. Oppgaver med bilde sier alltid hva bildet er (f.eks. «Finn ordet tre»).
+- `laering.js` – læringsmotoren: nivå per fag (matte, norsk, stave og setning; «begge» = matte og norsk), `GRADE_START`/`setGrade` (startnivå per trinn 1–4, voksenmenyen), repetisjon bare fra de `REVIEW_SPAN` (5) nærmeste ferdighetene under nivået, siste 10 svar per ferdighet, opp ved 8/10 og ned ved under 5/10 (med blanke ark), valg ca. 70 % nå / 20 % repetisjon (vektet mot det spilleren bommer på) / 10 % smakebit. `recordAnswer` fører også statistikk per fag og dag.
 - `belonning.js` – stjerner (1–3: av 10 riktige på første forsøk gir 0–5 → 1, 6–8 → 2, 9–10 → 3), ett egg per runde der stjernene avgjør typen (`EGG_KINDS`: 3 gull, 2 sølv, 1 bronse; `eggKind(e)` regner det ut fra `e.stars`), milepæl-diplomer og diplomer for mestrede ferdigheter.
 - `lagring.js` – profiler (dyr + farge, aldri navn), alt i `localStorage` under nøkkelen `gullegget` med versjonsnummer; tåler ødelagte data, sikkerhetskopi (eksport/import), `requestPersist()`.
 - `lyd.js` – Web Audio-effekter (pling, oops, fanfare, flap, bump, creak, bark, growl med `set/stop`) som også kan tas opp offline. `say(...biter)` spiller ferdiglagde setninger (`lyd/tale/manifest.json` → mp3) etter hverandre via Web Audio; mangler en bit, leses alt av enhetens stemme. `prefetch()` henter på forhånd. Setter `navigator.audioSession.type = 'playback'` (iOS 16.4+), så lyd høres selv om lydløs-bryteren er på. Lyd låses opp på `pointerdown`, `touchend` og `click`. Plass til innspilte bokstavlyder (`LETTER_FILES`).
-- `tale.js` – **alt spillet sier**, som funksjoner som gir biter (`T.welcome(p)`, `T.starsHave(n)`, `T.tryAgain()` …). `allPhrases()` lister alle bitene, inkludert alle oppgavesetningene (funnet ved mange trekk) og tall 0–300. **Ny tekst som skal sies, legges inn her**, og så kjøres `verktoy/lag-tale.py`.
+- `tale.js` – **alt spillet sier**, som funksjoner som gir biter (`T.welcome(p)`, `T.starsHave(n)`, `T.tryAgain()` …). `allPhrases()` lister alle bitene, inkludert alle oppgavesetningene (funnet ved mange trekk) og tall 0–1000. **Ny tekst som skal sies, legges inn her**, og så kjøres `verktoy/lag-tale.py`.
 - `ui.js` – `holdButton` (hold inne for å utløse) og `keepAwake` (Wake Lock).
 
 ## Stemme og lydfiler
@@ -45,7 +45,7 @@ skal stemme med `public/kjerne/` og `public/spill/`.
 - **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
 - **Rommet:** figur, ⭐ stjerner, egg-teller (leser opp antall per type), diplomer på klossvegg i fire rammer (`DIPLOMA_GROUPS`: matte, norsk, stave, ekstra; med antall, trykk åpner `#dipList` med alle i gruppa), hylle med 👑/💎 (`treasure(n)`: 10 egg = 1 diamant, 10 diamanter = 1 krone) og en hylle med de løse eggene (0–9) og tomme plasser opp til 10, krukker for matte/norsk (fremgang) og spillkort. Alt leses opp ved trykk. Spillkort (tre kolonner): ett trykk sier navnet, to trykk starter.
 - **Feiring:** nye egg og diplomer siden sist feires (fanfare; ny diamant/krone og nye diplomer vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
-- **Voksenmeny:** ⚙️, holdes inne i 3 s: bytt/ny/slett figur, fag (begge/matte/norsk), lyd av/på, sikkerhetskopi lagre/hent, Hjem-skjerm-hint, lenke til veiledningen.
+- **Voksenmeny:** ⚙️, holdes inne i 3 s: bytt/ny/slett figur, fag (begge/matte/norsk), startnivå (1.–4. trinn), lyd av/på, sikkerhetskopi lagre/hent, Hjem-skjerm-hint, lenke til veiledningen.
 - **Bare høykant på telefon og pad:** Safari kan ikke låse retningen, så `#rotate` («Snu skjermen», leses opp) dekker alt ved `(orientation: landscape) and (pointer: coarse)`, og spillene står stille. PC kan bruke begge retninger.
 - **Lave skjermer:** skjermene kan rulles og har kompakt utgave (`max-height: 520px`).
 - **Hjem-skjerm-app:** `manifest.webmanifest` (standalone, portrait, `start_url ./`), ikoner i `ikoner/`, iOS-metatagger. En app på Hjem-skjermen har egen lagring, atskilt fra Safari (står i veiledningen).

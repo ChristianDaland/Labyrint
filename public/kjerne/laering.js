@@ -8,6 +8,7 @@
 import { SKILL_BY_ID, skillsOf, makeTask } from './oppgaver.js';
 
 export const WINDOW = 10, UP = 8, DOWN = 5;
+export const REVIEW_SPAN = 5; // repetisjon bare fra de siste ferdighetene under nivået (ikke «telle til 5» i 4. klasse)
 export const SUBJECTS = ['matte', 'norsk'];
 
 // «stave» (staving) og «setning» er egne fag som bare Ordbyggeren og Ordtoget bruker
@@ -24,7 +25,7 @@ export function chooseSkill(learning, subject = 'begge', rnd = Math.random) {
   const r = rnd();
   if (r < 0.1 && cur + 1 < list.length) return list[cur + 1]; // smakebit på det neste
   if (r < 0.3 && cur > 0) { // repetisjon: ferdigheter spilleren ofte bommer på, kommer oftere
-    const done = list.slice(0, cur), weights = done.map(k => 1 + 4 * errorRate(learning.recent[k.id]));
+    const done = list.slice(Math.max(0, cur - REVIEW_SPAN), cur), weights = done.map(k => 1 + 4 * errorRate(learning.recent[k.id]));
     let x = rnd() * weights.reduce((a, b) => a + b, 0);
     for (let i = 0; i < done.length; i++) if ((x -= weights[i]) <= 0) return done[i];
     return done[done.length - 1];
@@ -36,6 +37,22 @@ export const nextTask = (profile, rnd) => makeTask(chooseSkill(profile.learning,
 
 export const today = (now = new Date()) =>
   `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+// Startnivå per trinn, valgt i voksenmenyen: ferdigheten barnet starter på i hvert fag.
+// Læringsmotoren justerer videre opp og ned derfra.
+export const GRADE_START = {
+  1: { matte: 'telle5', norsk: 'storliten', stave: 'stavkopi', setning: 'setntre' },
+  2: { matte: 'pluss10', norsk: 'alfabet', stave: 'stavvelg', setning: 'setnfire' },
+  3: { matte: 'pluss100', norsk: 'stavelser', stave: 'stavdobbel', setning: 'setnvelg' },
+  4: { matte: 'plassverdi', norsk: 'lesbilde', stave: 'stavng', setning: 'setnlang' },
+};
+export function setGrade(profile, grade) {
+  for (const [subject, id] of Object.entries(GRADE_START[grade])) {
+    const i = skillsOf(subject).findIndex(s => s.id === id);
+    if (i >= 0) profile.learning.level[subject] = i;
+  }
+  profile.settings.grade = grade;
+}
 
 // Registrerer et svar. Returnerer hendelser: { type: 'mastered' | 'stepDown', skill }.
 export function recordAnswer(profile, skillId, correct, now = new Date()) {

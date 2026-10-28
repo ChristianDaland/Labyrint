@@ -1,12 +1,14 @@
 # Gull-egget
 
-Læringsspill i lesing, skriving og enkel matte for 1.–2. trinn, også for barn som ikke kan lese ennå:
+Læringsspill i lesing, skriving og matte for 1.–4. trinn, også for barn som ikke kan lese ennå:
 alt leses opp, og oppgavene tilpasser seg barnet. Kjører i nettleseren, laget for iPhone og iPad.
 
 **Spill:** https://christiandaland.github.io/Labyrint/
 **Veiledning for foreldre:** https://christiandaland.github.io/Labyrint/veiledning.html
 
 Ingen innlogging og ingen navn. All fremgang lagres på enheten.
+
+Utviklet av Løland Gård Gaming. Kontakt: christian.daland@gmail.com
 
 ## Oppbygning
 - `public/` er hele nettsiden (statisk, ingen server). `index.html` er rommet. Spillene (Flakse-fuglen, Labyrinten) ligger i `spill/`,

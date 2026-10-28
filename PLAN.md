@@ -10,6 +10,7 @@ Status (28.10.2026): planen er godkjent.
 - **Ordbyggeren er lagt til:** `public/spill/ordbygger.js`. Staving med bokstavbrikker, eget fag `stave` med seks nivåer.
 - **Tallbyggeren er lagt til:** `public/spill/tallbygger.js`. Regnestykker der tall dras på plass, med matte-nivået. Felles motor med Ordbyggeren i `brikker.js`.
 - **Ordtoget er lagt til:** `public/spill/ordtog.js`. Lag enkle setninger med ordbrikker, eget fag `setning` med fire nivåer og tomme ruter.
+- **1.–4. trinn:** startnivå i voksenmenyen, og nye ferdigheter for 3.–4. trinn i matte (veksling, gange og dele, tall opp til 1000), staving (rettskriving) og norsk (leseforståelse).
 - **Neste:** test med barn, deretter steg 6 (innspilte bokstavlyder, som også gir lyd på brikkene i Ordbyggeren) og flere spill.
 
 ## 1. Mål og rammer

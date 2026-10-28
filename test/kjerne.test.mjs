@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, SKILL_BY_ID, skillsOf, makeTask, makeMathPuzzle } from '../public/kjerne/oppgaver.js';
-import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, today, WINDOW } from '../public/kjerne/laering.js';
+import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, today, WINDOW, REVIEW_SPAN, GRADE_START, setGrade } from '../public/kjerne/laering.js';
 import { starsFor, finishRound, awardSkills, newRewards, eggKind, countEggs, treasure, diplomaGroup } from '../public/kjerne/belonning.js';
 import { createStore, newProfile, profileName, KEY, VERSION } from '../public/kjerne/lagring.js';
 import * as lyd from '../public/kjerne/lyd.js';
@@ -39,7 +39,7 @@ test('staveoppgavene: ordet, bokstavbrikkene og ekstra bokstaver', () => {
     assert.match(t.word, /^[A-ZÆØÅ]{2,}$/, s.id);
     const rest = [...t.tiles];
     for (const ch of t.word) rest.splice(rest.indexOf(ch), 1); // hver bokstav i ordet finnes som brikke
-    assert.equal(rest.length, s.id === 'stavkopi' || s.id === 'stavkort' ? 0 : 2, s.id);
+    assert.equal(rest.length, { stavkopi: 0, stavkort: 0, stavsammen: 1 }[s.id] ?? 2, s.id);
     assert.ok(rest.every(ch => !t.word.includes(ch)), `${s.id}: ekstra bokstav finnes i ordet`);
     assert.equal(t.ghost, s.id === 'stavkopi');
     assert.ok(t.pic && t.speak === `Stav ordet ${t.word.toLowerCase()}.`);
@@ -59,9 +59,14 @@ test('Tallbyggeren: regnestykkene stemmer, og svarene finnes blant brikkene', ()
     assert.equal(rest.length, 2, `${s.id}: to ekstra brikker ${JSON.stringify(t.tiles)}`);
     assert.ok(t.tiles.every(v => /^\d+$/.test(v)), `${s.id}: rart tall ${JSON.stringify(t.tiles)}`);
     const ops = parts.map(p => p.text).filter(x => x && !/^\d+$/.test(x));
-    if (ops[0] === '+' || ops[0] === '−') {
-      const [a, , b, , c] = parts.map(val);
-      assert.equal(ops[0] === '+' ? a + b : a - b, c, `${s.id}: ${JSON.stringify(parts)}`);
+    if (ops.includes('=')) { // regn ut venstre side ledd for ledd og sammenlign med høyre side
+      const eq = parts.findIndex(p => p.text === '='), left = parts.slice(0, eq);
+      let v = val(left[0]);
+      for (let j = 1; j < left.length; j += 2) {
+        const op = left[j].text, x = val(left[j + 1]);
+        v = op === '+' ? v + x : op === '−' ? v - x : op === '·' ? v * x : v / x;
+      }
+      assert.equal(v, val(parts[eq + 1]), `${s.id}: ${JSON.stringify(parts)}`);
     } else if (ops[0] === '>') {
       const [b, , a] = parts.map(val), bigger = t.tiles.filter(v => Number(v) > a);
       assert.ok(b > a); assert.deepEqual(bigger, [String(b)], `${s.id}: bare én brikke skal passe`);
@@ -147,6 +152,20 @@ test('repetisjon velger oftere det spilleren bommer på', () => {
   const c = { telle5: 0, telle10: 0 };
   for (let i = 0; i < 20000; i++) { const s = chooseSkill(l, 'matte').id; if (s in c) c[s]++; }
   assert.ok(c.telle5 > 3 * c.telle10, JSON.stringify(c));
+});
+
+test('startnivå per trinn, og repetisjon bare fra de nærmeste ferdighetene', () => {
+  const p = newProfile('ugle', 'lilla');
+  for (const g of [1, 2, 3, 4]) {
+    setGrade(p, g);
+    assert.equal(p.settings.grade, g);
+    for (const [subject, id] of Object.entries(GRADE_START[g])) assert.equal(skillsOf(subject)[p.learning.level[subject]].id, id, `${g}. trinn ${subject}`);
+  }
+  for (const subject of ['matte', 'norsk', 'stave', 'setning']) // høyere trinn starter aldri lavere
+    for (let g = 2; g <= 4; g++) assert.ok(skillsOf(subject).findIndex(s => s.id === GRADE_START[g][subject]) >= skillsOf(subject).findIndex(s => s.id === GRADE_START[g - 1][subject]));
+  const l = newLearning(); l.level.matte = 15;
+  const list = skillsOf('matte');
+  for (let i = 0; i < 3000; i++) assert.ok(list.indexOf(chooseSkill(l, 'matte')) >= 15 - REVIEW_SPAN);
 });
 
 test('«begge» blander matte og norsk omtrent likt', () => {
@@ -330,7 +349,7 @@ test('alt spillet kan si, er med i listen over setninger (og dermed som lydfil)'
   const check = parts => parts.forEach(p => all.has(p) || missing.add(p));
   for (let i = 0; i < 20000; i++) { // ferske, tilfeldige oppgaver: spørsmål, ros og «riktig svar er …»
     const t = makeTask(SKILLS[i % SKILLS.length].id);
-    check(T.task(t)); check(T.wrong(t)); check(T.right());
+    check(T.task(t)); check(T.right());
   }
   const p = { animal: ANIMALS[3].id, color: COLORS[5].id };
   check(T.welcome(p)); check(T.figure(p)); check(T.hello(p)); check(T.starsHave(1)); check(T.starsHave(57));

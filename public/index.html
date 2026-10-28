@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gull-egget">
 <title>Gull-egget</title>
+<meta name="author" content="Løland Gård Gaming">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
 <style>
@@ -60,6 +61,8 @@
 
   /* Startskjerm */
   #start { background: radial-gradient(circle at 50% 40%, #6b4a30, #2b1a10 75%); }
+  .maker { position: absolute; left: 0; right: 0; bottom: max(16px, env(safe-area-inset-bottom)); text-align: center;
+    font: 700 14px 'Nunito', sans-serif; color: rgba(255,244,220,.5); pointer-events: none; }
   #playBtn { width: min(46vmin, 260px); aspect-ratio: 1; border-radius: 50%; background: var(--gold);
     box-shadow: 0 10px 0 #a57a17, 0 0 60px rgba(242,193,78,.6); display: grid; place-items: center;
     animation: pulse 1.6s ease-in-out infinite; }
@@ -233,6 +236,7 @@
   <button id="playBtn" aria-label="Start">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z" fill="#3b2805"/></svg>
   </button>
+  <p class="maker">© 2026 Løland Gård Gaming</p>
 </div>
 
 <div id="picker" class="screen hidden" style="background:#3b2a1e">
@@ -309,6 +313,15 @@
     </div>
     <p>Vanskelighetsgraden tilpasser seg selv etter hvordan barnet svarer.</p>
 
+    <h3>Startnivå</h3>
+    <div class="btnrow" id="aGrade">
+      <button class="abtn" data-g="1">1. trinn</button>
+      <button class="abtn" data-g="2">2. trinn</button>
+      <button class="abtn" data-g="3">3. trinn</button>
+      <button class="abtn" data-g="4">4. trinn</button>
+    </div>
+    <p>Hvor oppgavene skal starte i alle fagene. Barnet beholder egg og diplomer, og spillet går videre opp eller ned derfra.</p>
+
     <h3>Lyd</h3>
     <div class="btnrow">
       <button class="abtn" id="aSound"></button>
@@ -329,6 +342,10 @@
       <a class="abtn" href="veiledning.html" target="_blank" rel="noopener" style="text-decoration:none">Spillveiledning</a>
     </div>
 
+    <h3>Om spillet</h3>
+    <p>Gull-egget er utviklet av Løland Gård Gaming.<br>
+      Kontakt: <a href="mailto:christian.daland@gmail.com">christian.daland@gmail.com</a></p>
+
     <div class="btnrow" style="margin-top:22px">
       <button class="abtn primary" id="aClose">Lukk</button>
     </div>
@@ -337,7 +354,7 @@
 
 <script type="module">
 import { createStore, requestPersist, downloadBackup, ANIMALS, COLORS, profileName, profileEmoji, profileColor } from './kjerne/lagring.js';
-import { progress } from './kjerne/laering.js';
+import { progress, setGrade } from './kjerne/laering.js';
 import { SKILL_BY_ID } from './kjerne/oppgaver.js';
 import { finishRound, eggKind, countEggs, treasure, DIPLOMA_GROUPS, diplomaGroup } from './kjerne/belonning.js';
 import { holdButton } from './kjerne/ui.js';
@@ -609,6 +626,7 @@ function openAdult() {
   $('#adultWho').textContent = `Aktiv figur: ${profileEmoji(p)} ${profileName(p)}. ${store.profiles().length} figur(er) på denne enheten.`;
   $('#aSwitch').classList.toggle('hidden', store.profiles().length < 2);
   $('#aSubject').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === p.settings.subject));
+  $('#aGrade').querySelectorAll('button').forEach(b => b.classList.toggle('on', Number(b.dataset.g) === p.settings.grade));
   $('#aSound').textContent = store.data.sound ? 'Lyd er på – slå av' : 'Lyd er av – slå på';
   $('#adultMsg').textContent = '';
   $('#adult').classList.remove('hidden');
@@ -627,6 +645,14 @@ $('#aSubject').onclick = e => {
   const v = e.target.dataset?.v;
   if (!v) return;
   store.active().settings.subject = v; store.save(); openAdult();
+};
+$('#aGrade').onclick = e => {
+  const g = Number(e.target.dataset?.g);
+  if (!g) return;
+  const p = store.active();
+  if (!confirm(`Starte oppgavene på ${g}. trinn for ${profileName(p)}? Nivået i alle fagene flyttes dit.`)) return;
+  setGrade(p, g); store.save(); renderRoom(p, false); openAdult();
+  $('#adultMsg').textContent = `Oppgavene starter nå på ${g}. trinn.`;
 };
 $('#aSound').onclick = () => { store.setSound(!store.data.sound); lyd.setMuted(!store.data.sound); openAdult(); };
 $('#aExport').onclick = () => { downloadBackup(store); $('#adultMsg').textContent = 'Sikkerhetskopien er lagret som fil.'; };

@@ -39,7 +39,7 @@ const emptyData = () => ({ version: VERSION, activeId: null, sound: true, profil
 
 export function newProfile(animal, color, now = new Date()) {
   return { id: uuid(), animal, color, created: now.toISOString(),
-    learning: newLearning(), stats: newStats(), rewards: newRewards(), settings: { subject: 'begge' } };
+    learning: newLearning(), stats: newStats(), rewards: newRewards(), settings: { subject: 'begge', grade: 1 } };
 }
 
 // Fyller inn felt som mangler (eldre lagring, sikkerhetskopi), så resten av koden kan stole på formen

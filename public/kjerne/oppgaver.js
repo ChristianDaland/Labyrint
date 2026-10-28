@@ -72,6 +72,70 @@ function sequence(skill) {
     { speak: `Hvilket tall kommer så? ${seq.join(', ')}` });
 }
 
+// ─── Leseforståelse (3.–4. trinn) ──────────────────────────────────────
+// Teksten leses IKKE opp (det er lesingen som øves); stemmen sier bare hva barnet skal gjøre.
+// [setning, riktig bilde, to feil bilder]: feilbildene ligner, så barnet må lese hele setningen
+const READ_PICTURE = [
+  ['Katten sover i senga.', '🐱🛏️', ['🐶🛏️', '🐱⚽']], ['Hunden leker med ballen.', '🐶⚽', ['🐱⚽', '🐶🛏️']],
+  ['Fuglen sitter i treet.', '🐦🌳', ['🐟🌳', '🐦🏠']], ['Sola skinner på huset.', '☀️🏠', ['🌧️🏠', '☀️🚗']],
+  ['Det regner på bilen.', '🌧️🚗', ['☀️🚗', '🌧️🏠']], ['Jenta spiser et eple.', '👧🍎', ['👦🍎', '👧🍌']],
+  ['Gutten spiser en banan.', '👦🍌', ['👧🍌', '👦🍎']], ['Snømannen har en hatt.', '⛄🎩', ['⛄🥕', '🐻🎩']],
+  ['Musa spiser ost om natta.', '🐭🧀🌙', ['🐭🧀☀️', '🐱🧀🌙']], ['Bjørnen sover i snøen.', '🐻❄️', ['🐻☀️', '🐧❄️']],
+  ['Apen spiser banan i treet.', '🐒🍌🌳', ['🐒🍎🌳', '🐒🍌🏠']], ['Fisken svømmer under båten.', '🐟⛵', ['🐟🚗', '🦆⛵']],
+];
+// Korte tekster med spørsmål: [tekst, [[spørsmål, riktig svar, [to feil svar]], …]]
+const READ_TEXT = [
+  ['Ida har en katt. Katten heter Pus. Pus liker melk.', [['Hva heter katten?', 'PUS', ['IDA', 'MELK']], ['Hva liker Pus?', 'MELK', ['FISK', 'IS']]]],
+  ['Ola går på ski. Det er kaldt ute. Ola har en rød lue.', [['Hvilken farge har lua?', 'RØD', ['BLÅ', 'GRØNN']], ['Hvordan er været?', 'KALDT', ['VARMT', 'REGN']]]],
+  ['Mia har bursdag i dag. Hun blir sju år. Hun får en sykkel.', [['Hvor gammel blir Mia?', '7', ['6', '8']], ['Hva får Mia?', 'SYKKEL', ['BALL', 'BOK']]]],
+  ['Bestemor baker boller. Boller lukter godt. Per spiser to boller.', [['Hvem baker?', 'BESTEMOR', ['PER', 'PAPPA']], ['Hvor mange boller spiser Per?', '2', ['1', '3']]]],
+  ['Det er sommer. Sara bader i sjøen. Vannet er varmt.', [['Hvilken årstid er det?', 'SOMMER', ['VINTER', 'HØST']], ['Hvor bader Sara?', 'I SJØEN', ['I BADEKARET', 'I ELVA']]]],
+  ['Ali har tre fisker. Fiskene bor i et akvarium. Ali gir dem mat hver dag.', [['Hvor mange fisker har Ali?', '3', ['2', '4']], ['Hvor bor fiskene?', 'I ET AKVARIUM', ['I SJØEN', 'I EN BØTTE']]]],
+  ['Reven er sulten. Den leter etter mat i skogen. Den finner et egg.', [['Hva finner reven?', 'ET EGG', ['EN MUS', 'ET EPLE']], ['Hvor leter reven?', 'I SKOGEN', ['I HAGEN', 'I BYEN']]]],
+  ['Noah bygger et tårn av klosser. Tårnet blir høyt. Så faller det ned.', [['Hva bygger Noah?', 'ET TÅRN', ['ET HUS', 'EN BIL']], ['Hva skjer med tårnet?', 'DET FALLER', ['DET FLYR', 'DET BLIR RØDT']]]],
+  ['Det regner ute. Emma tar på seg støvler. Hun hopper i sølepytter.', [['Hva tar Emma på seg?', 'STØVLER', ['SKI', 'SANDALER']], ['Hva hopper Emma i?', 'SØLEPYTTER', ['SNØ', 'SAND']]]],
+  ['Katten Pelle klatrer opp i et tre. Han kommer ikke ned. Pappa henter en stige.', [['Hvor er Pelle?', 'I ET TRE', ['I SENGA', 'PÅ TAKET']], ['Hva henter pappa?', 'EN STIGE', ['EN BALL', 'EN BOK']]]],
+];
+function readPicture(skill) {
+  const [s, right, wrong] = pick(READ_PICTURE);
+  return task(skill, s, right, wrong, { speak: ['Les setningen.', 'Hvilket bilde passer?'] });
+}
+function readText(skill) {
+  const [text, qs] = pick(READ_TEXT), [q, right, wrong] = pick(qs);
+  return task(skill, `${text}\n${q}`, right, wrong, { speak: ['Les teksten.', q] });
+}
+
+// ─── 3.–4. trinn: tall opp til 1000, gange og dele ─────────────────────
+// Talen settes sammen av biter («Hva er», «347», «pluss», «200»): tallene 0–1000 finnes som egne lydfiler,
+// så det trengs ikke én lydfil per regnestykke.
+const OP_WORD = { '+': 'pluss', '−': 'minus', '·': 'ganger', ':': 'delt på' };
+const ask = (a, op, b) => ['Hva er', String(a), OP_WORD[op], String(b)];
+const calc = (skill, a, op, b, res, wrong) => task(skill, `${a} ${op} ${b} = ?`, res, wrong.filter(v => v >= 0 && v !== res), { speak: ask(a, op, b) });
+
+// Tosifret pluss og minus med veksling (27 + 45, 72 − 38)
+function carryPair(minus) {
+  for (;;) {
+    if (minus) { const a = between(31, 99), b = between(11, a - 10); if (a % 10 < b % 10) return [a, b]; }
+    else { const a = between(11, 88), b = between(11, 99 - a); if (a % 10 + b % 10 >= 10) return [a, b]; }
+  }
+}
+// Hele tiere og hundrere opp til 1000 (340 + 200, 760 − 30)
+function bigPair(minus) {
+  const a = between(1, 9) * 100 + between(0, 9) * 10;
+  const tens = Math.random() < 0.5;
+  if (minus) { const b = tens ? between(1, 9) * 10 : between(1, Math.floor(a / 100)) * 100; return b <= a ? [a, b] : [a, 10]; }
+  const room = 1000 - a, b = tens ? between(1, Math.min(9, room / 10)) * 10 : between(1, Math.max(1, Math.floor(room / 100))) * 100;
+  return a + b <= 1000 ? [a, b] : [a, 10];
+}
+const TABLES = { lett: [2, 5, 10], alle: [2, 3, 4, 5, 6, 7, 8, 9, 10] };
+const timesWrong = (a, b) => [a * b + b, a * b - b, a * b + 1, (a + 1) * (b + 1)];
+// 347 = 300 + 40 + 7; feilsvar bytter om sifrene
+function placeValue() {
+  let h, t, e;
+  do { h = between(1, 9); t = between(0, 9); e = between(1, 9); } while (h === t || t === e || h === e); // ulike sifre, så ombyttingene blir andre tall
+  return { h, t, e, n: h * 100 + t * 10 + e, wrong: [t * 100 + h * 10 + e, h * 100 + e * 10 + t, e * 100 + t * 10 + h, h * 100 + t * 10 + e + 10] };
+}
+
 // ─── Norsk ──────────────────────────────────────────────────────────────
 // [ord, bilde, antall stavelser]. Bare ord der første bokstav er lyden man hører først.
 const WORDS = [
@@ -143,7 +207,8 @@ function syllables(skill) {
 }
 
 // ─── Staving (eget fag med eget spill, Ordbyggeren) ────────────────────
-// Lydrette ord: skrives slik de høres, uten stumme bokstaver (ikke «hund», «tog»). [ord, bilde]
+// kort, fire, dobbel, lang: lydrette ord, som skrives slik de høres (ikke «hund», «tog»). De siste listene er
+// rettskriving: ng-lyden, kj- og sj-lyden, stumme bokstaver og sammensatte ord. [ord, bilde]
 const SPELL_WORDS = {
   kort: [['is', '🍦'], ['ku', '🐮'], ['sol', '☀️'], ['bil', '🚗'], ['mus', '🐭'], ['hus', '🏠'], ['bok', '📖'], ['båt', '⛵'],
     ['fly', '✈️'], ['rev', '🦊'], ['tre', '🌳'], ['sko', '👟'], ['ape', '🐒'], ['ost', '🧀'], ['ris', '🍚'], ['øre', '👂'],
@@ -154,6 +219,13 @@ const SPELL_WORDS = {
     ['vott', '🧤'], ['rakett', '🚀'], ['nøkkel', '🔑']],
   lang: [['sebra', '🦓'], ['banan', '🍌'], ['tomat', '🍅'], ['kanin', '🐰'], ['frosk', '🐸'], ['tiger', '🐯'], ['ananas', '🍍'],
     ['elefant', '🐘'], ['gulrot', '🥕'], ['potet', '🥔'], ['sitron', '🍋'], ['robot', '🤖'], ['kamel', '🐫'], ['delfin', '🐬']],
+  // Rettskriving (3.–4. trinn): ord som ikke skrives slik de høres
+  ng: [['seng', '🛏️'], ['ring', '💍'], ['slange', '🐍'], ['tunge', '👅'], ['penger', '💰'], ['konge', '🤴'], ['engel', '👼'], ['kenguru', '🦘']],
+  kj: [['kjole', '👗'], ['kjeks', '🍪'], ['kjøtt', '🍖'], ['kylling', '🐥'], ['skjerf', '🧣'], ['skje', '🥄'], ['skjell', '🐚'],
+    ['sjiraff', '🦒'], ['sjokolade', '🍫'], ['ski', '⛷️'], ['skilpadde', '🐢']],
+  stum: [['hval', '🐋'], ['hvete', '🌾'], ['hjerte', '❤️'], ['hjort', '🦌'], ['hjelm', '⛑️'], ['hund', '🐶'], ['hånd', '✋'], ['strand', '🏖️']],
+  sammensatt: [['fotball', '⚽'], ['snømann', '⛄'], ['regnbue', '🌈'], ['solsikke', '🌻'], ['marihøne', '🐞'], ['blekksprut', '🐙'],
+    ['solbriller', '😎'], ['jordbær', '🍓'], ['isbjørn', '🐻‍❄️']],
 };
 export const ALL_SPELL_WORDS = Object.values(SPELL_WORDS).flat().map(([w]) => w);
 const EXTRA_LETTERS = 'AEIOUSLMNRTKBDGPFH';
@@ -185,6 +257,18 @@ export const SKILLS = [
   { id: 'minus20', subject: 'matte', diploma: 'Du kan minus opp til 20!', make: s => minus(s, 10, 20, 10) },
   { id: 'tallrekker', subject: 'matte', diploma: 'Du kan telle med to, fem og ti!', make: s => sequence(s) },
   { id: 'storst100', subject: 'matte', diploma: 'Du kan store tall!', make: s => biggest(s, 10, 99) },
+  // 3.–4. trinn
+  { id: 'pluss100', subject: 'matte', diploma: 'Du kan pluss med veksling!', make: s => { const [a, b] = carryPair(false); return calc(s, a, '+', b, a + b, [a + b - 10, a + b + 10, a + b + 1, a + b - 1]); } },
+  { id: 'minus100', subject: 'matte', diploma: 'Du kan minus med veksling!', make: s => { const [a, b] = carryPair(true); return calc(s, a, '−', b, a - b, [a - b + 10, a - b - 10, a - b + 1, a - b - 1]); } },
+  { id: 'gange2510', subject: 'matte', diploma: 'Du kan gange med 2, 5 og 10!', make: s => { const a = between(1, 10), b = pick(TABLES.lett); return calc(s, a, '·', b, a * b, timesWrong(a, b)); } },
+  { id: 'dele2510', subject: 'matte', diploma: 'Du kan dele med 2, 5 og 10!', make: s => { const q = between(1, 10), b = pick(TABLES.lett); return calc(s, q * b, ':', b, q, [q + 1, q - 1, q + 2, b]); } },
+  { id: 'plassverdi', subject: 'matte', diploma: 'Du kan hundrere, tiere og enere!', make: s => { const p = placeValue();
+    return task(s, `${p.h * 100} + ${p.t * 10} + ${p.e} = ?`, p.n, p.wrong, { speak: ['Hva er', String(p.h * 100), 'pluss', String(p.t * 10), 'pluss', String(p.e)] }); } },
+  { id: 'storst1000', subject: 'matte', diploma: 'Du kan tallene opp til 1000!', make: s => biggest(s, 100, 999) },
+  { id: 'pluss1000', subject: 'matte', diploma: 'Du kan pluss opp til 1000!', make: s => { const [a, b] = bigPair(false); return calc(s, a, '+', b, a + b, [a + b + 10, a + b - 10, a + b + 100, a + b - 100]); } },
+  { id: 'minus1000', subject: 'matte', diploma: 'Du kan minus opp til 1000!', make: s => { const [a, b] = bigPair(true); return calc(s, a, '−', b, a - b, [a - b + 10, a - b - 10, a - b + 100, a - b - 100]); } },
+  { id: 'gangetabell', subject: 'matte', diploma: 'Du kan gangetabellen!', make: s => { const a = between(2, 10), b = pick(TABLES.alle); return calc(s, a, '·', b, a * b, timesWrong(a, b)); } },
+  { id: 'dele', subject: 'matte', diploma: 'Du kan dele!', make: s => { const q = between(2, 10), b = pick(TABLES.alle); return calc(s, q * b, ':', b, q, [q + 1, q - 1, q + 2, b]); } },
 
   { id: 'storliten', subject: 'norsk', diploma: 'Du kan store og små bokstaver!', make: s => smallLetter(s) },
   { id: 'forlyd', subject: 'norsk', diploma: 'Du hører hvilken bokstav ordet begynner med!', make: s => firstLetter(s) },
@@ -194,6 +278,9 @@ export const SKILLS = [
   { id: 'rim', subject: 'norsk', diploma: 'Du kan rim!', make: s => rhyme(s) },
   { id: 'stavelser', subject: 'norsk', diploma: 'Du kan dele ord i stavelser!', make: s => syllables(s) },
   { id: 'ordlang', subject: 'norsk', diploma: 'Du kan lese lange ord!', make: s => wordForPicture(s, false) },
+  // 3.–4. trinn: leseforståelse (teksten leses ikke opp)
+  { id: 'lesbilde', subject: 'norsk', diploma: 'Du kan lese og forstå setninger!', make: s => readPicture(s) },
+  { id: 'lestekst', subject: 'norsk', diploma: 'Du kan lese korte tekster!', make: s => readText(s) },
 ];
 // ─── Regnestykker med ruter (Tallbyggeren) ──────────────────────────────
 // Matte-ferdighetene som regnestykker der tall dras på plass, med samme nivå som i de andre spillene.
@@ -228,10 +315,17 @@ function minusPuzzle(skill, minA, maxA, maxB, missingShare) {
   const a = between(minA, maxA), b = between(1, Math.min(a, maxB));
   return diff(skill, a, b, Math.random() < missingShare);
 }
+// a op b = c, der c (eller b, med sannsynlighet `missingShare`) mangler. Talen settes sammen av biter.
+function opPuzzle(skill, a, op, b, c, missingShare) {
+  const near = v => [v + 1, v - 1, v + 10, v - 10, v + 2].filter(x => x >= 0);
+  return Math.random() < missingShare
+    ? puzzle(skill, [X(a), X(op), S(b), X('='), X(c)], near(b), { speak: [String(a), OP_WORD[op], 'hva blir', String(c)] })
+    : puzzle(skill, [X(a), X(op), X(b), X('='), S(c)], near(c), { speak: ask(a, op, b) });
+}
 function biggerPuzzle(skill, lo, hi) { // «☐ > 5»: bare én brikke er større
   const a = between(lo + 1, hi - 1), b = between(a + 1, Math.min(hi, a + 5));
   const small = shuffle(Array.from({ length: Math.min(a - lo + 1, 6) }, (_, i) => a - i));
-  return puzzle(skill, [S(b), X('>'), X(a)], small, { speak: `Hvilket tall er større enn ${a}?` });
+  return puzzle(skill, [S(b), X('>'), X(a)], small, { speak: ['Hvilket tall er større enn', String(a)] });
 }
 
 const MATH_PUZZLES = {
@@ -258,6 +352,17 @@ const MATH_PUZZLES = {
     return two ? rowPuzzle(s, nums, [1, 3], extras, 'Hvilke tall mangler?') : rowPuzzle(s, nums, [3], extras, 'Hvilket tall kommer så?');
   },
   storst100: s => biggerPuzzle(s, 10, 99),
+  pluss100: s => { const [a, b] = carryPair(false); return opPuzzle(s, a, '+', b, a + b, 0.3); },
+  minus100: s => { const [a, b] = carryPair(true); return opPuzzle(s, a, '−', b, a - b, 0.3); },
+  gange2510: s => { const a = between(1, 10), b = pick(TABLES.lett); return opPuzzle(s, a, '·', b, a * b, 0.4); },
+  dele2510: s => { const q = between(1, 10), b = pick(TABLES.lett); return opPuzzle(s, q * b, ':', b, q, 0); },
+  plassverdi: s => { const p = placeValue();
+    return puzzle(s, [X(p.h * 100), X('+'), X(p.t * 10), X('+'), X(p.e), X('='), S(p.n)], p.wrong, { speak: ['Hva er', String(p.h * 100), 'pluss', String(p.t * 10), 'pluss', String(p.e)] }); },
+  storst1000: s => biggerPuzzle(s, 100, 999),
+  pluss1000: s => { const [a, b] = bigPair(false); return opPuzzle(s, a, '+', b, a + b, 0.3); },
+  minus1000: s => { const [a, b] = bigPair(true); return opPuzzle(s, a, '−', b, a - b, 0.3); },
+  gangetabell: s => { const a = between(2, 10), b = pick(TABLES.alle); return opPuzzle(s, a, '·', b, a * b, 0.4); },
+  dele: s => { const q = between(2, 10), b = pick(TABLES.alle); return opPuzzle(s, q * b, ':', b, q, 0); },
 };
 export const makeMathPuzzle = skillId => MATH_PUZZLES[skillId](skillId);
 
@@ -302,6 +407,11 @@ export const SPELL_SKILLS = [
   { id: 'stavfire', subject: 'stave', diploma: 'Du kan stave ord med fire bokstaver!', make: s => spell(s, 'fire', { extra: 2 }) },
   { id: 'stavdobbel', subject: 'stave', diploma: 'Du kan stave ord med dobbel bokstav!', make: s => spell(s, 'dobbel', { extra: 2 }) },
   { id: 'stavlang', subject: 'stave', diploma: 'Du kan stave lange ord!', make: s => spell(s, 'lang', { extra: 2 }) },
+  // 3.–4. trinn: rettskriving
+  { id: 'stavng', subject: 'stave', diploma: 'Du kan skrive ng-lyden!', make: s => spell(s, 'ng', { extra: 2 }) },
+  { id: 'stavkj', subject: 'stave', diploma: 'Du kan skrive kj- og sj-lyden!', make: s => spell(s, 'kj', { extra: 2 }) },
+  { id: 'stavstum', subject: 'stave', diploma: 'Du kan ord med stumme bokstaver!', make: s => spell(s, 'stum', { extra: 2 }) },
+  { id: 'stavsammen', subject: 'stave', diploma: 'Du kan stave sammensatte ord!', make: s => spell(s, 'sammensatt', { extra: 1 }) },
 ];
 const ALL_SKILLS = [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS];
 export const SKILL_BY_ID = Object.fromEntries(ALL_SKILLS.map(s => [s.id, s]));

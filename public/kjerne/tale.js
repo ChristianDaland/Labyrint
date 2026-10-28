@@ -7,7 +7,7 @@ import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, ALL_SPELL_WORDS, ALL_SENTENCES, 
 import { MILESTONES, EGG_KINDS, EGG_NAMES, eggKind } from './belonning.js';
 
 export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen', ordbygger: 'Ordbyggeren', tallbygger: 'Tallbyggeren', ordtog: 'Ordtoget' };
-const MAX_NUMBER = 300; // tall som finnes som lydfil (større tall leses av enhetens stemme)
+const MAX_NUMBER = 1000; // tall som finnes som lydfil (større tall leses av enhetens stemme)
 const stars = n => (n === 1 ? 'stjerne.' : 'stjerner.');
 const cap = s => s[0].toUpperCase() + s.slice(1);
 const GROUP_NAMES = { matte: 'Matte-diplomer', norsk: 'Norsk-diplomer', stave: 'Stave-diplomer', ekstra: 'Stjerne-diplomer' };
@@ -57,9 +57,8 @@ export const T = {
   comingSoon: id => [`${GAME_NAMES[id]} kommer snart!`],
 
   // Oppgaver
-  task: t => [t.speak],
+  task: t => [].concat(t.speak), // én setning, eller biter («Hva er», «7», «ganger», «8»)
   right: () => [RIGHT[Math.floor(Math.random() * RIGHT.length)]],
-  wrong: t => ['Ikke helt.', 'Riktig svar er', spoken(t.options[t.answer]) + '.'],
   tryAgain: () => ['Ikke helt.', 'Prøv igjen!'],
 
   // Flakse-fuglen
@@ -98,8 +97,7 @@ export function taskPhrases(samples = 4000) {
   const out = new Set();
   for (const s of SKILLS) for (let i = 0; i < samples; i++) {
     const t = makeTask(s.id);
-    out.add(t.speak);
-    for (const o of t.options) out.add(spoken(o) + '.');
+    for (const p of T.task(t)) out.add(p);
   }
   return out;
 }
@@ -124,7 +122,7 @@ export function allPhrases(samples) {
   for (const L of ALPHABET) add(T.letter(L));
   add(T.spellStart()); add(T.mathStart());
   for (const g of Object.keys(GROUP_NAMES)) for (let n = 0; n <= 2; n++) add(T.diplomaGroup(g, n));
-  for (const s of skillsOf('matte')) for (let i = 0; i < (samples ?? 4000); i++) out.add(makeMathPuzzle(s.id).speak);
+  for (const s of skillsOf('matte')) for (let i = 0; i < (samples ?? 4000); i++) for (const p of [].concat(makeMathPuzzle(s.id).speak)) out.add(p);
   for (const id of Object.keys(GAME_NAMES)) {
     add(T.gameName(id)); add(T.comingSoon(id));
     for (let n = 1; n <= 3; n++) add(T.egg({ game: id, stars: n }));
