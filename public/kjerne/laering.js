@@ -21,7 +21,7 @@ export function chooseSkill(learning, subject = 'begge', rnd = Math.random) {
   const list = skillsOf(s), cur = Math.min(learning.level[s], list.length - 1);
   const r = rnd();
   if (r < 0.1 && cur + 1 < list.length) return list[cur + 1]; // smakebit på det neste
-  if (r < 0.3 && cur > 0) { // repetisjon: ferdigheter han ofte bommer på, kommer oftere
+  if (r < 0.3 && cur > 0) { // repetisjon: ferdigheter spilleren ofte bommer på, kommer oftere
     const done = list.slice(0, cur), weights = done.map(k => 1 + 4 * errorRate(learning.recent[k.id]));
     let x = rnd() * weights.reduce((a, b) => a + b, 0);
     for (let i = 0; i < done.length; i++) if ((x -= weights[i]) <= 0) return done[i];
@@ -48,7 +48,7 @@ export function recordAnswer(profile, skillId, correct, now = new Date()) {
   const day = (stats.days[today(now)] ||= { right: 0, wrong: 0 });
   correct ? day.right++ : day.wrong++;
 
-  // Bare ferdigheten han øver på nå kan flytte ham opp eller ned
+  // Bare ferdigheten spilleren øver på nå kan flytte nivået opp eller ned
   const list = skillsOf(s), cur = learning.level[s];
   if (list[cur]?.id !== skillId || recent.length < WINDOW) return [];
   const right = recent.reduce((a, b) => a + b, 0);
@@ -57,7 +57,7 @@ export function recordAnswer(profile, skillId, correct, now = new Date()) {
     return [{ type: 'mastered', skill: skillId }];
   }
   if (right < DOWN && cur > 0) {
-    // Tilbake til forrige ferdighet med blanke ark på begge, så det må øves ordentlig før han går opp igjen
+    // Tilbake til forrige ferdighet med blanke ark på begge, så det må øves ordentlig før nivået går opp igjen
     learning.level[s] = cur - 1;
     learning.recent[list[cur - 1].id] = [];
     learning.recent[skillId] = [];

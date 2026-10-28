@@ -81,7 +81,7 @@ test('midt i: ca. 70 % nå, 20 % repetisjon, 10 % neste', () => {
   assert.ok(Math.abs(next / n - 0.1) < 0.02, `neste ${next / n}`);
 });
 
-test('repetisjon velger oftere det han bommer på', () => {
+test('repetisjon velger oftere det spilleren bommer på', () => {
   const l = newLearning(); l.level.matte = 2;
   l.recent.telle5 = Array(10).fill(0); // alt feil
   l.recent.telle10 = Array(10).fill(1); // alt riktig
@@ -124,7 +124,7 @@ test('ned et hakk ved under 5 av 10, med blanke ark', () => {
   assert.equal(q.learning.level.matte, 0);
 });
 
-test('svar på andre ferdigheter enn den han øver på flytter ham ikke', () => {
+test('svar på andre ferdigheter enn den spilleren øver på flytter ikke nivået', () => {
   const p = profile(); p.learning.level.matte = 3;
   for (let i = 0; i < 20; i++) recordAnswer(p, 'telle5', true);
   for (let i = 0; i < 20; i++) recordAnswer(p, 'pluss10', true);

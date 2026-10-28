@@ -2,542 +2,609 @@
 <html lang="no">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gull-egget – storskjerm</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3b2a1e">
+<!-- Hjem-skjerm-app: fullskjerm uten Safari-menyer, eget ikon, høykant (manifest) -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="ikoner/ikon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gull-egget">
+<title>Gull-egget</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
 <style>
+  /* Rommet: startskjermen der spilleren ser gullegg, stjerner og diplomer og velger spill.
+     Alt kan brukes uten å lese: store bilder, og alt som betyr noe leses opp når man trykker. */
   :root {
-    --night: #101a14; --moss: #1c2c22; --moss-2: #2f4a39; --gold: #f2c14e;
-    --fox: #e2662a; --cream: #f3ead2; --muted: #a9b8a6; --wall: #4a3428; --floor: #2a3a2e;
+    --brick: #b98a62; --brick-2: #a8774f; --mortar: #8c6142;
+    --wood: #7a4b2a; --wood-2: #5e3820; --wood-3: #9a6236;
+    --floor: #c58b55; --floor-2: #b67c47;
+    --ink: #2b1a10; --cream: #fff4dc; --gold: #f2c14e; --sky: #8fd3ff;
+    --panel: #fff4dc; --panel-ink: #3b2a1e; --line: rgba(43,26,16,.25);
+    --ok: #3cb371; --danger: #d9534f;
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--night); color: var(--cream);
-    font-family: 'Nunito', system-ui, sans-serif; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #3b2a1e; color: var(--ink); font: 800 18px/1.3 'Nunito', system-ui, sans-serif;
+    overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    touch-action: manipulation; overscroll-behavior: none; }
   h1, h2, h3 { font-family: 'Lilita One', 'Arial Rounded MT Bold', system-ui, sans-serif; font-weight: 400; margin: 0; }
+  button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
   .hidden { display: none !important; }
-  button { font: 400 22px 'Lilita One', sans-serif; border: 0; border-radius: 14px; padding: 14px 26px; cursor: pointer; }
-  button:focus-visible, select:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
-  .gold { background: var(--gold); color: #3b2805; box-shadow: 0 5px 0 #a57a17; }
-  .gold:disabled { opacity: .4; cursor: not-allowed; }
-  .ghost { background: var(--moss-2); color: var(--cream); box-shadow: 0 5px 0 #0d1611; }
-  button:active:not(:disabled) { transform: translateY(3px); box-shadow: none; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
-  /* Lobby */
-  #lobby { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    gap: clamp(24px, 4vw, 64px); align-items: center; padding: clamp(24px, 5vw, 72px); max-width: 1400px; margin: 0 auto; }
-  .title { display: flex; align-items: center; gap: 22px; }
-  .egg { flex: 0 0 auto; width: 96px; height: 124px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  /* Kan rulles hvis innholdet ikke får plass (f.eks. iPhone på tvers); sentreres ellers (margin: auto) */
+  .screen { position: fixed; inset: 0; display: flex; overflow-y: auto; padding: 16px;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+
+  /* Klossvegg (egen stil, ikke kopiert fra noe spill) */
+  .bricks { background-color: var(--brick);
+    background-image:
+      linear-gradient(var(--mortar) 3px, transparent 3px),
+      linear-gradient(90deg, var(--mortar) 3px, transparent 3px),
+      linear-gradient(90deg, var(--mortar) 3px, transparent 3px);
+    background-size: 64px 32px, 64px 64px, 64px 64px;
+    background-position: 0 0, 0 0, 32px 32px; }
+  .bricks::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(90deg, transparent 0 61px, rgba(0,0,0,.04) 61px 64px); }
+
+  .egg { display: inline-block; width: 1em; height: 1.28em; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
     background: radial-gradient(circle at 35% 30%, #fff6c9 0 8%, #f7d46a 22%, #d99a1e 70%, #9a6510 100%);
-    box-shadow: 0 0 60px rgba(242,193,78,.5); animation: wobble 3.5s ease-in-out infinite; transform-origin: 50% 90%; }
-  @keyframes wobble { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
-  @media (prefers-reduced-motion: reduce) { .egg { animation: none; } }
-  h1 { font-size: clamp(56px, 7vw, 104px); line-height: .9; color: var(--gold); }
-  .lead { font-size: 21px; line-height: 1.5; color: var(--muted); max-width: 34ch; margin: 22px 0 30px; }
-  .rules { display: grid; gap: 10px; font-size: 18px; margin-bottom: 30px; }
-  .rules div { display: flex; gap: 12px; align-items: baseline; }
-  .settings { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin-bottom: 26px; }
-  label { display: grid; gap: 6px; font-weight: 800; color: var(--muted); font-size: 15px; }
-  select { font: 800 18px 'Nunito', sans-serif; padding: 10px 14px; border-radius: 12px; background: var(--moss);
-    color: var(--cream); border: 2px solid var(--moss-2); }
+    box-shadow: 0 0 .5em rgba(242,193,78,.55), inset -.06em -.08em .1em rgba(120,70,0,.35); }
 
-  .joinbox { background: var(--moss); border-radius: 28px; padding: clamp(20px, 3vw, 36px); text-align: center;
-    border: 3px solid var(--moss-2); }
-  .qr { width: min(100%, 340px); aspect-ratio: 1; background: #fff; border-radius: 18px; padding: 14px; display: block; margin: 0 auto; }
-  .url { font-size: 18px; color: var(--muted); margin: 16px 0 22px; word-break: break-all; }
-  .url b { color: var(--cream); }
-  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 44px; }
-  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px; border-radius: 99px;
-    background: var(--night); font-weight: 800; font-size: 17px; }
-  .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); }
-  .empty { color: var(--muted); font-size: 17px; }
+  /* Startskjerm */
+  #start { background: radial-gradient(circle at 50% 40%, #6b4a30, #2b1a10 75%); }
+  #playBtn { width: min(46vmin, 260px); aspect-ratio: 1; border-radius: 50%; background: var(--gold);
+    box-shadow: 0 10px 0 #a57a17, 0 0 60px rgba(242,193,78,.6); display: grid; place-items: center;
+    animation: pulse 1.6s ease-in-out infinite; }
+  #playBtn svg { width: 46%; margin-left: 10%; }
+  #playBtn:active { transform: translateY(6px); box-shadow: 0 4px 0 #a57a17; }
+  @keyframes pulse { 50% { transform: scale(1.06); } }
 
-  /* Spill */
-  #play { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
-  #mapWrap { position: relative; min-height: 0; display: grid; place-items: center; padding: 20px; }
-  #map { width: 100%; height: 100%; display: block; }
-  aside { background: var(--moss); padding: 24px; display: flex; flex-direction: column; gap: 20px; overflow: auto; }
-  aside h2 { font-size: 30px; color: var(--gold); }
-  .plist { display: grid; gap: 8px; }
-  .prow { display: flex; align-items: center; gap: 10px; background: var(--night); padding: 10px 12px; border-radius: 12px; font-weight: 800; }
-  .prow .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .log { display: grid; gap: 6px; font-size: 15px; color: var(--muted); }
-  .log div:first-child { color: var(--cream); }
-  .timer { font: 400 22px 'Lilita One', sans-serif; color: var(--muted); }
+  /* Figurvalg og ny figur */
+  .screen > * { margin: auto; }
+  .pickwrap { width: min(760px, 100%); text-align: center; color: var(--cream); }
+  .pickwrap h2 { font-size: clamp(28px, 6vw, 44px); margin-bottom: 18px; text-shadow: 0 2px 0 rgba(0,0,0,.3); }
+  .figgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 14px; }
+  .fig { aspect-ratio: 1; border-radius: 24px; display: grid; place-items: center; font-size: clamp(54px, 12vw, 72px);
+    background: var(--panel); box-shadow: 0 6px 0 rgba(0,0,0,.3); position: relative; }
+  .fig.sel { outline: 6px solid var(--gold); }
+  .fig:disabled { opacity: .3; }
+  .fig .ring { position: absolute; inset: 10%; border-radius: 50%; z-index: 0; }
+  .fig .em { position: relative; z-index: 1; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 16px 0; }
+  .sw { width: 64px; height: 64px; border-radius: 50%; box-shadow: 0 5px 0 rgba(0,0,0,.3); border: 4px solid rgba(255,255,255,.7); }
+  .sw.sel { outline: 6px solid var(--gold); outline-offset: 3px; }
+  .sw:disabled { opacity: .25; }
+  .preview { font-size: 96px; width: 150px; height: 150px; border-radius: 50%; margin: 6px auto 14px; display: grid; place-items: center;
+    background: var(--panel); box-shadow: 0 6px 0 rgba(0,0,0,.3); }
+  .bigok { background: var(--ok); color: #fff; width: 96px; height: 96px; border-radius: 50%; font-size: 52px;
+    box-shadow: 0 8px 0 #22804c; }
+  .bigok:disabled { opacity: .35; }
+  .hold { position: relative; }
+  .hold::after { content: ''; position: absolute; inset: -6px; border-radius: inherit; pointer-events: none;
+    background: conic-gradient(var(--gold) calc(var(--p, 0) * 1turn), transparent 0); opacity: .9;
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px)); }
+  .addfig { margin-top: 18px; width: 64px; height: 64px; border-radius: 50%; background: rgba(255,244,220,.15);
+    color: var(--cream); font-size: 36px; }
 
-  #end { position: fixed; inset: 0; background: rgba(10,16,12,.88); display: grid; place-items: center; text-align: center; padding: 24px; }
-  #end .icon { font-size: 110px; }
-  #end h2 { font-size: clamp(44px, 6vw, 84px); color: var(--gold); margin: 10px 0 20px; }
-  #endScores { list-style: none; padding: 0; margin: 0 auto 28px; display: grid; gap: 8px; width: min(520px, 100%); text-align: left; }
-  #endScores li { display: flex; align-items: center; gap: 12px; background: var(--moss); padding: 10px 16px; border-radius: 14px;
-    font-weight: 800; font-size: 20px; }
-  #endScores .pos { width: 1.6em; color: var(--muted); }
-  #endScores .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #endScores .d { color: var(--muted); font-size: 16px; }
-  #endScores b { color: var(--gold); min-width: 4.5em; text-align: right; }
-  #end .btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  /* Rommet */
+  #room { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto auto; }
+  .bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    padding-top: max(10px, env(safe-area-inset-top)); padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right)); background: var(--wood-2); color: var(--cream);
+    box-shadow: 0 4px 0 rgba(0,0,0,.25); z-index: 2; }
+  #me { width: 60px; height: 60px; border-radius: 50%; font-size: 38px; display: grid; place-items: center;
+    background: var(--panel); border: 4px solid var(--gold); }
+  #stars { font: 400 30px 'Lilita One', sans-serif; display: flex; align-items: center; gap: 6px; padding: 6px 14px;
+    border-radius: 99px; background: rgba(0,0,0,.25); }
+  #eggCount { font: 400 30px 'Lilita One', sans-serif; display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+    border-radius: 99px; background: rgba(0,0,0,.25); }
+  #eggCount .egg { font-size: 24px; }
+  .spacer { flex: 1; }
+  #gear { width: 48px; height: 48px; border-radius: 50%; font-size: 26px; opacity: .55; display: grid; place-items: center; }
 
-  #denied { position: fixed; inset: 0; background: var(--night); display: grid; place-items: center;
-    text-align: center; padding: 24px; z-index: 10; }
-  #denied h2 { font-size: 44px; color: var(--gold); margin-bottom: 12px; }
-  #denied p { font-size: 19px; color: var(--muted); max-width: 40ch; line-height: 1.5; }
+  .scene { position: relative; overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; align-content: start; gap: 14px;
+    padding: 18px max(14px, env(safe-area-inset-right)) 18px max(14px, env(safe-area-inset-left)); }
+  .wall { position: relative; display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  .frame { position: relative; width: 92px; height: 104px; border-radius: 8px; background: var(--cream);
+    border: 6px solid var(--wood-3); box-shadow: 0 6px 0 rgba(0,0,0,.25), inset 0 0 0 3px #e9d7b0;
+    display: grid; place-items: center; font-size: 44px; }
+  .frame::before { content: ''; position: absolute; top: -18px; left: 50%; width: 2px; height: 16px; background: var(--wood-2);
+    transform: rotate(0); }
+  .frame .ribbon { position: absolute; bottom: -12px; right: -10px; font-size: 28px; }
+  .frame.empty { background: rgba(255,244,220,.25); border-style: dashed; border-color: rgba(122,75,42,.6); box-shadow: none;
+    color: rgba(43,26,16,.35); font: 400 40px 'Lilita One', sans-serif; }
+  .frame.new { animation: glow 1.2s ease-in-out 4; }
+  @keyframes glow { 50% { box-shadow: 0 0 0 8px rgba(242,193,78,.8), 0 0 30px var(--gold); } }
 
-  .linkbtn { background: none; border: 0; padding: 4px 0; font: 800 16px 'Nunito', sans-serif; color: var(--gold);
-    text-decoration: underline; cursor: pointer; box-shadow: none; }
+  .shelves { position: relative; display: grid; gap: 30px; padding-top: 10px; }
+  .shelf { position: relative; display: flex; justify-content: center; align-items: flex-end; gap: 10px; min-height: 64px;
+    padding: 0 14px 0; }
+  .shelf::after { content: ''; position: absolute; left: 0; right: 0; bottom: -16px; height: 16px; border-radius: 4px;
+    background: linear-gradient(var(--wood-3), var(--wood)); box-shadow: 0 6px 0 rgba(0,0,0,.25); }
+  .slot { font-size: 42px; position: relative; display: grid; justify-items: center; }
+  .slot .st { font-size: 12px; letter-spacing: -2px; margin-top: 2px; }
+  .slot.empty .egg { background: rgba(255,255,255,.25); box-shadow: none; outline: 3px dashed rgba(122,75,42,.5); }
+  .slot.new { animation: drop .8s cubic-bezier(.3,1.6,.5,1) both; }
+  @keyframes drop { from { transform: translateY(-160px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+  .more { font: 400 26px 'Lilita One', sans-serif; color: var(--cream); background: rgba(0,0,0,.3); padding: 4px 12px; border-radius: 99px; align-self: center; }
 
-  /* Egne oppgaver */
-  #editor { max-width: 1200px; margin: 0 auto; padding: clamp(20px, 4vw, 48px); }
-  .ed-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
-  .ed-head h2 { font-size: 44px; color: var(--gold); }
-  .ed-intro { color: var(--muted); font-size: 17px; line-height: 1.5; max-width: 70ch; margin: 0 0 24px; }
-  .ed-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
-  .panel { background: var(--moss); border: 3px solid var(--moss-2); border-radius: 22px; padding: 22px; display: grid; gap: 14px; }
-  .panel h3 { font-size: 26px; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .small { font-size: 17px; padding: 10px 16px; }
-  input, textarea { font: 700 17px 'Nunito', sans-serif; padding: 10px 14px; border-radius: 12px; background: var(--night);
-    color: var(--cream); border: 2px solid var(--moss-2); width: 100%; }
-  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--gold); }
-  .ed-list { display: grid; gap: 8px; max-height: 46vh; overflow: auto; }
-  .ed-item { display: flex; gap: 10px; align-items: center; background: var(--night); border-radius: 12px; padding: 10px 12px; }
-  .ed-item .txt { flex: 1; min-width: 0; }
-  .ed-item .q { font-weight: 800; overflow-wrap: anywhere; }
-  .ed-item .a { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
-  .ed-item .a b { color: #7fd88f; }
-  .ed-item button { font: 800 14px 'Nunito', sans-serif; padding: 6px 10px; border-radius: 8px; background: var(--moss-2); color: var(--cream); }
-  .hint { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 0; }
-  details summary { cursor: pointer; font-weight: 800; color: var(--gold); }
-  .err { color: #ff8a73; font-weight: 800; min-height: 1.2em; }
+  .jars { display: flex; gap: 14px; justify-content: center; padding: 10px 14px; background: var(--floor-2); }
+  .jar { flex: 0 1 260px; display: flex; align-items: center; gap: 10px; background: rgba(255,244,220,.85); border-radius: 18px;
+    padding: 8px 12px; box-shadow: 0 4px 0 rgba(0,0,0,.2); }
+  .jar .ic { font-size: 30px; }
+  .jar .bar2 { flex: 1; height: 18px; border-radius: 99px; background: rgba(43,26,16,.15); overflow: hidden; }
+  .jar .fill { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #f7d46a, #e0a020); transition: width .8s; }
 
-  @media (max-width: 860px) {
-    .ed-grid { grid-template-columns: 1fr; }
-    #lobby { grid-template-columns: 1fr; }
-    #play { grid-template-columns: 1fr; grid-template-rows: 60vh auto; }
+  .games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 14px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)); padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    background: repeating-linear-gradient(90deg, var(--floor) 0 120px, var(--floor-2) 120px 124px); }
+  .game { position: relative; min-height: 120px; border-radius: 26px; background: var(--panel); box-shadow: 0 8px 0 rgba(0,0,0,.3);
+    display: grid; place-items: center; font-size: 72px; transition: transform .15s; }
+  .game.sel { outline: 6px solid var(--gold); transform: translateY(-4px); }
+  .game .lock { position: absolute; top: 8px; right: 10px; font-size: 30px; }
+  .game.locked .em { opacity: .45; filter: grayscale(.6); }
+  .game:active { transform: translateY(4px); box-shadow: 0 4px 0 rgba(0,0,0,.3); }
+
+  /* iPad og PC på tvers: vegg og hyller til venstre, krukker og spill til høyre */
+  @media (min-aspect-ratio: 4/3) and (min-width: 700px) {
+    #room { grid-template-columns: minmax(0, 1fr) minmax(280px, 34%); grid-template-rows: auto 1fr auto; }
+    .bar { grid-column: 1 / -1; }
+    .scene { grid-column: 1; grid-row: 2 / 4; }
+    .jars { grid-column: 2; grid-row: 3; flex-direction: column; align-items: stretch; }
+    .jar { flex: none; }
+    .games { grid-column: 2; grid-row: 2; grid-template-columns: 1fr; align-content: center; }
+    .game { min-height: 150px; font-size: 90px; }
   }
+  @media (max-width: 480px) { .frame { width: 78px; height: 88px; font-size: 38px; } .wall { gap: 12px; } }
+  /* Lave skjermer (iPhone på tvers): mindre figurer og knapper, så alt får plass */
+  @media (max-height: 520px) {
+    .pickwrap h2 { font-size: 26px; margin-bottom: 10px; }
+    .figgrid { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
+    .fig { font-size: 38px; border-radius: 16px; }
+    .preview { width: 76px; height: 76px; font-size: 48px; margin-bottom: 8px; }
+    .sw { width: 46px; height: 46px; }
+    .swatches { margin: 10px 0; }
+    .bigok { width: 64px; height: 64px; font-size: 34px; }
+    #celebrate .frame { width: min(34vh, 200px); font-size: min(18vh, 90px); margin-bottom: 10px; }
+    #celebrate h2 { margin-bottom: 10px; }
+  }
+  @media (max-height: 520px) { .game { min-height: 90px; font-size: 54px; } .frame { width: 76px; height: 86px; font-size: 36px; } }
+
+  /* Telefon og pad skal brukes på høykant (nettsider kan ikke låse retningen i Safari) */
+  #rotate { position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; background: #3b2a1e; color: var(--cream); text-align: center; padding: 20px; }
+  #rotate .phone { width: 70px; height: 120px; border: 8px solid var(--cream); border-radius: 16px; animation: turn 2s ease-in-out infinite; }
+  #rotate h2 { font-size: 32px; }
+  @keyframes turn { 0%, 20% { transform: rotate(-90deg); } 60%, 100% { transform: rotate(0); } }
+  @media (orientation: landscape) and (pointer: coarse) { #rotate { display: flex; } }
+
+  /* Feiring og voksenmeny */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: flex; overflow-y: auto; padding: 20px;
+    background: rgba(30,18,10,.82); }
+  .overlay > * { margin: auto; }
+  #celebrate .big { text-align: center; color: var(--cream); }
+  #celebrate .frame { width: min(60vmin, 260px); height: auto; aspect-ratio: .9; font-size: min(28vmin, 120px); margin: 0 auto 18px;
+    animation: pop .6s cubic-bezier(.3,1.6,.5,1); }
+  #celebrate .frame::before { display: none; }
+  #celebrate h2 { font-size: clamp(26px, 6vw, 40px); max-width: 18ch; margin: 0 auto 20px; }
+  @keyframes pop { from { transform: scale(.3) rotate(-10deg); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  #adult .panel { width: min(520px, 100%); max-height: 100%; overflow: auto; background: var(--panel); color: var(--panel-ink);
+    border-radius: 22px; padding: 22px; font: 700 16px/1.45 'Nunito', sans-serif; user-select: text; -webkit-user-select: text; }
+  #adult h2 { font-size: 28px; margin-bottom: 4px; }
+  #adult h3 { font-size: 18px; margin: 18px 0 8px; }
+  #adult p { margin: 6px 0; color: #6b5444; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .abtn { font: 800 15px 'Nunito', sans-serif; padding: 10px 14px; border-radius: 12px; background: #ead9b6; color: var(--panel-ink); }
+  .abtn.on { background: var(--panel-ink); color: var(--cream); }
+  .abtn.danger { background: #f5d0cc; color: #8a1f17; }
+  .abtn.primary { background: var(--panel-ink); color: var(--cream); }
+  #adultMsg { min-height: 1.4em; font-weight: 800; color: #2d7f42; }
 </style>
+<link rel="icon" href="ikoner/ikon-192.png">
 </head>
 <body>
 
-<section id="lobby">
-  <div>
-    <div class="title"><div class="egg" aria-hidden="true"></div><h1>Gull-<br>egget</h1></div>
-    <p class="lead">Et gull-egg er gjemt et sted i en helt ny labyrint. Førstemann som finner det, vinner.</p>
-    <div class="rules">
-      <div><span>📱</span><span>Skann koden og styr med pilene på mobilen.</span></div>
-      <div><span>🚪</span><span>Dørene er låst. Løs en oppgave for å åpne dem.</span></div>
-      <div><span>⭐</span><span>Du får poeng når du går nye steder og når du løser oppgaver.</span></div>
-      <div><span>🦊</span><span>En rev leter også. Tar den deg, må du svare på et revespørsmål for å komme fri.</span></div>
-    </div>
-    <div class="settings">
-      <label>Labyrint
-        <select id="size"><option value="liten">Liten</option><option value="middels">Middels</option><option value="stor">Stor</option></select>
-      </label>
-      <label>Trinn
-        <select id="grade"><option value="1">1. trinn</option><option value="2">2. trinn</option></select>
-      </label>
-      <label>Standardoppgaver
-        <select id="subject"><option value="begge">Matte og norsk</option><option value="matte">Matte</option><option value="norsk">Norsk</option><option value="ingen">Ingen</option></select>
-      </label>
-      <label>Egne oppgaver
-        <select id="customSel"></select>
-      </label>
-      <button id="startBtn" class="gold" disabled>Start runden</button>
-    </div>
-    <div class="row" style="gap:22px">
-      <button class="linkbtn" id="editBtn">✏️ Lag egne oppgaver</button>
-      <a class="linkbtn" href="/veiledning" target="_blank" rel="noopener">📖 Spillveiledning</a>
-    </div>
-    <p class="hint" id="customInfo"></p>
-  </div>
-  <div class="joinbox">
-    <img class="qr" src="/qr.png" alt="QR-kode for å bli med">
-    <div class="url">eller gå til <b id="joinUrl"></b></div>
-    <div class="chips" id="chips"></div>
-  </div>
-</section>
+<div id="rotate" aria-live="polite"><div class="phone" aria-hidden="true"></div><h2>Snu skjermen</h2></div>
 
-<section id="editor" class="hidden">
-  <div class="ed-head">
-    <h2>Egne oppgaver</h2>
-    <button class="ghost" id="edBack">Tilbake til lobbyen</button>
-  </div>
-  <p class="ed-intro">Lag oppgaver barnet skal løse ved dørene. Spørsmålet leses opp på mobilen, og barnet velger mellom
-    riktig svar og ett eller to feil svar. Settene lagres i denne nettleseren. Last ned et sett som fil for å dele det
-    eller ta det med til en annen maskin. Se også <a href="/veiledning#egne" target="_blank" rel="noopener" style="color:var(--gold)">spillveiledningen</a>.</p>
-  <div class="ed-grid">
-    <div class="panel">
-      <div class="row">
-        <label style="flex:1">Oppgavesett <select id="edSet"></select></label>
-      </div>
-      <div class="row">
-        <button class="ghost small" id="edNew">+ Nytt sett</button>
-        <button class="ghost small" id="edDelete">Slett settet</button>
-      </div>
-      <label>Navn på settet <input id="edName" maxlength="40"></label>
-      <div class="ed-list" id="edList"></div>
-      <div class="row">
-        <button class="ghost small" id="edExport">⬇ Last ned som fil</button>
-        <button class="ghost small" id="edImportBtn">⬆ Hent fra fil</button>
-        <input type="file" id="edImport" accept=".json,application/json" hidden>
-      </div>
-      <div class="err" id="edFileErr"></div>
-    </div>
-    <div class="panel">
-      <h3 id="fTitle">Ny oppgave</h3>
-      <form id="edForm" style="display:grid;gap:12px">
-        <label>Spørsmål (leses opp for barnet) <input id="fQ" maxlength="200" required placeholder="Hva er 5 + 3?"></label>
-        <label>Emoji som bilde (valgfritt) <input id="fPic" maxlength="24" placeholder="🐱"></label>
-        <label>Riktig svar <input id="fRight" maxlength="40" required placeholder="8"></label>
-        <label>Feil svar <input id="fW1" maxlength="40" required placeholder="7"></label>
-        <label>Feil svar 2 (valgfritt) <input id="fW2" maxlength="40" placeholder="9"></label>
-        <div class="err" id="fErr"></div>
-        <div class="row">
-          <button class="gold small" type="submit" id="fSave">Legg til oppgave</button>
-          <button class="ghost small hidden" type="button" id="fCancel">Avbryt endring</button>
-        </div>
-      </form>
-      <details>
-        <summary>Lim inn mange oppgaver på en gang</summary>
-        <p class="hint" style="margin:10px 0">Én oppgave per linje: <b>spørsmål | riktig svar | feil svar | feil svar</b>.
-          Emoji kan stå først i spørsmålet.</p>
-        <textarea id="bulk" rows="6" placeholder="Hva rimer på hus? | mus | bil | sol&#10;Hvor mange bein har en edderkopp? | 8 | 6 | 4"></textarea>
-        <div class="row" style="margin-top:10px"><button class="ghost small" id="bulkAdd">Legg til</button><span class="hint" id="bulkInfo"></span></div>
-      </details>
-    </div>
-  </div>
-</section>
+<div id="start" class="screen">
+  <button id="playBtn" aria-label="Start">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z" fill="#3b2805"/></svg>
+  </button>
+</div>
 
-<section id="play" class="hidden">
-  <div id="mapWrap"><canvas id="map"></canvas></div>
-  <aside>
-    <div><h2>Gull-egget</h2><div class="timer" id="timer">0:00</div></div>
-    <div class="plist" id="plist"></div>
-    <div class="log" id="log"></div>
-    <button class="ghost" id="stopBtn" style="margin-top:auto">Avslutt runden</button>
-  </aside>
-</section>
+<div id="picker" class="screen hidden" style="background:#3b2a1e">
+  <div class="pickwrap">
+    <h2>Hvem er du?</h2>
+    <div class="figgrid" id="pickGrid"></div>
+    <button class="addfig hold" id="pickAdd" aria-label="Ny figur (hold inne)">+</button>
+  </div>
+</div>
 
-<div id="end" class="hidden">
-  <div>
-    <div class="icon" id="endIcon"></div>
-    <h2 id="endTitle"></h2>
-    <ol id="endScores"></ol>
-    <div class="btns">
-      <button class="gold" id="againBtn">Ny runde</button>
-      <button class="ghost" id="lobbyBtn">Tilbake til lobbyen</button>
+<div id="create" class="screen hidden" style="background:#3b2a1e">
+  <div class="pickwrap">
+    <div class="preview" id="crPreview">❔</div>
+    <div class="figgrid" id="crAnimals"></div>
+    <div class="swatches" id="crColors"></div>
+    <button class="bigok" id="crOk" aria-label="Ferdig" disabled>✔</button>
+  </div>
+</div>
+
+<main id="room" class="hidden">
+  <header class="bar">
+    <button id="me" aria-label="Figuren din"></button>
+    <button id="stars" aria-label="Stjerner">⭐ <span id="starN">0</span></button>
+    <button id="eggCount" aria-label="Gullegg"><span class="egg"></span> <span id="eggN">0</span></button>
+    <div class="spacer"></div>
+    <button id="gear" class="hold" aria-label="For voksne (hold inne)">⚙️</button>
+  </header>
+  <section class="scene bricks">
+    <div class="wall" id="wall" aria-label="Diplomer"></div>
+    <div class="shelves" id="shelves" aria-label="Gullegg"></div>
+  </section>
+  <section class="jars">
+    <button class="jar" id="jarMatte" aria-label="Matte"><span class="ic">🔢</span><span class="bar2"><span class="fill" id="fillMatte"></span></span></button>
+    <button class="jar" id="jarNorsk" aria-label="Norsk"><span class="ic">🔤</span><span class="bar2"><span class="fill" id="fillNorsk"></span></span></button>
+  </section>
+  <nav class="games" id="games" aria-label="Spill"></nav>
+</main>
+
+<div id="celebrate" class="overlay hidden">
+  <div class="big">
+    <div class="frame" id="celFrame"></div>
+    <h2 id="celText"></h2>
+    <button class="bigok" id="celOk" aria-label="OK">✔</button>
+  </div>
+</div>
+
+<div id="adult" class="overlay hidden">
+  <div class="panel" role="dialog" aria-labelledby="adultTitle">
+    <h2 id="adultTitle">For voksne</h2>
+    <p>Fremgangen lagres bare på denne enheten. Ingen navn eller annet om barnet sendes noe sted.</p>
+    <div id="adultMsg"></div>
+
+    <h3>Figur</h3>
+    <p id="adultWho"></p>
+    <div class="btnrow">
+      <button class="abtn" id="aSwitch">Bytt figur</button>
+      <button class="abtn" id="aNew">Ny figur</button>
+      <button class="abtn danger" id="aDelete">Slett denne figuren</button>
+    </div>
+
+    <h3>Oppgaver</h3>
+    <div class="btnrow" id="aSubject">
+      <button class="abtn" data-v="begge">Matte og norsk</button>
+      <button class="abtn" data-v="matte">Bare matte</button>
+      <button class="abtn" data-v="norsk">Bare norsk</button>
+    </div>
+    <p>Vanskelighetsgraden tilpasser seg selv etter hvordan barnet svarer.</p>
+
+    <h3>Lyd</h3>
+    <div class="btnrow">
+      <button class="abtn" id="aSound"></button>
+    </div>
+
+    <h3>Sikkerhetskopi</h3>
+    <p>På iPhone og iPad kan Safari slette lagrede data for nettsider som ikke er brukt på en uke. Legg spillet til på
+      Hjem-skjermen (Del-knappen → «Legg til på Hjem-skjerm») og spill derfra. Appen på Hjem-skjermen har egen lagring:
+      fremgang fra Safari blir ikke med dit, men kan flyttes med en sikkerhetskopi. Ta en sikkerhetskopi av og til.</p>
+    <div class="btnrow">
+      <button class="abtn" id="aExport">Lagre sikkerhetskopi</button>
+      <button class="abtn" id="aImportBtn">Hent sikkerhetskopi</button>
+      <input type="file" id="aImport" accept=".json,application/json" hidden>
+    </div>
+
+    <h3>Hjelp</h3>
+    <div class="btnrow">
+      <a class="abtn" href="veiledning.html" target="_blank" rel="noopener" style="text-decoration:none">Spillveiledning</a>
+    </div>
+
+    <div class="btnrow" style="margin-top:22px">
+      <button class="abtn primary" id="aClose">Lukk</button>
     </div>
   </div>
 </div>
 
-<div id="denied" class="hidden">
-  <div>
-    <h2>Storskjermen er låst</h2>
-    <p>Denne serveren krever en vertsnøkkel. Åpne siden med <b>?key=</b> og nøkkelen bak adressen.</p>
-  </div>
-</div>
+<script type="module">
+import { createStore, requestPersist, downloadBackup, ANIMALS, COLORS, profileName, profileEmoji, profileColor } from './kjerne/lagring.js';
+import { progress } from './kjerne/laering.js';
+import { SKILL_BY_ID } from './kjerne/oppgaver.js';
+import { finishRound } from './kjerne/belonning.js';
+import { holdButton } from './kjerne/ui.js';
+import { T } from './kjerne/tale.js';
+import * as lyd from './kjerne/lyd.js';
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
 const $ = s => document.querySelector(s);
-const socket = io();
-const hostKey = new URLSearchParams(location.search).get('key') || '';
-socket.on('connect', () => { socket.emit('host', { key: hostKey }); sendCustom(); });
-socket.on('hostDenied', () => $('#denied').classList.remove('hidden'));
-$('#joinUrl').textContent = location.host + '/play';
+const store = createStore();
+lyd.setMuted(!store.data.sound);
+requestPersist();
 
-let lobby = { players: [] }, game = null, state = { players: [], foxes: [] }, startedAt = 0, round = 0;
-const log = [];
+// Spillene lastes inn i denne siden som moduler (ikke egne sider), så lyden forblir låst opp på iPhone/iPad
+// og rommet kan dele ut belønningene. `ready` slås på når spillet finnes (Flakse-fuglen i steg 3, labyrinten i steg 4).
+const GAMES = [
+  { id: 'flakse', emoji: '🐦', name: 'Flakse-fuglen', module: './spill/flakse.js', ready: true },
+  { id: 'labyrint', emoji: '🧱', name: 'Labyrinten', module: './spill/labyrint.js', ready: false },
+];
 
-function view(id) {
-  for (const s of ['lobby', 'editor', 'play']) $('#' + s).classList.toggle('hidden', id !== s);
-  $('#end').classList.add('hidden');
+function show(id) {
+  for (const s of ['start', 'picker', 'create', 'room']) $('#' + s).classList.toggle('hidden', s !== id); // null: alt skjult (et spill vises)
 }
 
-socket.on('lobby', d => {
-  lobby = d;
-  $('#size').value = d.settings.size; $('#grade').value = String(d.settings.grade); $('#subject').value = d.settings.subject;
-  const chips = $('#chips');
-  chips.innerHTML = d.players.length ? '' : '<span class="empty">Ingen har blitt med ennå</span>';
-  for (const p of d.players) {
-    const c = document.createElement('span'); c.className = 'chip';
-    c.innerHTML = `<span class="dot" style="background:${p.color}"></span>`;
-    c.append(p.name); chips.append(c);
+// ─── Start ──────────────────────────────────────────────────────────────
+$('#playBtn').onclick = () => { lyd.audio(); lyd.pling(); next(); };
+
+function next() {
+  const ps = store.profiles();
+  if (!ps.length) return openCreate();
+  if (ps.length > 1) return openPicker();
+  store.setActive(ps[0].id);
+  openRoom(true);
+}
+
+// ─── Velg figur ─────────────────────────────────────────────────────────
+function figButton(p) {
+  const b = document.createElement('button');
+  b.className = 'fig';
+  b.innerHTML = '<span class="ring"></span><span class="em"></span>';
+  b.querySelector('.ring').style.background = profileColor(p);
+  b.querySelector('.em').textContent = profileEmoji(p);
+  b.setAttribute('aria-label', profileName(p));
+  return b;
+}
+
+function openPicker() {
+  const grid = $('#pickGrid'); grid.innerHTML = '';
+  for (const p of store.profiles()) {
+    const b = figButton(p);
+    b.onclick = () => { store.setActive(p.id); openRoom(true); };
+    grid.append(b);
   }
-  $('#startBtn').disabled = !d.players.length;
-  const { customName: n, customCount: c, subject } = d.settings;
-  $('#customInfo').textContent = c ? `Runden bruker «${n}» (${c} oppgaver)${subject === 'ingen' ? '' : ' blandet med standardoppgavene'}.`
-    : subject === 'ingen' ? 'Ingen egne oppgaver er valgt, så standardoppgavene brukes.' : '';
-  if (d.phase === 'lobby') { game = null; if ($('#editor').classList.contains('hidden')) view('lobby'); }
-});
-socket.on('game', d => {
-  game = d; startedAt = Date.now() - d.elapsed;
-  if (d.round !== round) { round = d.round; log.length = 0; renderLog(); } // behold loggen ved gjenoppkobling
-  view('play'); resize(); renderTimer();
-  if (d.phase === 'ended' && d.result) showEnd(d.result);
-});
-socket.on('state', d => { state = d; renderPlayers(); });
-socket.on('event', e => { log.unshift(e.text); log.length = Math.min(log.length, 8); renderLog(); });
-socket.on('end', showEnd);
+  show('picker');
+  lyd.say(T.whoAreYou());
+}
+holdButton($('#pickAdd'), 3000, () => openCreate());
 
-function showEnd(r) {
-  const win = r.type === 'player';
-  $('#endIcon').textContent = win ? '🥚' : '🦊';
-  $('#endTitle').textContent = win ? `${r.name} fant gull-egget!` : 'Reven tok gull-egget!';
-  if (win) $('#endTitle').style.color = r.color; else $('#endTitle').style.color = '';
-  const ol = $('#endScores'); ol.innerHTML = '';
-  (r.scores || []).slice(0, 10).forEach((p, i) => {
-    const li = document.createElement('li');
-    li.innerHTML = `<span class="pos">${i + 1}.</span><span class="dot" style="background:${p.color}"></span>` +
-      `<span class="n"></span><span class="d">🚪 ${p.doors}</span><b>⭐ ${p.score}</b>`;
-    li.querySelector('.n').textContent = p.name;
-    ol.append(li);
-  });
-  $('#end').classList.remove('hidden');
+// ─── Ny figur: velg dyr, så farge ───────────────────────────────────────
+let crAnimal = null, crColor = null;
+function openCreate() {
+  crAnimal = crColor = null;
+  const grid = $('#crAnimals'); grid.innerHTML = '';
+  for (const a of ANIMALS) {
+    const b = document.createElement('button');
+    b.className = 'fig'; b.textContent = a.emoji; b.setAttribute('aria-label', a.name);
+    b.onclick = () => { crAnimal = a.id; crColor = null; renderCreate(); lyd.say(T.animalPicked(a)); };
+    grid.append(b);
+  }
+  renderCreate();
+  show('create');
+  lyd.say(store.profiles().length ? T.pickAnimalNew() : T.pickAnimalFirst());
 }
 
-const sendSettings = () => socket.emit('settings', { size: $('#size').value, grade: $('#grade').value, subject: $('#subject').value });
-$('#size').onchange = sendSettings; $('#grade').onchange = sendSettings; $('#subject').onchange = sendSettings;
-const start = () => { sendCustom(); socket.emit('start'); }; // send siste versjon av settet før start
-$('#startBtn').onclick = start;
-$('#againBtn').onclick = start;
-$('#lobbyBtn').onclick = () => socket.emit('toLobby');
-$('#stopBtn').onclick = () => { if (confirm('Avslutte runden og gå tilbake til lobbyen?')) socket.emit('toLobby'); };
+function renderCreate() {
+  [...$('#crAnimals').children].forEach((b, i) => b.classList.toggle('sel', ANIMALS[i].id === crAnimal));
+  const sw = $('#crColors'); sw.innerHTML = '';
+  sw.classList.toggle('hidden', !crAnimal);
+  for (const c of COLORS) {
+    const b = document.createElement('button');
+    b.className = 'sw' + (c.id === crColor ? ' sel' : ''); b.style.background = c.hex;
+    b.setAttribute('aria-label', c.name);
+    b.disabled = !crAnimal || store.taken(crAnimal, c.id);
+    b.onclick = () => { crColor = c.id; renderCreate(); lyd.say(T.figure({ animal: crAnimal, color: crColor })); };
+    sw.append(b);
+  }
+  const pv = $('#crPreview');
+  pv.textContent = crAnimal ? ANIMALS.find(a => a.id === crAnimal).emoji : '❔';
+  pv.style.background = crColor ? COLORS.find(c => c.id === crColor).hex : '';
+  $('#crOk').disabled = !(crAnimal && crColor);
+}
 
-// ─── Egne oppgaver (lagres i nettleseren) ──────────────────────────────
-// Sett: { id, name, tasks: [{ q, pic, right, wrong: [..] }] }
-const store = {
-  get: (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
-  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+$('#crOk').onclick = () => {
+  const p = store.addProfile(crAnimal, crColor);
+  lyd.fanfare();
+  lyd.say(T.welcome(p));
+  openRoom(false);
 };
-let sets = store.get('gullegg-sets', []);
-let chosenId = store.get('gullegg-chosen', '');
-let edId = null, editIdx = -1;
-const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const cur = () => sets.find(s => s.id === edId);
 
-function saveSets() { store.set('gullegg-sets', sets); renderCustomSel(); }
+// ─── Rommet ─────────────────────────────────────────────────────────────
+const MAX_SHELVES = 3;
+// Så mange egg som får plass på én hylle i bredden (hvert egg tar ca. 52 px)
+const perShelf = () => Math.max(4, Math.min(10, Math.floor(($('#shelves').clientWidth - 28) / 52)));
 
-function sendCustom() {
-  const s = sets.find(x => x.id === chosenId);
-  socket.emit('customTasks', s ? { name: s.name, tasks: s.tasks } : { tasks: [] });
+// Ikonet på diplomet (HTML). Gullegg tegnes selv: 🥚-emojien er et brunt hverdagsegg.
+function diplomaIcon(d) {
+  if (d.id.startsWith('kan-')) return SKILL_BY_ID[d.id.slice(4)]?.subject === 'norsk' ? '📖' : '➕';
+  if (d.id.startsWith('egg')) return '<span class="egg" style="font-size:.75em"></span>';
+  if (d.id.startsWith('matte')) return '🔢';
+  if (d.id.startsWith('norsk')) return '🔤';
+  if (d.id === 'stjerner3') return '⭐';
+  if (d.id === 'rev5') return '🦊';
+  return '🏅';
 }
 
-function renderCustomSel() {
-  const sel = $('#customSel'); sel.innerHTML = '';
-  sel.append(new Option('Ingen', ''));
-  for (const s of sets) sel.append(new Option(`${s.name} (${s.tasks.length})`, s.id));
-  if (!sets.some(s => s.id === chosenId)) chosenId = '';
-  sel.value = chosenId;
-}
-$('#customSel').onchange = e => { chosenId = e.target.value; store.set('gullegg-chosen', chosenId); sendCustom(); };
-
-function openEditor() {
-  if (!sets.length) addSet('Mine oppgaver');
-  if (!cur()) edId = (sets.find(s => s.id === chosenId) || sets[0]).id;
-  resetForm(); renderEditor(); view('editor');
-}
-$('#editBtn').onclick = openEditor;
-$('#edBack').onclick = () => { sendCustom(); view(game ? 'play' : 'lobby'); };
-
-function addSet(name, tasks = []) {
-  const s = { id: newId(), name, tasks };
-  sets.push(s); edId = s.id; saveSets();
-  return s;
+function openRoom(greet) {
+  const p = store.active();
+  if (!p) return next();
+  show('room');
+  renderRoom(p, true);
+  if (greet) lyd.say(T.hello(p));
+  setTimeout(() => celebrate(p), greet ? 1200 : 400);
 }
 
-function renderEditor() {
-  const s = cur(), sel = $('#edSet');
-  sel.innerHTML = '';
-  for (const x of sets) sel.append(new Option(`${x.name} (${x.tasks.length})`, x.id));
-  sel.value = s.id;
-  $('#edName').value = s.name;
-  const list = $('#edList'); list.innerHTML = '';
-  if (!s.tasks.length) list.innerHTML = '<p class="hint">Ingen oppgaver ennå. Legg til den første til høyre.</p>';
-  s.tasks.forEach((t, i) => {
-    const row = document.createElement('div'); row.className = 'ed-item';
-    row.innerHTML = '<div class="txt"><div class="q"></div><div class="a">Riktig: <b></b> · Feil: <span></span></div></div>' +
-      '<button data-act="edit">Endre</button><button data-act="del">Slett</button>';
-    row.querySelector('.q').textContent = (t.pic ? t.pic + ' ' : '') + t.q;
-    row.querySelector('.a b').textContent = t.right;
-    row.querySelector('.a span').textContent = t.wrong.join(', ');
-    row.querySelector('[data-act=edit]').onclick = () => editTask(i);
-    row.querySelector('[data-act=del]').onclick = () => {
-      if (!confirm('Slette denne oppgaven?')) return;
-      s.tasks.splice(i, 1); if (editIdx === i) resetForm(); saveSets(); renderEditor();
+function renderRoom(p, markNew) {
+  const me = $('#me');
+  me.textContent = profileEmoji(p); me.style.background = profileColor(p);
+  $('#starN').textContent = p.rewards.stars;
+  $('#eggN').textContent = p.rewards.eggs.length;
+
+  // Diplomer på veggen, pluss noen tomme rammer som viser at det finnes flere å få
+  const wall = $('#wall'); wall.innerHTML = '';
+  p.rewards.diplomas.forEach((d, i) => {
+    const f = document.createElement('button');
+    f.className = 'frame' + (markNew && i >= p.rewards.seenDiplomas ? ' new' : '');
+    f.innerHTML = `<span>${diplomaIcon(d)}</span><span class="ribbon">🎀</span>`;
+    f.setAttribute('aria-label', d.text);
+    f.onclick = () => lyd.say(T.diploma(d.text));
+    wall.append(f);
+  });
+  for (let i = 0; i < Math.max(1, 3 - p.rewards.diplomas.length); i++) {
+    const f = document.createElement('button');
+    f.className = 'frame empty'; f.textContent = '?';
+    f.onclick = () => lyd.say(T.emptyFrame());
+    wall.append(f);
+  }
+
+  // Gullegg på hyllene (nyeste til slutt), og tomme plasser som viser hvor neste egg havner
+  const SHELF = perShelf();
+  const eggs = p.rewards.eggs, shown = eggs.slice(-SHELF * MAX_SHELVES), hidden = eggs.length - shown.length;
+  const shelves = $('#shelves'); shelves.innerHTML = '';
+  const slots = shown.length + 1, rows = Math.min(MAX_SHELVES, Math.max(1, Math.ceil(slots / SHELF)));
+  for (let r = 0; r < rows; r++) {
+    const shelf = document.createElement('div'); shelf.className = 'shelf';
+    if (r === 0 && hidden) { const m = document.createElement('span'); m.className = 'more'; m.textContent = '+' + hidden; shelf.append(m); }
+    for (let i = r * SHELF; i < Math.min((r + 1) * SHELF, shown.length + 1); i++) {
+      const e = shown[i], s = document.createElement('button');
+      const idx = hidden + i;
+      s.className = 'slot' + (!e ? ' empty' : markNew && idx >= p.rewards.seenEggs ? ' new' : '');
+      if (e) s.style.animationDelay = `${(idx - p.rewards.seenEggs) * 0.25}s`;
+      s.innerHTML = `<span class="egg"></span>${e ? `<span class="st">${'⭐'.repeat(e.stars)}</span>` : ''}`;
+      s.setAttribute('aria-label', e ? T.egg(e).join(' ') : 'Plass til neste gullegg');
+      s.onclick = () => lyd.say(e ? T.egg(e) : T.emptyEgg());
+      shelf.append(s);
+    }
+    shelves.append(shelf);
+  }
+
+  // Krukkene viser hvor langt spilleren er kommet i hvert fag
+  for (const [subject, fill] of [['matte', '#fillMatte'], ['norsk', '#fillNorsk']])
+    $(fill).style.width = Math.max(4, Math.round(progress(p.learning, subject) * 100)) + '%';
+
+  // Spillkort: ett trykk sier navnet, ett til starter (så ingenting startes ved et uhell)
+  const nav = $('#games'); nav.innerHTML = '';
+  for (const g of GAMES) {
+    const b = document.createElement('button');
+    b.className = 'game' + (g.ready ? '' : ' locked');
+    b.innerHTML = `<span class="em">${g.emoji}</span>${g.ready ? '' : '<span class="lock">🔒</span>'}`;
+    b.setAttribute('aria-label', g.name);
+    b.onclick = () => {
+      if (!g.ready) return lyd.say(T.comingSoon(g.id));
+      if (b.classList.contains('sel')) return startGame(g);
+      nav.querySelectorAll('.sel').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      lyd.say(T.gameName(g.id));
     };
-    list.append(row);
-  });
-}
-
-$('#edSet').onchange = e => { edId = e.target.value; resetForm(); renderEditor(); };
-$('#edName').oninput = e => { cur().name = e.target.value.trim() || 'Uten navn'; saveSets(); };
-$('#edName').onchange = renderEditor;
-$('#edNew').onclick = () => { addSet('Nytt sett'); resetForm(); renderEditor(); $('#edName').select(); };
-$('#edDelete').onclick = () => {
-  const s = cur();
-  if (!confirm(`Slette settet «${s.name}» med ${s.tasks.length} oppgaver?`)) return;
-  sets = sets.filter(x => x !== s);
-  if (!sets.length) addSet('Mine oppgaver');
-  edId = sets[0].id; saveSets(); resetForm(); renderEditor();
-};
-
-function resetForm() {
-  editIdx = -1; $('#edForm').reset(); $('#fErr').textContent = '';
-  $('#fTitle').textContent = 'Ny oppgave'; $('#fSave').textContent = 'Legg til oppgave';
-  $('#fCancel').classList.add('hidden');
-}
-function editTask(i) {
-  const t = cur().tasks[i];
-  editIdx = i;
-  $('#fQ').value = t.q; $('#fPic').value = t.pic || ''; $('#fRight').value = t.right;
-  $('#fW1').value = t.wrong[0] || ''; $('#fW2').value = t.wrong[1] || '';
-  $('#fTitle').textContent = 'Endre oppgave'; $('#fSave').textContent = 'Lagre endring';
-  $('#fCancel').classList.remove('hidden'); $('#fErr').textContent = '';
-  $('#fQ').focus();
-}
-$('#fCancel').onclick = resetForm;
-
-// Samme regler som serveren: spørsmål, riktig svar og minst ett feil svar som er forskjellig fra det riktige
-function makeTask(q, pic, right, wrong) {
-  q = q.trim(); right = right.trim();
-  wrong = [...new Set(wrong.map(w => w.trim()))].filter(w => w && w !== right).slice(0, 2);
-  if (!q || !right) return null;
-  if (!wrong.length) return null;
-  return { q, pic: pic.trim(), right, wrong };
-}
-
-$('#edForm').onsubmit = e => {
-  e.preventDefault();
-  const t = makeTask($('#fQ').value, $('#fPic').value, $('#fRight').value, [$('#fW1').value, $('#fW2').value]);
-  if (!t) { $('#fErr').textContent = 'Feil svar må være forskjellig fra det riktige svaret.'; return; }
-  const s = cur();
-  if (s.tasks.length >= 300 && editIdx < 0) { $('#fErr').textContent = 'Et sett kan ha høyst 300 oppgaver.'; return; }
-  if (editIdx >= 0) s.tasks[editIdx] = t; else s.tasks.push(t);
-  saveSets(); resetForm(); renderEditor(); $('#fQ').focus();
-};
-
-// «Hva rimer på hus? | mus | bil | sol». Emoji først i spørsmålet blir bildet.
-const LEADING_EMOJI = /^((?:\p{Extended_Pictographic}|\p{Regional_Indicator}|‍|️)+)\s*/u;
-$('#bulkAdd').onclick = () => {
-  const s = cur(); let added = 0, skipped = 0;
-  for (const line of $('#bulk').value.split('\n')) {
-    if (!line.trim()) continue;
-    const [q = '', right = '', ...wrong] = line.split('|');
-    const m = q.trim().match(LEADING_EMOJI);
-    const t = makeTask(m ? q.trim().slice(m[0].length) : q, m ? m[1] : '', right, wrong);
-    if (t && s.tasks.length < 300) { s.tasks.push(t); added++; } else skipped++;
+    nav.append(b);
   }
-  $('#bulkInfo').textContent = `${added} lagt til` + (skipped ? `, ${skipped} ${skipped === 1 ? 'linje' : 'linjer'} hoppet over (mangler svar?)` : '');
-  if (added) { $('#bulk').value = ''; saveSets(); renderEditor(); }
-};
+}
 
-$('#edExport').onclick = () => {
-  const s = cur();
-  const blob = new Blob([JSON.stringify({ name: s.name, tasks: s.tasks }, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (s.name.replace(/[^\p{L}\p{N} _-]/gu, '').trim() || 'oppgaver') + '.json';
-  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+$('#me').onclick = () => lyd.say(T.hello(store.active()));
+$('#stars').onclick = () => lyd.say(T.starsHave(store.active().rewards.stars));
+$('#eggCount').onclick = () => lyd.say(T.eggsHave(store.active().rewards.eggs.length));
+$('#jarMatte').onclick = () => lyd.say(T.subject('matte', store.active().learning.level.matte));
+$('#jarNorsk').onclick = () => lyd.say(T.subject('norsk', store.active().learning.level.norsk));
+
+// Nye egg og diplomer siden sist: fanfare, og hvert nye diplom vises stort og leses opp
+function celebrate(p) {
+  const newEggs = p.rewards.eggs.length - p.rewards.seenEggs;
+  const newDiplomas = p.rewards.diplomas.slice(p.rewards.seenDiplomas);
+  if (!newEggs && !newDiplomas.length) return;
+  if (newEggs) {
+    lyd.fanfare();
+    lyd.say(T.newEggs(newEggs));
+  }
+  const queue = [...newDiplomas];
+  const showNext = () => {
+    const d = queue.shift();
+    if (!d) {
+      $('#celebrate').classList.add('hidden');
+      p.rewards.seenEggs = p.rewards.eggs.length;
+      p.rewards.seenDiplomas = p.rewards.diplomas.length;
+      store.save();
+      return;
+    }
+    $('#celFrame').innerHTML = diplomaIcon(d);
+    $('#celText').textContent = d.text;
+    $('#celebrate').classList.remove('hidden');
+    lyd.fanfare();
+    lyd.say(T.newDiploma(d.text));
+  };
+  $('#celOk').onclick = showNext;
+  setTimeout(showNext, newEggs ? 2200 : 0);
+}
+
+// ─── Voksenmeny (hold tannhjulet inne i 3 sekunder) ────────────────────
+holdButton($('#gear'), 3000, openAdult);
+
+function openAdult() {
+  const p = store.active();
+  $('#adultWho').textContent = `Aktiv figur: ${profileEmoji(p)} ${profileName(p)}. ${store.profiles().length} figur(er) på denne enheten.`;
+  $('#aSwitch').classList.toggle('hidden', store.profiles().length < 2);
+  $('#aSubject').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === p.settings.subject));
+  $('#aSound').textContent = store.data.sound ? 'Lyd er på – slå av' : 'Lyd er av – slå på';
+  $('#adultMsg').textContent = '';
+  $('#adult').classList.remove('hidden');
+}
+const closeAdult = () => $('#adult').classList.add('hidden');
+$('#aClose').onclick = closeAdult;
+$('#aSwitch').onclick = () => { closeAdult(); openPicker(); };
+$('#aNew').onclick = () => { closeAdult(); openCreate(); };
+$('#aDelete').onclick = () => {
+  const p = store.active();
+  if (!confirm(`Slette ${profileName(p)} med ${p.rewards.eggs.length} gullegg og alle diplomer? Dette kan ikke angres.`)) return;
+  store.removeProfile(p.id);
+  closeAdult(); next();
 };
-$('#edImportBtn').onclick = () => $('#edImport').click();
-$('#edImport').onchange = async e => {
+$('#aSubject').onclick = e => {
+  const v = e.target.dataset?.v;
+  if (!v) return;
+  store.active().settings.subject = v; store.save(); openAdult();
+};
+$('#aSound').onclick = () => { store.setSound(!store.data.sound); lyd.setMuted(!store.data.sound); openAdult(); };
+$('#aExport').onclick = () => { downloadBackup(store); $('#adultMsg').textContent = 'Sikkerhetskopien er lagret som fil.'; };
+$('#aImportBtn').onclick = () => $('#aImport').click();
+$('#aImport').onchange = async e => {
   const file = e.target.files[0]; e.target.value = '';
-  $('#edFileErr').textContent = '';
   if (!file) return;
   try {
-    const data = JSON.parse(await file.text());
-    let n = 0;
-    for (const x of Array.isArray(data) ? data : [data]) {
-      const tasks = (Array.isArray(x?.tasks) ? x.tasks : [])
-        .map(t => makeTask(String(t?.q ?? ''), String(t?.pic ?? ''), String(t?.right ?? ''), (Array.isArray(t?.wrong) ? t.wrong : []).map(String)))
-        .filter(Boolean).slice(0, 300);
-      if (tasks.length) { addSet(String(x.name || file.name.replace(/\.json$/i, '')).slice(0, 40), tasks); n++; }
-    }
-    if (!n) throw new Error();
-    resetForm(); renderEditor();
-  } catch { $('#edFileErr').textContent = 'Fant ingen oppgaver i fila. Er det en fil lastet ned herfra?'; }
+    const text = await file.text();
+    if (!confirm('Erstatte all fremgang på denne enheten med sikkerhetskopien?')) return;
+    const n = store.importBackup(text);
+    closeAdult(); next();
+    alert(`Sikkerhetskopien er hentet inn (${n} figur${n === 1 ? '' : 'er'}).`);
+  } catch (err) {
+    $('#adultMsg').style.color = '#8a1f17';
+    $('#adultMsg').textContent = `Kunne ikke bruke fila: ${err.message}.`;
+  }
 };
 
-renderCustomSel();
+// Telefon/pad på tvers: «snu skjermen» dekker alt (CSS), og stemmen sier fra
+const sideways = matchMedia('(orientation: landscape) and (pointer: coarse)');
+sideways.addEventListener?.('change', e => { if (e.matches) lyd.say(T.rotate()); });
 
-function renderPlayers() {
-  const el = $('#plist'); el.innerHTML = '';
-  for (const p of [...state.players].sort((a, b) => b.score - a.score)) {
-    const r = document.createElement('div'); r.className = 'prow';
-    r.innerHTML = `<span class="dot" style="background:${p.color}"></span><span class="n"></span>` +
-      `<span title="Dører åpnet">${p.caught ? '🦊 ' : p.task ? '✏️ ' : ''}🚪${p.doors}</span><b style="color:var(--gold)">⭐ ${p.score}</b>`;
-    r.querySelector('.n').textContent = p.name; el.append(r);
-  }
+// Snur man enheten, får hyllene en annen bredde
+addEventListener('resize', () => { const p = store.active(); if (p && !$('#room').classList.contains('hidden')) renderRoom(p, false); });
+
+// Starter et spill i denne siden. Når runden er ferdig, får spilleren gullegg og stjerner her,
+// og rommet feirer det nye. Avbrutt runde (✕) gir ikke egg, men svarene er lagret i læringsmotoren.
+async function startGame(g) {
+  const p = store.active();
+  lyd.stopSpeaking();
+  let mod;
+  try { mod = await import(g.module); } catch { return lyd.say(T.comingSoon(g.id)); }
+  const stage = document.createElement('div');
+  document.body.append(stage);
+  show(null);
+  mod.default({ root: stage, profile: p, store, onExit: result => {
+    stage.remove();
+    if (result) { finishRound(p, result); store.save(); }
+    openRoom(false);
+  } });
 }
-function renderTimer() {
-  const s = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-  $('#timer').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-function renderLog() {
-  const el = $('#log'); el.innerHTML = '';
-  for (const t of log) { const d = document.createElement('div'); d.textContent = t; el.append(d); }
-}
-
-// ─── Kart sett ovenfra ──────────────────────────────────────────────────
-const cv = $('#map'), ctx = cv.getContext('2d');
-function resize() {
-  const r = $('#mapWrap').getBoundingClientRect(), dpr = devicePixelRatio || 1;
-  if (r.width <= 40 || r.height <= 40) return; // skjult
-  cv.width = (r.width - 40) * dpr; cv.height = (r.height - 40) * dpr;
-}
-new ResizeObserver(resize).observe($('#mapWrap'));
-
-function draw(t) {
-  requestAnimationFrame(draw);
-  if (!game || !game.grid || $('#play').classList.contains('hidden')) return;
-  const g = game.grid, H = g.length, W = g[0].length, dpr = devicePixelRatio || 1;
-  const cell = Math.floor(Math.min(cv.width / W, cv.height / H));
-  const ox = Math.floor((cv.width - cell * W) / 2), oy = Math.floor((cv.height - cell * H) / 2);
-  const P = (x, z) => [ox + x * cell, oy + z * cell];
-  ctx.clearRect(0, 0, cv.width, cv.height);
-  ctx.fillStyle = '#2a3a2e'; ctx.fillRect(ox, oy, cell * W, cell * H);
-  ctx.fillStyle = '#5a3d2c';
-  for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (g[z][x]) ctx.fillRect(ox + x * cell, oy + z * cell, cell, cell);
-
-  // Dører: en planke på tvers av gangen
-  ctx.fillStyle = '#c08a4a';
-  const th = Math.max(2, cell * 0.2);
-  for (const d of game.doors || []) {
-    const [x, z] = P(d.x, d.z);
-    if (d.x % 2 === 0) ctx.fillRect(x + (cell - th) / 2, z, th, cell); // gangen går langs x
-    else ctx.fillRect(x, z + (cell - th) / 2, cell, th);
-  }
-
-  // Egget
-  const [ex, ez] = P(game.egg.x, game.egg.z);
-  const pulse = 1 + Math.sin(t / 300) * 0.15;
-  const grd = ctx.createRadialGradient(ex, ez, 0, ex, ez, cell * 1.4 * pulse);
-  grd.addColorStop(0, 'rgba(242,193,78,.7)'); grd.addColorStop(1, 'rgba(242,193,78,0)');
-  ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(ex, ez, cell * 1.4 * pulse, 0, 7); ctx.fill();
-  ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.ellipse(ex, ez, cell * .22, cell * .3, 0, 0, 7); ctx.fill();
-
-  // Rever
-  for (const f of state.foxes) {
-    const [x, z] = P(f.x, f.z);
-    ctx.save(); ctx.translate(x, z); ctx.rotate(f.a);
-    if (f.c) { ctx.strokeStyle = 'rgba(255,60,40,.9)'; ctx.lineWidth = 3 * dpr; ctx.beginPath(); ctx.arc(0, 0, cell * .45, 0, 7); ctx.stroke(); }
-    ctx.fillStyle = '#e2662a'; ctx.beginPath();
-    ctx.moveTo(cell * .35, 0); ctx.lineTo(-cell * .25, cell * .22); ctx.lineTo(-cell * .25, -cell * .22); ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
-  // Spillere
-  ctx.textAlign = 'center'; ctx.font = `800 ${Math.max(11, cell * .42)}px Nunito, sans-serif`;
-  for (const p of state.players) {
-    const [x, z] = P(p.x, p.z);
-    if (p.inv && Math.floor(t / 150) % 2) continue;
-    ctx.fillStyle = p.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * dpr;
-    ctx.beginPath(); ctx.arc(x, z, cell * .3, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x, z); ctx.lineTo(x + Math.cos(p.a) * cell * .5, z + Math.sin(p.a) * cell * .5); ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.fillText(p.name, x, z - cell * .5);
-  }
-  if ($('#end').classList.contains('hidden')) renderTimer();
-}
-requestAnimationFrame(draw);
 </script>
 </body>
 </html>

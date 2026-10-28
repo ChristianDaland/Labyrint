@@ -4,6 +4,10 @@
 
 let actx = null, noiseBuf = null, muted = false;
 
+// iPhone/iPad: uten dette demper lydløs-bryteren all Web Audio. «playback» gjør at spillet høres
+// som en video eller musikk gjør (Safari 16.4+).
+try { if (globalThis.navigator?.audioSession) navigator.audioSession.type = 'playback'; } catch {}
+
 export function audio() {
   if (!actx) {
     const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
@@ -16,7 +20,8 @@ export function audio() {
 
 // Knyttes til første og senere trykk, og pauser lyden når fanen skjules
 if (typeof window !== 'undefined') {
-  addEventListener('pointerdown', () => { audio(); unlockSpeech(); }, { passive: true });
+  // iOS godtar opplåsing sikrest når fingeren slippes eller ved klikk, så alle tre brukes
+  for (const ev of ['pointerdown', 'touchend', 'click']) addEventListener(ev, () => { audio(); unlockSpeech(); }, { passive: true });
   addEventListener('keydown', () => audio());
   document.addEventListener('visibilitychange', () => {
     if (!actx) return;

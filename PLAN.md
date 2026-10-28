@@ -4,6 +4,7 @@ Status (28.10.2026): planen er godkjent.
 - **Steg 1 (grunnmur) er ferdig:** `public/kjerne/` med oppgaver, læringsmotor, belønninger, lagring og lyd, testet med `npm test` og i nettleser.
 - **Steg 2 (rommet) er ferdig:** `public/rom.html`, testet i nettleser som iPhone (høykant) og iPad (liggende).
 - **Steg 3 (Flakse-fuglen og ferdiglaget tale) er bygget:** `public/spill/flakse.js`, `public/kjerne/tale.js`, `verktoy/lag-tale.py` og lydfilene i `public/lyd/tale/`.
+- **Steg 5 (hjem-skjerm-app, publisering, ny veiledning) er gjort før steg 4:** rommet ligger på `index.html` (fast adresse for ikonet), det gamle storskjerm-spillet på `storskjerm.html`, og GitHub Actions publiserer bare `public/`. Lyden følger ikke lenger lydløs-bryteren på iOS 16.4+.
 - **Neste:** test med barn, deretter steg 4 (labyrinten).
 
 ## 1. Mål og rammer
@@ -13,7 +14,7 @@ ennå. Laget først for bruk hjemme, på iPhone og iPad.
 
 Bestemt så langt:
 
-- **Læringen er selve spillet.** Han skal ikke løse oppgaver for å få lov til å spille.
+- **Læringen er selve spillet.** Barnet skal ikke løse oppgaver for å få lov til å spille.
 - **Én spiller per spill.** Flerspiller og storskjerm fjernes.
 - **Gratis å drifte:** statisk nettside på GitHub Pages, uten server og database.
 - **Ingen innlogging og ingen foreldreside.** Foreldrene følger med på samme enhet.
@@ -33,13 +34,13 @@ Bestemt så langt:
 | Kan legges på hjem-skjermen (fullskjerm) | |
 | Publisering på GitHub Pages | |
 
-## 3. Slik opplever han det
+## 3. Slik opplever barnet det
 
-1. Han trykker på ikonet på hjem-skjermen, og spillet åpner i fullskjerm.
-2. **Er det flere profiler**, ser han figurene og trykker på sin. Med bare én profil går han rett videre.
-3. **Rommet:** figuren hans, hylla med gullegg, diplomer på veggen og to store spillknapper: 🐦 Flakse-fuglen og 🥚 Labyrinten.
-4. Han spiller en runde på 3–5 minutter.
-5. Han kommer tilbake til rommet og ser at det nye egget, stjernene eller diplomet havner på plass, med lyd og en liten feiring.
+1. Barnet trykker på ikonet på hjem-skjermen, og spillet åpner i fullskjerm.
+2. **Er det flere profiler**, ser barnet figurene og trykker på sin. Med bare én profil går det rett videre.
+3. **Rommet:** figuren, hylla med gullegg, diplomer på veggen og to store spillknapper: 🐦 Flakse-fuglen og 🥚 Labyrinten.
+4. Barnet spiller en runde på 3–5 minutter.
+5. Barnet kommer tilbake til rommet og ser at det nye egget, stjernene eller diplomet havner på plass, med lyd og en liten feiring.
 
 Alt kan brukes uten å lese. Store bilder, få knapper, og alt som betyr noe, leses opp.
 
@@ -47,10 +48,10 @@ Alt kan brukes uten å lese. Store bilder, få knapper, og alt som betyr noe, le
 
 - **Tegnes i 2D** (HTML, SVG og CSS) med varm, kloss-aktig stil. Det skal være inspirert av Minecraft uten å kopiere.
 - **Hylla:** ett gullegg per fullført runde, med flere hyller etter hvert.
-- **Diplomer på veggen.** Han trykker på et diplom, og det leses opp hva han klarte.
+- **Diplomer på veggen.** Barnet trykker på et diplom, og det leses opp hva det klarte.
 - **Stjerner i rommet:** antall stjerner synes, som en teller eller en krukke som fylles.
-- **Spillknappene:** store kort med bilde, ikke tekst. Trykk én gang for å høre navnet og to ganger for å starte. Det hindrer at han starter spill ved et uhell.
-- **Senere:** ting han låser opp og kan plassere i rommet, for eksempel en lampe, et kjæledyr eller en rakett.
+- **Spillknappene:** store kort med bilde, ikke tekst. Trykk én gang for å høre navnet og to ganger for å starte. Det hindrer at spill startes ved et uhell.
+- **Senere:** ting barnet låser opp og kan plassere i rommet, for eksempel en lampe, et kjæledyr eller en rakett.
 
 ## 5. Flakse-fuglen (første nye spill)
 
@@ -61,8 +62,8 @@ Alt kan brukes uten å lese. Store bilder, få knapper, og alt som betyr noe, le
 - Fuglen flyr mot en vegg med tre åpninger. Hver åpning har et svar, med tall, bokstav eller bilde.
 - **Riktig åpning:** pling, en stjerne, og fuglen flyr videre. Neste oppgave kommer.
 - **Feil åpning:** fuglen flyr gjennom, men det spilles en «oi»-lyd, riktig svar lyser opp og leses opp, og den samme *typen* oppgave kommer snart igjen.
-- **Treffer han veggen:** fuglen spretter litt tilbake og fortsetter. Han dør aldri, og det er aldri «game over».
-- **Fart:** rolig fra start, og litt raskere når han får mange riktige på rad.
+- **Treffer fuglen veggen:** den spretter litt tilbake og fortsetter. Den dør aldri, og det er aldri «game over».
+- **Fart:** rolig fra start, og litt raskere ved mange riktige på rad.
 
 **Runde og belønning:**
 - En runde er 10 oppgaver. Til slutt kommer et gullegg flyvende inn.
@@ -98,12 +99,12 @@ Oppgavene ved dørene og fra reven hentes fra læringsmotoren. Å finne egget gi
 
 **Tilpasning:**
 - For hver ferdighet huskes de siste 10 svarene.
-- Han flyttes et hakk opp når han har 8 av 10 riktige, og et hakk ned når han har under 5 av 10.
+- Spilleren flyttes et hakk opp ved 8 av 10 riktige, og et hakk ned ved under 5 av 10.
 - Oppgavene velges omtrent slik:
-  - 70 % på nivået han er på,
-  - 20 % repetisjon av noe han kan,
+  - 70 % på nivået spilleren er på,
+  - 20 % repetisjon av noe spilleren kan,
   - 10 % smakebit på det neste.
-- Ferdigheter han ofte bommer på, kommer oftere.
+- Ferdigheter spilleren ofte bommer på, kommer oftere.
 - Det blandes matte og norsk. Senere kan foreldrene få velge fag.
 
 **Oppgaveformat** (felles for alle spill): `{ ferdighet, spørsmål, bilde, alternativer[], riktig, opplesning }`. Dagens oppgavegenerator i `tasks.js` brukes som utgangspunkt og merkes med ferdighet og nivå.
@@ -113,7 +114,7 @@ Oppgavene ved dørene og fra reven hentes fra læringsmotoren. Å finne egget gi
 - **Alle setninger lages på forhånd** av et skript: spørsmål, beskjeder, diplomer, tall og ord. Filene hentes bare når de trengs.
 - **Enhetens stemme brukes bare som reserve** hvis en fil mangler. Den var nesten uforståelig på Linux, men bedre på iPhone og iPad.
 - Hele spørsmål leses av den valgte stemmen.
-- Bokstavlyder, som /sss/ og ikke «ess», tas opp av deg senere som lydfiler.
+- Bokstavlyder, som /sss/ og ikke «ess», tas opp senere som lydfiler.
 - Til opptakene er klare, lager vi oppgaver som ikke trenger enkeltlyder.
 
 ## 8. Belønninger
@@ -124,18 +125,18 @@ Oppgavene ved dørene og fra reven hentes fra læringsmotoren. Å finne egget gi
 | Gullegg | Ett per fullført runde i hvilket som helst spill |
 | Diplomer | Milepæler, for eksempel: første egg · 5 egg · 10 egg · 3 stjerner i en runde · 50 riktige i matte · 50 riktige i norsk · ny ferdighet låst opp · rømte fra reven 5 ganger |
 
-Diplomene viser *hva han har lært*, for eksempel «Du kan pluss innenfor 10!», ikke bare at han har spilt mye. Diplomer for nye ferdigheter er de viktigste.
+Diplomene viser *hva barnet har lært*, for eksempel «Du kan pluss innenfor 10!», ikke bare at det har spilt mye. Diplomer for nye ferdigheter er de viktigste.
 
 ## 9. Profiler
 
 - Flere profiler på samme enhet. Hver har en figur og en farge, som 🦉 Lilla ugle, og ikke noe navn.
-- Med én profil ser han aldri valget.
+- Med én profil vises aldri valget.
 - En ny profil lages fra profilvalget. Det åpnes med et lite «+» som må holdes inne i 3 sekunder, slik at det er tungt å gjøre ved et uhell.
 
 ## 10. Lagring og sikkerhetskopi
 
 - Alt lagres i nettleserens `localStorage`, med versjonsnummer slik at det tåler senere endringer.
-- **Per profil:** figur, ferdighetsnivåer, siste svar per ferdighet, egg, stjerner, diplomer, og en enkel logg per dag over hvor mye han har spilt og hvor mye som var riktig.
+- **Per profil:** figur, ferdighetsnivåer, siste svar per ferdighet, egg, stjerner, diplomer, og en enkel logg per dag over hvor mye barnet har spilt og hvor mye som var riktig.
 - Spillet ber nettleseren om varig lagring (`navigator.storage.persist`).
 - **Hjem-skjermen er viktig:** Safari på iPhone og iPad kan slette lagrede data for nettsider som ikke er brukt på 7 dager. Når spillet er lagt på hjem-skjermen, gjelder ikke det.
 - **Voksenmeny:** en liten ⚙️-knapp i rommet som må holdes inne i 3 sekunder. Den har:
@@ -152,11 +153,11 @@ Diplomene viser *hva han har lært*, for eksempel «Du kan pluss innenfor 10!»,
 - **Statisk nettside,** ren HTML og JavaScript uten byggesteg, som i dag. Three.js brukes bare i labyrinten.
 - **Foreslått struktur:**
 
-Endret i steg 2: spillene er **moduler som lastes inn i rommet**, ikke egne sider. På iPhone og iPad må lyd låses opp med et trykk etter hver sidelasting. Med egne sider ville feiringen være stum når han kommer tilbake til rommet. Nå er lyden låst opp hele tiden, og rommet deler ut belønningene på ett sted.
+Endret i steg 2: spillene er **moduler som lastes inn i rommet**, ikke egne sider. På iPhone og iPad må lyd låses opp med et trykk etter hver sidelasting. Med egne sider ville feiringen være stum når barnet kommer tilbake til rommet. Nå er lyden låst opp hele tiden, og rommet deler ut belønningene på ett sted.
 
 ```
 public/
-  rom.html            rommet + profilvalg + voksenmeny (blir index.html når det gamle spillet fjernes i steg 4)
+  index.html          rommet + profilvalg + voksenmeny (var rom.html i steg 2–3)
   spill/flakse.js     Flakse-fuglen (lastes inn i rommet)
   spill/labyrint.js   labyrinten, enspiller (lastes inn i rommet)
   veiledning.html     skrives om for den nye løsningen
@@ -196,16 +197,16 @@ public/
 
 ## 14. Rekkefølge
 
-| Steg | Innhold | Kan testes med ham? |
+| Steg | Innhold | Kan testes med barn? |
 |---|---|---|
 | 1 | Grunnmur: struktur, lagring, profiler, lyd, læringsmotor (uten grafikk) | Nei (testes av oss) |
-| 2 | Rommet med egg, stjerner og diplomer | Ja, han ser rommet |
+| 2 | Rommet med egg, stjerner og diplomer | Ja, rommet kan vises |
 | 3 | Flakse-fuglen | **Ja: første ekte test** |
 | 4 | Labyrinten som enspiller | Ja |
-| 5 | Hjem-skjerm-app, publisering på GitHub Pages, ny veiledning | Ja, på hans egen iPad |
+| 5 | Hjem-skjerm-app, publisering på GitHub Pages, ny veiledning | Ja, på egen iPad |
 | 6 | Innspilte bokstavlyder og oppgaver som bruker dem | Ja |
 
-Etter steg 3 og 5 tester vi med ham og justerer før vi går videre.
+Etter steg 3 og 5 tester vi med barn og justerer før vi går videre.
 
 ## 15. Senere
 
@@ -220,6 +221,6 @@ Etter steg 3 og 5 tester vi med ham og justerer før vi går videre.
 ## 16. Åpne spørsmål
 
 1. Følges en bestemt ABC-bok eller rekkefølge for bokstavene? Det påvirker rekkefølgen i norsk-ferdighetene.
-2. Passer 10 oppgaver per runde i Flakse-fuglen, omtrent 3–5 minutter, for hvor lenge han holder fokus?
+2. Passer 10 oppgaver per runde i Flakse-fuglen, omtrent 3–5 minutter, for hvor lenge barn holder fokus?
 3. Skal labyrinten med i første test, eller vente til Flakse-fuglen er prøvd?
-4. Er en figur med farge, uten navn, nok for profilene, eller vil han gjerne kalle figuren noe? Da lagres det bare på enheten.
+4. Er en figur med farge, uten navn, nok for profilene, eller vil barn gjerne kalle figuren noe? Da lagres det bare på enheten.

@@ -1,7 +1,7 @@
 // Flakse-fuglen: trykk for å flakse, og fly gjennom åpningen med riktig svar. Fuglen kan ikke krasje:
 // nær veggen glir den inn i åpningen den er nærmest. Feil svar gir samme spørsmål på en ny vegg der
-// den feile åpningen er murt igjen, helt til han flyr gjennom riktig. En runde er 10 oppgaver.
-// Lastes inn i rommet (rom.html), som deler ut gullegget når runden er ferdig.
+// den feile åpningen er murt igjen, helt til fuglen flyr gjennom riktig. En runde er 10 oppgaver.
+// Lastes inn i rommet (index.html), som deler ut gullegget når runden er ferdig.
 
 import { nextTask, recordAnswer } from '../kjerne/laering.js';
 import { awardSkills, starsFor } from '../kjerne/belonning.js';
@@ -305,7 +305,7 @@ export default function start({ root, profile, store, onExit }) {
     w.task.options.forEach((label, i) => {
       if (!w.open[i]) return;
       const { y0, y1, cy } = g[i];
-      // Den valgte åpningen blir grønn (riktig) eller rød (feil). Riktig svar avsløres ikke ved feil, for han skal prøve igjen.
+      // Den valgte åpningen blir grønn (riktig) eller rød (feil). Riktig svar avsløres ikke ved feil, for barnet skal prøve igjen.
       const picked = i === w.chosen, ok = picked && i === w.task.answer;
       if (picked) {
         ctx.fillStyle = ok ? 'rgba(60,179,113,.35)' : 'rgba(217,83,79,.3)';

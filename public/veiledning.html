@@ -2,15 +2,16 @@
 <html lang="no">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Spillveiledning – Gull-egget</title>
+<link rel="icon" href="ikoner/ikon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   /* Holdes oppdatert sammen med spillet: se «Spillveiledning» i CLAUDE.md */
   :root {
-    --night: #101a14; --moss: #1c2c22; --moss-2: #2f4a39; --gold: #f2c14e; --fox: #ff8a3d;
-    --cream: #f3ead2; --muted: #a9b8a6; --wood: #c08a4a; --line: #2f4a39;
+    --night: #2b1d14; --moss: #3b2a1e; --moss-2: #5e3820; --gold: #f2c14e;
+    --cream: #fff4dc; --muted: #d6c2a4; --line: #5e3820;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -24,11 +25,9 @@
   p { margin: 0 0 12px; }
   ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
   li { margin: 4px 0; }
-  b, strong { color: #fff6dc; }
-  kbd { font: 800 14px 'Nunito', sans-serif; background: var(--moss-2); border-radius: 6px; padding: 1px 7px; }
-  code { font: 700 15px ui-monospace, Menlo, Consolas, monospace; background: var(--moss-2); border-radius: 6px; padding: 1px 6px; }
+  b, strong { color: #fffaf0; }
 
-  .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   header { padding: 40px 0 28px; display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
   .egg { flex: 0 0 auto; width: 64px; height: 82px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
     background: radial-gradient(circle at 35% 30%, #fff6c9 0 8%, #f7d46a 22%, #d99a1e 70%, #9a6510 100%);
@@ -42,12 +41,9 @@
   nav.toc a:hover { text-decoration: underline; }
 
   section { margin: 0 0 44px; }
-  .card { background: var(--moss); border: 2px solid var(--line); border-radius: 18px; padding: 18px 20px; margin: 14px 0; }
-  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .steps { counter-reset: s; list-style: none; padding: 0; }
   .steps > li { counter-increment: s; position: relative; padding: 10px 0 10px 52px; margin: 0; border-bottom: 1px solid var(--line); }
   .steps > li:last-child { border-bottom: 0; }
-  .steps ul { margin-top: 6px; }
   .steps > li::before { content: counter(s); position: absolute; left: 0; top: 9px; width: 36px; height: 36px; border-radius: 50%;
     background: var(--gold); color: #3b2805; font: 400 20px/36px 'Lilita One', sans-serif; text-align: center; }
 
@@ -56,25 +52,14 @@
   th { color: var(--muted); font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
   td.num { font: 400 20px 'Lilita One', sans-serif; color: var(--gold); white-space: nowrap; }
   .scroll { overflow-x: auto; }
-
-  .tag { display: inline-block; border-radius: 99px; padding: 2px 12px; font-weight: 800; font-size: 15px; }
-  .tag.door { background: rgba(192,138,74,.25); color: #e8c79a; }
-  .tag.fox { background: var(--fox); color: #3a1404; }
-  .compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  .compare .card.fox { background: radial-gradient(circle at 50% 20%, #8f3412, #34100a 80%); border-color: #a8501d; }
-  .tip { border-left: 4px solid var(--gold); padding: 6px 0 6px 14px; margin: 12px 0; color: var(--cream); }
+  .tip { border-left: 4px solid var(--gold); padding: 6px 0 6px 14px; margin: 12px 0; }
   .muted { color: var(--muted); }
-  pre { background: var(--moss-2); border-radius: 12px; padding: 12px 14px; overflow-x: auto; font: 700 15px/1.5 ui-monospace, Menlo, Consolas, monospace; }
   details { background: var(--moss); border: 2px solid var(--line); border-radius: 14px; padding: 12px 16px; margin: 10px 0; }
   details summary { cursor: pointer; font-weight: 800; }
   details[open] summary { margin-bottom: 8px; }
   footer { color: var(--muted); font-size: 14px; padding: 20px 0 50px; border-top: 1px solid var(--line); }
 
-  @media (max-width: 680px) {
-    nav.toc ol { columns: 1; }
-    .grid2, .compare { grid-template-columns: 1fr; }
-    header { padding-top: 28px; }
-  }
+  @media (max-width: 680px) { nav.toc ol { columns: 1; } header { padding-top: 28px; } }
 
   /* Utskrift: lys bakgrunn, mørk tekst */
   @media print {
@@ -82,7 +67,6 @@
     body { font-size: 12pt; }
     b, strong { color: #000; }
     .back, nav.toc { display: none; }
-    .compare .card.fox { background: #fff1e6; }
     section { break-inside: avoid-page; }
     details { border: 0; padding: 0; }
   }
@@ -95,286 +79,165 @@
   <div class="egg" aria-hidden="true"></div>
   <div>
     <h1>Spillveiledning</h1>
-    <p class="lead">Gull-egget er et labyrintspill for 1. og 2. trinn. Barna går rundt i en labyrint på mobilen eller nettbrettet,
-      løser oppgaver for å åpne dører og prøver å finne gull-egget først.</p>
-    <a class="back" href="/">← Til spillet</a>
+    <p class="lead">Gull-egget er små spill der barnet øver på å lese, skrive og regne mens det spiller. Laget for 1.–2. trinn,
+      også for barn som ikke kan lese ennå: alt leses opp, og spillet tilpasser seg barnet.</p>
+    <a class="back" href="./">← Til spillet</a>
   </div>
 </header>
 
 <nav class="toc" aria-label="Innhold">
   <ol>
-    <li><a href="#trenger">Dette trenger du</a></li>
     <li><a href="#start">Kom i gang</a></li>
-    <li><a href="#spill">Slik spiller barna</a></li>
-    <li><a href="#dorer">Dører og oppgaver</a></li>
-    <li><a href="#reven">Reven</a></li>
-    <li><a href="#poeng">Poeng og vinner</a></li>
-    <li><a href="#oppgaver">Standardoppgavene</a></li>
-    <li><a href="#egne">Lag egne oppgaver</a></li>
-    <li><a href="#storskjerm">Storskjermen under spill</a></li>
-    <li><a href="#tips">Tips til klasserommet</a></li>
+    <li><a href="#rommet">Rommet</a></li>
+    <li><a href="#flakse">Flakse-fuglen</a></li>
+    <li><a href="#laering">Hva barnet lærer</a></li>
+    <li><a href="#belonning">Stjerner, gullegg og diplomer</a></li>
+    <li><a href="#voksen">Voksenmenyen</a></li>
+    <li><a href="#personvern">Personvern</a></li>
+    <li><a href="#tips">Tips</a></li>
     <li><a href="#problemer">Hvis noe ikke virker</a></li>
-    <li><a href="#drift">For den som drifter spillet</a></li>
   </ol>
 </nav>
 
-<section id="trenger">
-  <h2>Dette trenger du</h2>
-  <div class="grid2">
-    <div class="card">
-      <h3 style="margin-top:0">🖥️ En storskjerm</h3>
-      <p>En PC, et nettbrett eller en projektor som viser spillets startside. Her ser alle QR-koden, kartet og hvem som vinner.
-        Det er også her du velger innstillinger og lager egne oppgaver.</p>
-    </div>
-    <div class="card">
-      <h3 style="margin-top:0">📱 En mobil eller et nettbrett per barn</h3>
-      <p>Med kamera for å skanne QR-koden. Skru på lyden: oppgavene leses opp, slik at barn som ikke kan lese ennå, også kan spille. Spillet har også lydeffekter.</p>
-    </div>
-  </div>
-  <p class="muted">Spillet kjører i nettleseren. Ingenting skal installeres, og ingen trenger konto.</p>
-</section>
-
 <section id="start">
   <h2>Kom i gang</h2>
+  <p>Spillet er laget for iPhone og iPad (det virker også på Android og PC). Gjør dette én gang, sammen med barnet:</p>
   <ol class="steps">
-    <li><b>Åpne spillet på storskjermen.</b> Du ser lobbyen med QR-kode og innstillinger.</li>
-    <li><b>Velg innstillinger:</b>
-      <ul>
-        <li><b>Labyrint:</b> liten, middels eller stor. Start gjerne med <i>liten</i> første gang.</li>
-        <li><b>Trinn:</b> 1. eller 2. trinn. Styrer vanskelighetsgraden på standardoppgavene.</li>
-        <li><b>Standardoppgaver:</b> matte og norsk, bare matte, bare norsk, eller ingen.</li>
-        <li><b>Egne oppgaver:</b> et oppgavesett du har laget selv (se <a href="#egne">Lag egne oppgaver</a>), eller «Ingen».</li>
-      </ul>
-    </li>
-    <li><b>Barna skanner QR-koden</b> (eller skriver adressen under koden), skriver navnet sitt og trykker <b>Bli med</b>.
-      Navnene dukker opp på storskjermen.</li>
-    <li><b>Trykk «Start runden».</b> Alle får en helt ny labyrint og starter på samme sted.</li>
-    <li>Når noen finner egget, vises vinner og poengtavle. Trykk <b>Ny runde</b> for en ny labyrint med de samme barna,
-      eller <b>Tilbake til lobbyen</b> for å endre innstillinger.</li>
+    <li><b>Åpne spillet i Safari:</b> <a href="./">christiandaland.github.io/Labyrint</a></li>
+    <li><b>Legg det på Hjem-skjermen:</b> trykk på Del-knappen (firkanten med pil opp) og velg <b>«Legg til på Hjem-skjerm»</b>.
+      Da får du et ikon med et gullegg.</li>
+    <li><b>Åpne spillet fra ikonet</b> og trykk på den store ▶-knappen.</li>
+    <li><b>Barnet velger et dyr og en farge.</b> Det blir figuren deres, for eksempel «lilla ugle». Ingen navn skrives inn.</li>
   </ol>
+  <div class="tip"><b>Viktig:</b> Bruk alltid ikonet på Hjem-skjermen. Appen der har sin egen lagring, så fremgang fra Safari
+    blir ikke med (den kan flyttes med en sikkerhetskopi, se <a href="#voksen">Voksenmenyen</a>). Som app på Hjem-skjermen
+    slettes ikke fremgangen, og spillet fyller hele skjermen.</div>
+  <p class="muted">Spillet brukes på høykant. Holdes telefonen eller paden på tvers, står det «Snu skjermen», og spillet venter.
+    Spillet trenger internett.</p>
 </section>
 
-<section id="spill">
-  <h2>Slik spiller barna</h2>
-  <p>Mobilen viser labyrinten i 3D øverst og fire store knapper nederst:</p>
-  <div class="scroll"><table>
-    <tr><th>Knapp</th><th>Hva den gjør</th></tr>
-    <tr><td>◀ ▶ (til venstre)</td><td>Snu til venstre eller høyre</td></tr>
-    <tr><td>▲ ▼ (til høyre)</td><td>Gå fram eller bakover</td></tr>
-    <tr><td>🗺️ Kart (øverst i midten)</td><td>Viser labyrinten ovenfra. Trykk igjen (🧊 3D) for å gå tilbake til 3D.</td></tr>
-  </table></div>
-  <p>Barna kan bruke én tommel på hver side samtidig. Øverst ser de poengene sine (⭐) og navnet sitt.</p>
-  <h3>Kartet</h3>
-  <p>Kartet viser veggene, barnets egne lukkede dører (brune streker), barnet selv som en pil som peker dit det ser,
-    de andre barna som fargede prikker, <b>gull-egget</b> som gløder, og <b>reven 🦊</b>. Får reven en rød ring rundt seg,
-    jager den noen. Barna kan gå mens kartet vises.</p>
-</section>
-
-<section id="dorer">
-  <h2>Dører og oppgaver</h2>
-  <p>Labyrinten har mange låste dører (treplanker med et gult «?»). Veien til egget går alltid gjennom flere av dem,
-    så barna <b>må</b> løse oppgaver for å komme fram. Noen få dører står også i sidegangene.</p>
+<section id="rommet">
+  <h2>Rommet</h2>
+  <p>Barnet kommer alltid til sitt eget rom. Alt i rommet leses opp når barnet trykker på det.</p>
   <ul>
-    <li>Barnet går mot en dør, og en oppgave dukker opp. Den <b>leses opp</b> automatisk. 🔊-knappen leser den opp igjen.</li>
-    <li>Barnet velger mellom to eller tre store svarknapper.</li>
-    <li><b>Riktig svar:</b> døra knirker og glir opp, og barnet får 10 poeng.</li>
-    <li><b>Feil svar:</b> det riktige svaret vises i grønt. Etter 3 sekunder kommer en ny oppgave.</li>
-    <li>Barnet kan trykke <b>Gå bort fra døra</b> og prøve en annen vei. Kommer det tilbake før det har svart,
-      får det den samme oppgaven igjen, så det lønner seg ikke å lete etter lettere oppgaver.</li>
-    <li>Dørene er personlige: hvert barn må løse sine egne. Andre barn kan derfor gå gjennom en dør som fortsatt er låst for deg.</li>
-    <li>Mens barnet løser en dør-oppgave, kan reven ikke ta det.</li>
+    <li><b>Øverst:</b> figuren, antall stjerner ⭐ og antall gullegg.</li>
+    <li><b>Diplomer på veggen</b> for det barnet har lært. Tomme rammer med «?» viser at det finnes flere å få.</li>
+    <li><b>Gullegg på hyllene</b>, ett for hver runde, med stjernene barnet fikk.</li>
+    <li><b>To søyler</b> for matte (🔢) og norsk (🔤) fylles etter hvert som barnet mestrer mer. Trykk, så sier stemmen hva barnet øver på nå.</li>
+    <li><b>Spillene nederst:</b> trykk én gang for å høre navnet, og én gang til for å starte. Spill med 🔒 kommer senere.</li>
   </ul>
-  <p>Omtrent antall dører barna må gjennom på veien til egget:</p>
-  <div class="scroll"><table>
-    <tr><th>Labyrint</th><th>Størrelse</th><th>Dører på veien</th></tr>
-    <tr><td>Liten</td><td>8 × 8 ruter</td><td class="num">ca. 7</td></tr>
-    <tr><td>Middels</td><td>12 × 12 ruter</td><td class="num">ca. 11</td></tr>
-    <tr><td>Stor</td><td>16 × 16 ruter</td><td class="num">ca. 16</td></tr>
-  </table></div>
+  <p>Når barnet kommer tilbake fra et spill, feires nye gullegg og diplomer med musikk, og nye diplomer vises stort og leses opp.</p>
 </section>
 
-<section id="reven">
-  <h2>Reven</h2>
-  <p>En rev vandrer rundt i labyrinten. Ser den et barn langs en rett gang, jager den. Barna går litt fortere enn reven,
-    så det går an å løpe fra den. Når reven er nær og jager, lyser kanten på skjermen oransje.</p>
-  <p><b>Barna kan høre reven.</b> Den knurrer når den er i nærheten, og lyden blir sterkere jo nærmere den kommer
-    og sterkest når den jager. Lyden kommer fra den siden reven er på, så barna kan høre om den er til venstre eller
-    høyre (tydeligst med hodetelefoner). Når den jager, bjeffer den av og til, og den bjeffer når den fanger noen.
-    Mens et oppgavevindu er oppe, er revelyden stille, slik at opplesningen høres.</p>
-  <p><b>Tar reven et barn, mister barnet verken liv eller poeng.</b> Barnet står fast og må svare riktig på et
-    <span class="tag fox">revespørsmål</span> for å komme fri:</p>
+<section id="flakse">
+  <h2>Flakse-fuglen</h2>
   <ul>
-    <li>Barnet kan ikke gå og kan ikke lukke spørsmålet.</li>
-    <li><b>Riktig svar:</b> barnet er fri og får 5 poeng. Reven løper da et godt stykke bort fra barnet (ca. 10 ruter),
-      og barnet er trygt for reven i 5 sekunder.</li>
-    <li><b>Feil svar:</b> det riktige svaret vises, og etter 3 sekunder kommer et nytt revespørsmål.</li>
+    <li><b>Trykk hvor som helst</b> på skjermen for å flakse. Fuglen synker sakte når man ikke trykker.</li>
+    <li>Øverst står et <b>spørsmål</b>, ofte med et bilde. Det leses opp, og 🔊 leser det opp igjen.</li>
+    <li>En vegg kommer flyvende med <b>tre åpninger</b>, og svarene står på skilt. Barnet flyr mot det riktige svaret.
+      Nær veggen glir fuglen selv inn i nærmeste åpning, så den aldri krasjer.</li>
+    <li><b>Riktig svar:</b> en glad lyd, stjerner og ros.</li>
+    <li><b>Feil svar:</b> «Ikke helt. Prøv igjen!» Samme spørsmål kommer på en ny vegg, der den feile åpningen er murt igjen.
+      Barnet kommer alltid gjennom til slutt, uten å «tape».</li>
+    <li>En runde er <b>10 spørsmål</b> og tar noen minutter. Etter runden får barnet et gullegg.</li>
+    <li>For å avslutte midt i en runde: <b>hold inne ✕</b> øverst til venstre i ett sekund. Da blir det ikke noe egg,
+      men svarene teller i læringen.</li>
   </ul>
-  <h3>Slik ser du forskjell</h3>
-  <div class="compare">
-    <div class="card">
-      <p><span class="tag door">🚪 Løs oppgaven for å åpne døra</span></p>
-      <ul>
-        <li>Mørkegrønn bakgrunn og lyse knapper</li>
-        <li>Kan gå bort fra døra</li>
-        <li>Gir 10 poeng</li>
-      </ul>
-    </div>
-    <div class="card fox">
-      <p><span class="tag fox">🦊 Reven har fanget deg!</span></p>
-      <ul>
-        <li>Glødende oransje og rød bakgrunn og oransje knapper</li>
-        <li>Rød blink og vibrasjon, og «Reven har fanget deg!» leses opp</li>
-        <li>Kan ikke gå bort</li>
-        <li>Gir 5 poeng</li>
-      </ul>
-    </div>
-  </div>
-  <p class="muted">Reven kan også vinne: kommer den fram til egget (tidligst etter ett minutt) før noen av barna, er runden over.</p>
 </section>
 
-<section id="poeng">
-  <h2>Poeng og vinner</h2>
+<section id="laering">
+  <h2>Hva barnet lærer</h2>
+  <p>Spillet velger oppgavene selv. Matte og norsk blandes (dette kan endres i voksenmenyen). Barnet går videre til neste
+    ferdighet når 8 av de 10 siste svarene er riktige, og et hakk tilbake hvis færre enn 5 av 10 er riktige.
+    Det meste er på nivået barnet er på nå, litt er repetisjon (oftest av det barnet bommer på), og litt er smakebit på det som kommer.
+    Bare første svar på hvert spørsmål teller.</p>
   <div class="scroll"><table>
-    <tr><th>Hva barnet gjør</th><th>Poeng</th></tr>
-    <tr><td>Går på en rute det ikke har vært på før</td><td class="num">+1</td></tr>
-    <tr><td>Løser en oppgave og åpner en dør</td><td class="num">+10</td></tr>
-    <tr><td>Svarer riktig og kommer fri fra reven</td><td class="num">+5</td></tr>
-    <tr><td>Finner gull-egget</td><td class="num">+25</td></tr>
+    <tr><th>Matte, i rekkefølge</th><th>Norsk, i rekkefølge</th></tr>
+    <tr><td>Telle til 5 · telle til 10 · tallet som kommer etter · hvilket tall er størst · pluss og minus opp til 5 ·
+      pluss og minus opp til 10 · telle til 20 · tiervenner (7 + ? = 10) · tallene opp til 20 · det dobbelte ·
+      pluss og minus opp til 20 · telle med to, fem og ti · store tall</td>
+      <td>Store og små bokstaver · hvilken bokstav ordet begynner med · lese korte ord · alfabetet ·
+      bokstaven som mangler (S _ L) · rim · stavelser («klapp og tell») · lese lange ord</td></tr>
   </table></div>
-  <p>Man får ikke poeng for å gå fram og tilbake på samme sted, og ingen mister poeng.</p>
-  <p>Runden er over når <b>det første barnet finner egget</b> (eller reven kommer dit først). Da vises en poengtavle
-    på storskjermen og mobilene, med poeng og antall dører hvert barn har åpnet. Den som fant egget, får eggbonusen,
-    men det kan godt være et annet barn som har flest poeng.</p>
+  <p class="muted">Oppgaver med bilde sier alltid hva bildet er, for eksempel «Finn ordet tre», så et lite bilde ikke misforstås.</p>
 </section>
 
-<section id="oppgaver">
-  <h2>Standardoppgavene</h2>
-  <p>Spillet lager nye oppgaver hele tiden, tilpasset trinnet du velger. Alle har to eller tre svaralternativer,
-    og mange bruker bilder (emoji), slik at barna ikke må kunne lese.</p>
+<section id="belonning">
+  <h2>Stjerner, gullegg og diplomer</h2>
   <div class="scroll"><table>
-    <tr><th></th><th>1. trinn</th><th>2. trinn</th></tr>
-    <tr><td><b>Matte</b></td>
-      <td>Telle bilder (opptil 10) · pluss og minus innenfor 10 · hvilket tall er størst · hvilket tall kommer etter</td>
-      <td>Telle bilder (opptil 20) · pluss og minus innenfor 20 · tiervenner (7 + ? = 10) · det dobbelte · tallrekker (2, 4, 6, …) ·
-        størst og før/etter med tall opptil 100</td></tr>
-    <tr><td><b>Norsk</b></td>
-      <td>Hvilken bokstav begynner ordet med (med bilde) · finn ordet til bildet · finn den lille bokstaven · hvilken bokstav kommer etter</td>
-      <td>Manglende bokstav (S _ L) · hva rimer på … · hvor mange stavelser («klapp og tell») · finn ordet til bildet ·
-        første bokstav · alfabetet</td></tr>
+    <tr><th>Riktige på første forsøk (av 10)</th><th>Stjerner</th></tr>
+    <tr><td>9–10</td><td class="num">⭐⭐⭐</td></tr>
+    <tr><td>6–8</td><td class="num">⭐⭐</td></tr>
+    <tr><td>0–5</td><td class="num">⭐</td></tr>
   </table></div>
-  <p>Velger du «Matte og norsk», blandes oppgavene.</p>
+  <ul>
+    <li><b>Gullegg:</b> ett for hver runde barnet spiller ferdig, uansett antall riktige.</li>
+    <li><b>Diplomer for ferdigheter</b>, for eksempel «Du kan pluss opp til 10!». Disse viser hva barnet faktisk har lært.</li>
+    <li><b>Diplomer for milepæler:</b> første gullegg, 5, 10 og 25 gullegg, tre stjerner på én runde, og 50 og 200 riktige svar i matte og i norsk.</li>
+  </ul>
 </section>
 
-<section id="egne">
-  <h2>Lag egne oppgaver</h2>
-  <p>Lærere og foreldre kan lage egne oppgaver, for eksempel ukens ord, gloser eller noe klassen jobber med nå.
-    Trykk <b>✏️ Lag egne oppgaver</b> i lobbyen på storskjermen.</p>
-  <h3>Én og én oppgave</h3>
-  <p>Hver oppgave har:</p>
+<section id="voksen">
+  <h2>Voksenmenyen</h2>
+  <p>Hold inne tannhjulet ⚙️ øverst til høyre i rommet i <b>3 sekunder</b>. Her kan du:</p>
   <ul>
-    <li><b>Spørsmål.</b> Leses opp for barnet, så skriv det slik du ville sagt det.</li>
-    <li><b>Emoji som bilde</b> (valgfritt), for eksempel 🐱 eller 🍎. Vises stort over spørsmålet.</li>
-    <li><b>Riktig svar</b> og <b>ett eller to feil svar.</b> Feil svar må være forskjellige fra det riktige.</li>
+    <li><b>Figur:</b> bytte figur, lage en ny (for eksempel til et søsken) eller slette en.</li>
+    <li><b>Oppgaver:</b> velge matte og norsk, bare matte eller bare norsk. Vanskelighetsgraden tilpasser seg selv.</li>
+    <li><b>Lyd</b> av eller på.</li>
+    <li><b>Sikkerhetskopi:</b> «Lagre sikkerhetskopi» lagrer all fremgang som en fil. «Hent sikkerhetskopi» henter den inn igjen,
+      også på en annen enhet. Ta en sikkerhetskopi av og til.</li>
+    <li><b>Spillveiledning:</b> denne siden.</li>
   </ul>
-  <p>Hold svarene korte. Én eller to ord eller et tall passer best på knappene.</p>
-  <h3>Mange på en gang</h3>
-  <p>Åpne <b>Lim inn mange oppgaver på en gang</b> og skriv én oppgave per linje, med loddrett strek mellom delene:</p>
-  <pre>spørsmål | riktig svar | feil svar | feil svar
-🏠 Hva rimer på hus? | mus | bil | sol
-Hvor mange bein har en edderkopp? | 8 | 6 | 4
-🐱 Hva sier katten? | mjau | voff</pre>
-  <p>Står det en emoji først i spørsmålet, blir den bildet. Linjer som mangler svar, hoppes over, og du får beskjed om hvor mange.</p>
-  <h3>Oppgavesett</h3>
-  <ul>
-    <li>Oppgavene samles i navngitte sett, for eksempel «Uke 43». Lag så mange sett du vil (opptil 300 oppgaver per sett).</li>
-    <li>Velg settet under <b>Egne oppgaver</b> i lobbyen før du starter.</li>
-    <li>Står <b>Standardoppgaver</b> på noe annet enn «Ingen», blandes de egne oppgavene med standardoppgavene, omtrent halvt om halvt.
-      Velg «Ingen» for å bruke bare dine egne.</li>
-    <li>Hvert barn får alle de egne oppgavene i tilfeldig rekkefølge før noen kommer igjen.</li>
-    <li>De samme oppgavene brukes både ved dørene og når reven fanger noen.</li>
-  </ul>
-  <div class="tip"><b>Viktig:</b> Settene lagres <b>i nettleseren på den maskinen</b> du lager dem på. Bruk
-    <b>⬇ Last ned som fil</b> for å ta vare på et sett, dele det med en kollega eller bruke det på en annen PC.
-    Hent det inn igjen med <b>⬆ Hent fra fil</b>. Tømmer du nettleserdataene, forsvinner settene som ikke er lastet ned.</div>
 </section>
 
-<section id="storskjerm">
-  <h2>Storskjermen under spill</h2>
+<section id="personvern">
+  <h2>Personvern</h2>
   <ul>
-    <li><b>Kartet</b> viser hele labyrinten med alle dører, barna (med navn), reven og egget.</li>
-    <li><b>Lista til høyre</b> viser hvert barn med antall dører åpnet (🚪) og poeng (⭐), sortert etter poeng.
-      ✏️ betyr at barnet løser en dør-oppgave, og 🦊 at reven har fanget det.</li>
-    <li><b>Hendelsesloggen</b> forteller hvem som åpner dører og blir fanget eller sluppet fri av reven.</li>
-    <li><b>Avslutt runden</b> stopper runden og går tilbake til lobbyen.</li>
+    <li>Ingen navn, ingen innlogging og ingen konto. Barnet er bare en figur, for eksempel «lilla ugle».</li>
+    <li>All fremgang lagres <b>bare på enheten</b>. Ingenting om barnet sendes noe sted.</li>
+    <li>Spillet har ingen reklame, sporing eller analyseverktøy.</li>
   </ul>
 </section>
 
 <section id="tips">
-  <h2>Tips til klasserommet</h2>
+  <h2>Tips</h2>
   <ul>
-    <li><b>Vis spillet først.</b> Bli med selv fra en mobil, og vis på storskjermen hvordan man går, åpner en dør og bruker kartet.</li>
-    <li><b>Start smått:</b> liten labyrint og 1. trinn, og gå opp når barna har forstått spillet.</li>
-    <li><b>Lyd:</b> mange barn trenger opplesningen, og revelyden hjelper dem å høre hvor reven er. Sjekk at lyden er på. I et rom med mange barn kan hodetelefoner hjelpe.</li>
-    <li><b>Ett barn per enhet</b> fungerer best. Barn kan også spille to og to på samme enhet og bytte på å styre og svare.</li>
-    <li><b>Egne oppgaver om det dere jobber med</b> gjør spillet til repetisjon: ukens ord, rim, enkle gloser, regnefakta.</li>
-    <li><b>Snakk om poengtavla:</b> den som fant egget, har ikke alltid flest poeng. Den som løser mange oppgaver, får også mange poeng.</li>
+    <li><b>Sitt sammen første gang</b>, og vis hvordan man flakser og velger svar.</li>
+    <li><b>Korte økter:</b> én til tre runder om gangen er nok. En runde tar noen minutter.</li>
+    <li><b>Snakk om diplomene:</b> trykk på dem sammen og hør hva barnet har lært.</li>
+    <li><b>Feil er en del av spillet:</b> barnet prøver igjen til det kommer gjennom, og ingen mister noe.</li>
   </ul>
 </section>
 
 <section id="problemer">
   <h2>Hvis noe ikke virker</h2>
   <details>
-    <summary>Et barn falt ut eller lukket nettleseren</summary>
-    <p>Åpne spillet igjen på samme enhet og skriv samme navn. Barnet kommer tilbake til runden med dørene og poengene sine.
-      (Var barnet fanget av reven, er det fri når det kommer tilbake.)</p>
+    <summary>Det er ingen lyd</summary>
+    <p>Skru opp volumet. Lyden starter når barnet har trykket på ▶. På eldre iPhone-er (før iOS 16.4) må bryteren for lydløs
+      på siden av telefonen være av.</p>
   </details>
   <details>
-    <summary>Oppgaven blir ikke lest opp</summary>
-    <p>Sjekk at lyden er på og volumet oppe, og trykk 🔊. Opplesningen bruker telefonens innebygde norske stemme.
-      Noen eldre telefoner mangler norsk stemme. Da kan en voksen eller et annet barn lese.</p>
+    <summary>Det står «Snu skjermen»</summary>
+    <p>Spillet brukes på høykant. Snu telefonen eller paden, så fortsetter spillet der det var.</p>
   </details>
   <details>
-    <summary>Ingen lydeffekter (knirk og rev)</summary>
-    <p>Lyden starter først når barnet har trykket på skjermen, for eksempel «Bli med». Sjekk volumet. På iPhone
-      må bryteren for lydløs på siden av telefonen være av, ellers er lydeffektene stille.</p>
+    <summary>Fremgangen er borte</summary>
+    <p>Spilte barnet i Safari i stedet for fra ikonet på Hjem-skjermen? Da ligger fremgangen i Safari: åpne spillet der,
+      lagre en sikkerhetskopi i voksenmenyen, og hent den inn i appen. Safari kan også slette fremgangen hvis spillet ikke er
+      brukt på en uke. Bruk derfor ikonet på Hjem-skjermen, og ta sikkerhetskopi av og til.</p>
   </details>
   <details>
-    <summary>Skjermen på mobilen slukker</summary>
-    <p>Spillet prøver å holde skjermen på mens det er åpent. Virker ikke det, skru opp tiden før skjermen låses i innstillingene på enheten.</p>
+    <summary>Spillet starter ikke eller er tomt</summary>
+    <p>Spillet trenger internett. Sjekk nettforbindelsen og prøv igjen.</p>
   </details>
   <details>
-    <summary>QR-koden virker ikke eller peker feil</summary>
-    <p>Barna kan skrive adressen som står under QR-koden. Kjører spillet på en lokal PC, må storskjermen åpnes med PC-ens IP-adresse
-      (ikke «localhost»), og enhetene må være på samme nett.</p>
+    <summary>Barnet avsluttet en runde ved et uhell</summary>
+    <p>Svarene er lagret i læringen, men det blir ikke noe gullegg for en avbrutt runde. Start en ny runde fra rommet.</p>
   </details>
-  <details>
-    <summary>Spillet bruker lang tid på å starte</summary>
-    <p>Gratisversjonen av serveren sovner når den ikke er i bruk, og trenger opptil et minutt på å våkne.
-      Åpne storskjermen litt før timen starter.</p>
-  </details>
-  <details>
-    <summary>Storskjermen sier «Storskjermen er låst»</summary>
-    <p>Serveren krever en vertsnøkkel. Åpne storskjermen med <code>?key=</code> og nøkkelen bak adressen. Spør den som drifter spillet.</p>
-  </details>
-  <details>
-    <summary>Alle barna forsvant midt i en runde</summary>
-    <p>Er ingen barn koblet til i ett minutt, går spillet automatisk tilbake til lobbyen.</p>
-  </details>
-</section>
-
-<section id="drift">
-  <h2>For den som drifter spillet</h2>
-  <ul>
-    <li><b>Lås storskjermen:</b> sett miljøvariabelen <code>HOST_KEY</code> på serveren og åpne storskjermen med
-      <code>/?key=&lt;nøkkelen&gt;</code>. Uten nøkkel kan hvem som helst med adressen styre spillet.</li>
-    <li><b>Justere spillet:</b> poeng, antall dører, revens fart, ventetid etter feil svar og mer står i <code>CONFIG</code>
-      øverst i <code>server.js</code>. Standardoppgavene lages i <code>tasks.js</code>.</li>
-    <li>Det finnes ett spill per server om gangen. Flere klasser samtidig krever hver sin server (romkoder er ikke laget ennå).</li>
-  </ul>
 </section>
 
 <footer>
-  Gull-egget · spillveiledning for lærere og foreldre · <a href="/">Til spillet</a>
+  Gull-egget · spillveiledning for foreldre · <a href="./">Til spillet</a>
 </footer>
 
 </div>

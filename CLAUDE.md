@@ -7,11 +7,11 @@ Brukes i undervisning på 1.–2. trinn: mange elever kan ikke lese ennå, så o
 Språk i UI: norsk bokmål.
 
 ## Ombygging pågår (se PLAN.md)
-Spillet bygges om fra flerspiller med storskjerm til en samling læringsspill for én spiller, som statisk side på GitHub Pages (ingen server). Plan og status står i `PLAN.md`. Til labyrinten er bygd om (steg 4), beskriver resten av denne fila det gamle flerspillerspillet, som fortsatt ligger i `server.js`, `tasks.js`, `public/index.html` og `public/play.html`.
+Spillet bygges om fra flerspiller med storskjerm til en samling læringsspill for én spiller, som statisk side på GitHub Pages (ingen server). Plan og status står i `PLAN.md`. Til labyrinten er bygd om (steg 4), beskriver resten av denne fila (fra «Teknologi») det gamle flerspillerspillet, som fortsatt ligger i `server.js`, `tasks.js`, `public/storskjerm.html` (tidligere `index.html`) og `public/play.html`.
 
 Ny kjerne i `public/kjerne/` (ES-moduler uten byggesteg, felles for alle spillene; `kjerne/package.json` gjør dem til moduler også i Node):
 - `oppgaver.js` – oppgaver per ferdighet (`SKILLS`, i læringsrekkefølge per fag, hver med diplomtekst). Oppgave: `{skill, q, pic, options[3], answer, speak}`. `LETTER_ORDER` = rekkefølgen bokstavene innføres i (bytt hvis en annen ABC-bok følges).
-- `laering.js` – læringsmotoren: nivå per fag, siste 10 svar per ferdighet, opp ved 8/10 og ned ved under 5/10 (med blanke ark), valg ca. 70 % nå / 20 % repetisjon (vektet mot det han bommer på) / 10 % smakebit. `recordAnswer` fører også statistikk per fag og dag.
+- `laering.js` – læringsmotoren: nivå per fag, siste 10 svar per ferdighet, opp ved 8/10 og ned ved under 5/10 (med blanke ark), valg ca. 70 % nå / 20 % repetisjon (vektet mot det spilleren bommer på) / 10 % smakebit. `recordAnswer` fører også statistikk per fag og dag.
 - `belonning.js` – stjerner (1–3), gullegg per runde, milepæl-diplomer og diplomer for mestrede ferdigheter.
 - `lagring.js` – profiler (dyr + farge, aldri navn), alt i `localStorage` under nøkkelen `gullegget` med versjonsnummer; tåler ødelagte data, sikkerhetskopi (eksport/import), `requestPersist()`.
 - `lyd.js` – Web Audio-effekter (pling, oops, fanfare, flap, bump, creak, bark, growl) som også kan tas opp offline. `say(...biter)` spiller ferdiglagde setninger (`lyd/tale/manifest.json` → mp3) etter hverandre via Web Audio. Mangler en bit, leses alt av enhetens stemme. `prefetch()` henter på forhånd. Plass til innspilte bokstavlyder (`LETTER_FILES`).
@@ -19,7 +19,7 @@ Ny kjerne i `public/kjerne/` (ES-moduler uten byggesteg, felles for alle spillen
 - `ui.js` – `holdButton` (hold inne for å utløse) og `keepAwake` (Wake Lock).
 - Alle stier er relative (siden ligger under `/Labyrint/` på GitHub Pages).
 
-Rommet `public/rom.html` (startskjerm; blir `index.html` i steg 4):
+Rommet `public/index.html` (startskjerm, adresse `https://christiandaland.github.io/Labyrint/`):
 - **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
 - **Bare høykant på telefon og pad:** Safari kan ikke låse retningen, så `#rotate` («Snu skjermen», leses opp) dekker alt ved `(orientation: landscape) and (pointer: coarse)`. PC kan bruke begge retninger.
 - **Lave skjermer:** skjermene kan rulles og har kompakt utgave (`max-height: 520px`).
@@ -28,7 +28,13 @@ Rommet `public/rom.html` (startskjerm; blir `index.html` i steg 4):
 - **Spillkort:** ett trykk sier navnet, to trykk starter.
 - **Feiring:** nye egg og diplomer siden sist feires (fanfare, diplom vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
 - **Voksenmeny:** ⚙️, holdes inne i 3 s. Inneholder bytt/ny/slett figur, fag (begge/matte/norsk), lyd av/på, sikkerhetskopi lagre/hent, og hint om Hjem-skjerm.
-- **Spillene lastes inn som moduler** (`spill/*.js`) i samme side, ikke egne sider, så lyden forblir låst opp. `GAMES` i rom.html; `ready: false` til spillet finnes.
+- **Spillene lastes inn som moduler** (`spill/*.js`) i samme side, ikke egne sider, så lyden forblir låst opp. `GAMES` i index.html; `ready: false` til spillet finnes.
+
+Hjem-skjerm-app og publisering:
+- **App-oppsett:** `public/manifest.webmanifest` (standalone, portrait, `start_url ./`), ikoner i `public/ikoner/` (tegnes med `uv run --with pillow python verktoy/lag-ikoner.py`) og iOS-metatagger i index.html.
+- **Egen lagring på iOS:** en app på Hjem-skjermen har egen lagring, atskilt fra Safari. Veiledningen ber derfor foreldrene legge spillet på Hjem-skjermen først, og bruke sikkerhetskopi for å flytte fremgang.
+- **Lydløs-bryteren:** `lyd.js` setter `navigator.audioSession.type = 'playback'` (iOS 16.4+), så lyd høres selv om den står på lydløs. Lyd låses opp på `pointerdown`, `touchend` og `click`.
+- **Publisering:** `.github/workflows/pages.yml` kjører testene og publiserer **bare `public/`** til GitHub Pages ved push til `main` (Pages-kilde: GitHub Actions). **Startadressen må ikke endres,** ellers slutter installerte ikoner å virke.
 - Tester: `npm test` (Node, `test/kjerne.test.mjs`). Testene sjekker også at alt `tale.js` kan si, finnes som lydfil.
 
 Stemme og lydfiler:
@@ -52,9 +58,9 @@ Spill (`public/spill/*.js`, lastes inn i rommet med `import()`; `export default 
   - **Test:** `#test=riktig|slurv|feil` i adressen slår på autopilot («slurv» sikter mot kanten av riktig åpning) og eksponerer `window.__flakse` (brukes av automatiske tester).
 
 ## Spillveiledning – hold den oppdatert
-`public/veiledning.html` (rute `/veiledning`, lenket fra lobbyen og fra «Egne oppgaver») er veiledningen for lærere og foreldre.
+`public/veiledning.html` er veiledningen for foreldre om læringsspillet (rommet, Flakse-fuglen, læringen, voksenmenyen, personvern, feilsøking). Den lenkes fra voksenmenyen.
 **Når regler, poeng, oppgavetyper, innstillinger, knapper, tekster eller oppførsel i spillet endres, skal veiledningen oppdateres i samme endring.**
-Tall i veiledningen (poeng, antall dører, ventetider, revens pause, maks oppgaver) skal stemme med `CONFIG` i `server.js` og med `tasks.js`.
+Tall i veiledningen (stjernegrenser, rundelengde, opp/ned 8/10 og 5/10, ferdighetslisten, voksenmenyens 3 s) skal stemme med `kjerne/` og `spill/`.
 
 ## Teknologi
 - Node.js 18+, Express, Socket.io (sanntid), `qrcode` (QR genereres på serveren).
