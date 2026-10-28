@@ -8,6 +8,7 @@ Status (28.10.2026): planen er godkjent.
 - **Steg 4 (Labyrinten som enspiller) er ferdig:** `public/spill/labyrint.js` og `labyrint-kart.js`. Det gamle flerspillerspillet (server, Socket.io, storskjerm) er fjernet; Render-tjenesten kan slettes.
 - **Slangen er lagt til** som tredje spill: `public/spill/slange.js`. Spis skiltet med riktig svar; kan ikke krasje.
 - **Ordbyggeren er lagt til:** `public/spill/ordbygger.js`. Staving med bokstavbrikker, eget fag `stave` med seks nivåer.
+- **Tallbyggeren er lagt til:** `public/spill/tallbygger.js`. Regnestykker der tall dras på plass, med matte-nivået. Felles motor med Ordbyggeren i `brikker.js`.
 - **Neste:** test med barn, deretter steg 6 (innspilte bokstavlyder, som også gir lyd på brikkene i Ordbyggeren) og flere spill.
 
 ## 1. Mål og rammer
@@ -33,6 +34,7 @@ Bestemt så langt:
 | Labyrinten, som enspiller | Foreldreoversikt |
 | Slangen | |
 | Ordbyggeren (staving) | |
+| Tallbyggeren (regnestykker) | |
 | Felles læringsmotor som tilpasser seg | Redigering av egne oppgaver (finnes i dag, kommer tilbake senere) |
 | Profiler (velg figur) på samme enhet | Innspilte bokstavlyder (planlagt rett etter) |
 | Lagring på enheten, med sikkerhetskopi | Å forme bokstaver med fingeren |

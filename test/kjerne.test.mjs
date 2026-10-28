@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SKILLS, SPELL_SKILLS, SKILL_BY_ID, skillsOf, makeTask } from '../public/kjerne/oppgaver.js';
+import { SKILLS, SPELL_SKILLS, SKILL_BY_ID, skillsOf, makeTask, makeMathPuzzle } from '../public/kjerne/oppgaver.js';
 import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, today, WINDOW } from '../public/kjerne/laering.js';
 import { starsFor, finishRound, awardSkills, newRewards, eggKind, countEggs } from '../public/kjerne/belonning.js';
 import { createStore, newProfile, profileName, KEY, VERSION } from '../public/kjerne/lagring.js';
@@ -46,6 +46,32 @@ test('staveoppgavene: ordet, bokstavbrikkene og ekstra bokstaver', () => {
   }
   assert.deepEqual(skillsOf('stave').map(s => s.id), SPELL_SKILLS.map(s => s.id));
   assert.equal(chooseSkill({ level: { matte: 0, norsk: 0, stave: 2 }, recent: {} }, 'stave', () => 0.5).id, 'stavvelg');
+});
+
+test('Tallbyggeren: regnestykkene stemmer, og svarene finnes blant brikkene', () => {
+  const val = p => Number('slot' in p ? p.slot : p.text);
+  for (const s of skillsOf('matte')) for (let i = 0; i < 2000; i++) {
+    const t = makeMathPuzzle(s.id), parts = t.parts, answers = parts.filter(p => 'slot' in p).map(p => p.slot);
+    assert.equal(t.skill, s.id);
+    assert.ok(answers.length >= 1 && t.speak, s.id);
+    const rest = [...t.tiles];
+    for (const a of answers) { assert.ok(rest.includes(a), `${s.id}: mangler brikke ${a}`); rest.splice(rest.indexOf(a), 1); }
+    assert.equal(rest.length, 2, `${s.id}: to ekstra brikker ${JSON.stringify(t.tiles)}`);
+    assert.ok(t.tiles.every(v => /^\d+$/.test(v)), `${s.id}: rart tall ${JSON.stringify(t.tiles)}`);
+    const ops = parts.map(p => p.text).filter(x => x && !/^\d+$/.test(x));
+    if (ops[0] === '+' || ops[0] === '−') {
+      const [a, , b, , c] = parts.map(val);
+      assert.equal(ops[0] === '+' ? a + b : a - b, c, `${s.id}: ${JSON.stringify(parts)}`);
+    } else if (ops[0] === '>') {
+      const [b, , a] = parts.map(val), bigger = t.tiles.filter(v => Number(v) > a);
+      assert.ok(b > a); assert.deepEqual(bigger, [String(b)], `${s.id}: bare én brikke skal passe`);
+    } else if (parts.length > 1) { // tallrekke: lik avstand
+      const nums = parts.map(val), step = nums[1] - nums[0];
+      assert.ok(step > 0 && nums.every((n, j) => !j || n - nums[j - 1] === step), `${s.id}: ${nums}`);
+      // ekstra brikker skal ikke passe i noen tom rute
+      assert.ok(rest.every(v => !answers.includes(v)));
+    }
+  }
 });
 
 test('regnestykkene har riktig fasit og holder seg innenfor tallområdet', () => {

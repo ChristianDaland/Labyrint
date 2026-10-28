@@ -195,6 +195,72 @@ export const SKILLS = [
   { id: 'stavelser', subject: 'norsk', diploma: 'Du kan dele ord i stavelser!', make: s => syllables(s) },
   { id: 'ordlang', subject: 'norsk', diploma: 'Du kan lese lange ord!', make: s => wordForPicture(s, false) },
 ];
+// ─── Regnestykker med ruter (Tallbyggeren) ──────────────────────────────
+// Matte-ferdighetene som regnestykker der tall dras på plass, med samme nivå som i de andre spillene.
+// { skill, q, pic, parts: [{ text } | { slot }], tiles, speak }: `tiles` er svarene pluss to ekstra tall, stokket.
+const X = t => ({ text: String(t) }), S = n => ({ slot: String(n) });
+function puzzle(skill, parts, extras, { q = null, pic = null, speak }) {
+  const answers = parts.filter(p => 'slot' in p).map(p => p.slot);
+  const extra = [...new Set(extras.map(String))].filter(v => !answers.includes(v) && !v.startsWith('-')).slice(0, 2);
+  return { skill, q, pic, parts, tiles: shuffle([...answers, ...extra]), speak };
+}
+const sum = (skill, a, b, missing) => missing
+  ? puzzle(skill, [X(a), X('+'), S(b), X('='), X(a + b)], nearby(b, 0, a + b), { speak: `${a} pluss hva blir ${a + b}?` })
+  : puzzle(skill, [X(a), X('+'), X(b), X('='), S(a + b)], nearby(a + b, 0, a + b + 3), { speak: `Hva er ${a} pluss ${b}?` });
+const diff = (skill, a, b, missing) => missing
+  ? puzzle(skill, [X(a), X('−'), S(b), X('='), X(a - b)], nearby(b, 1, a), { speak: `${a} minus hva blir ${a - b}?` })
+  : puzzle(skill, [X(a), X('−'), X(b), X('='), S(a - b)], nearby(a - b, 0, a), { speak: `Hva er ${a} minus ${b}?` });
+
+function countPuzzle(skill, min, max) {
+  const n = between(min, max), [icon, name] = pick(THINGS), rows = [];
+  for (let i = 0; i < n; i += 5) rows.push(icon.repeat(Math.min(5, n - i)));
+  return puzzle(skill, [S(n)], nearby(n, 1, max + 3), { pic: rows.join('\n'), speak: `Hvor mange ${name}?` });
+}
+// Tallrekke der noen tall mangler: `blanks` = plassene som er tomme
+function rowPuzzle(skill, nums, blanks, extras, speak) {
+  return puzzle(skill, nums.map((n, i) => blanks.includes(i) ? S(n) : X(n)), extras, { speak });
+}
+function plusPuzzle(skill, max, minTerm, missingShare) {
+  const a = between(minTerm, max - Math.max(minTerm, 1)), b = between(Math.max(minTerm, 1), max - a);
+  return sum(skill, a, b, Math.random() < missingShare);
+}
+function minusPuzzle(skill, minA, maxA, maxB, missingShare) {
+  const a = between(minA, maxA), b = between(1, Math.min(a, maxB));
+  return diff(skill, a, b, Math.random() < missingShare);
+}
+function biggerPuzzle(skill, lo, hi) { // «☐ > 5»: bare én brikke er større
+  const a = between(lo + 1, hi - 1), b = between(a + 1, Math.min(hi, a + 5));
+  const small = shuffle(Array.from({ length: Math.min(a - lo + 1, 6) }, (_, i) => a - i));
+  return puzzle(skill, [S(b), X('>'), X(a)], small, { speak: `Hvilket tall er større enn ${a}?` });
+}
+
+const MATH_PUZZLES = {
+  telle5: s => countPuzzle(s, 1, 5),
+  telle10: s => countPuzzle(s, 4, 10),
+  etter10: s => { const n = between(1, 9); return rowPuzzle(s, [n - 1, n, n + 1], [2], [n + 2, n - 1, n + 3].filter(v => v !== n), `Hvilket tall kommer etter ${n}?`); },
+  storst10: s => biggerPuzzle(s, 0, 10),
+  pluss5: s => plusPuzzle(s, 5, 0, 0),
+  minus5: s => minusPuzzle(s, 2, 5, 5, 0),
+  pluss10: s => plusPuzzle(s, 10, 1, 0.3),
+  minus10: s => minusPuzzle(s, 4, 10, 10, 0.3),
+  telle20: s => countPuzzle(s, 8, 20),
+  tiervenner: s => { const a = between(1, 9); return puzzle(s, [X(a), X('+'), S(10 - a), X('='), X(10)], nearby(10 - a, 0, 10), { speak: `${a} pluss hva blir 10?` }); },
+  foretter20: s => {
+    const a = between(1, 15), nums = [a, a + 1, a + 2, a + 3, a + 4], blanks = shuffle([1, 2, 3, 4]).slice(0, 2).sort();
+    return rowPuzzle(s, nums, blanks, [a + 5, a - 1, a + 6, a + 7], 'Hvilke tall mangler?');
+  },
+  dobbel: s => { const n = between(1, 10); return puzzle(s, [X(n), X('+'), X(n), X('='), S(2 * n)], [2 * n - 1, 2 * n + 1, n + 1, 2 * n + 2], { speak: `Hva er ${n} pluss ${n}?` }); },
+  pluss20: s => plusPuzzle(s, 20, 2, 0.4),
+  minus20: s => minusPuzzle(s, 10, 20, 10, 0.4),
+  tallrekker: s => {
+    const step = pick([2, 5, 10]), start = step === 2 ? between(0, 10) : step * between(0, 5), nums = [0, 1, 2, 3].map(i => start + i * step);
+    const two = Math.random() < 0.5, extras = [start + 4 * step, nums[3] + 1, nums[3] - 1, nums[1] + 1];
+    return two ? rowPuzzle(s, nums, [1, 3], extras, 'Hvilke tall mangler?') : rowPuzzle(s, nums, [3], extras, 'Hvilket tall kommer så?');
+  },
+  storst100: s => biggerPuzzle(s, 10, 99),
+};
+export const makeMathPuzzle = skillId => MATH_PUZZLES[skillId](skillId);
+
 // Staving: brukes bare i Ordbyggeren (oppgavene er ikke flervalg), så de står utenfor SKILLS
 export const SPELL_SKILLS = [
   { id: 'stavkopi', subject: 'stave', diploma: 'Du kan bygge ord!', make: s => spell(s, 'kort', { ghost: true }) },
