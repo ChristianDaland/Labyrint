@@ -61,14 +61,20 @@
   .plist { display: grid; gap: 8px; }
   .prow { display: flex; align-items: center; gap: 10px; background: var(--night); padding: 10px 12px; border-radius: 12px; font-weight: 800; }
   .prow .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .prow.out { opacity: .45; }
   .log { display: grid; gap: 6px; font-size: 15px; color: var(--muted); }
   .log div:first-child { color: var(--cream); }
   .timer { font: 400 22px 'Lilita One', sans-serif; color: var(--muted); }
 
   #end { position: fixed; inset: 0; background: rgba(10,16,12,.88); display: grid; place-items: center; text-align: center; padding: 24px; }
   #end .icon { font-size: 110px; }
-  #end h2 { font-size: clamp(44px, 6vw, 84px); color: var(--gold); margin: 10px 0 30px; }
+  #end h2 { font-size: clamp(44px, 6vw, 84px); color: var(--gold); margin: 10px 0 20px; }
+  #endScores { list-style: none; padding: 0; margin: 0 auto 28px; display: grid; gap: 8px; width: min(520px, 100%); text-align: left; }
+  #endScores li { display: flex; align-items: center; gap: 12px; background: var(--moss); padding: 10px 16px; border-radius: 14px;
+    font-weight: 800; font-size: 20px; }
+  #endScores .pos { width: 1.6em; color: var(--muted); }
+  #endScores .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #endScores .d { color: var(--muted); font-size: 16px; }
+  #endScores b { color: var(--gold); min-width: 4.5em; text-align: right; }
   #end .btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
 
   #denied { position: fixed; inset: 0; background: var(--night); display: grid; place-items: center;
@@ -119,8 +125,8 @@
     <div class="rules">
       <div><span>📱</span><span>Skann koden og styr med pilene på mobilen.</span></div>
       <div><span>🚪</span><span>Dørene er låst. Løs en oppgave for å åpne dem.</span></div>
-      <div><span>🦊</span><span>En rev leter også. Krasjer du med den, mister du et liv.</span></div>
-      <div><span>❤️</span><span>Alle har tre liv. Ser du reven, snu og løp!</span></div>
+      <div><span>⭐</span><span>Du får poeng når du går nye steder og når du løser oppgaver.</span></div>
+      <div><span>🦊</span><span>En rev leter også. Tar den deg, må du svare på et revespørsmål for å komme fri.</span></div>
     </div>
     <div class="settings">
       <label>Labyrint
@@ -137,7 +143,10 @@
       </label>
       <button id="startBtn" class="gold" disabled>Start runden</button>
     </div>
-    <button class="linkbtn" id="editBtn">✏️ Lag egne oppgaver</button>
+    <div class="row" style="gap:22px">
+      <button class="linkbtn" id="editBtn">✏️ Lag egne oppgaver</button>
+      <a class="linkbtn" href="/veiledning" target="_blank" rel="noopener">📖 Spillveiledning</a>
+    </div>
     <p class="hint" id="customInfo"></p>
   </div>
   <div class="joinbox">
@@ -154,7 +163,7 @@
   </div>
   <p class="ed-intro">Lag oppgaver barnet skal løse ved dørene. Spørsmålet leses opp på mobilen, og barnet velger mellom
     riktig svar og ett eller to feil svar. Settene lagres i denne nettleseren. Last ned et sett som fil for å dele det
-    eller ta det med til en annen maskin.</p>
+    eller ta det med til en annen maskin. Se også <a href="/veiledning#egne" target="_blank" rel="noopener" style="color:var(--gold)">spillveiledningen</a>.</p>
   <div class="ed-grid">
     <div class="panel">
       <div class="row">
@@ -212,6 +221,7 @@
   <div>
     <div class="icon" id="endIcon"></div>
     <h2 id="endTitle"></h2>
+    <ol id="endScores"></ol>
     <div class="btns">
       <button class="gold" id="againBtn">Ny runde</button>
       <button class="ghost" id="lobbyBtn">Tilbake til lobbyen</button>
@@ -272,8 +282,16 @@ socket.on('end', showEnd);
 function showEnd(r) {
   const win = r.type === 'player';
   $('#endIcon').textContent = win ? '🥚' : '🦊';
-  $('#endTitle').textContent = win ? `${r.name} fant gull-egget!` : r.type === 'fox' ? 'Reven tok gull-egget!' : 'Reven tok alle!';
+  $('#endTitle').textContent = win ? `${r.name} fant gull-egget!` : 'Reven tok gull-egget!';
   if (win) $('#endTitle').style.color = r.color; else $('#endTitle').style.color = '';
+  const ol = $('#endScores'); ol.innerHTML = '';
+  (r.scores || []).slice(0, 10).forEach((p, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="pos">${i + 1}.</span><span class="dot" style="background:${p.color}"></span>` +
+      `<span class="n"></span><span class="d">🚪 ${p.doors}</span><b>⭐ ${p.score}</b>`;
+    li.querySelector('.n').textContent = p.name;
+    ol.append(li);
+  });
   $('#end').classList.remove('hidden');
 }
 
@@ -444,10 +462,10 @@ renderCustomSel();
 
 function renderPlayers() {
   const el = $('#plist'); el.innerHTML = '';
-  for (const p of state.players) {
-    const r = document.createElement('div'); r.className = 'prow' + (p.out ? ' out' : '');
+  for (const p of [...state.players].sort((a, b) => b.score - a.score)) {
+    const r = document.createElement('div'); r.className = 'prow';
     r.innerHTML = `<span class="dot" style="background:${p.color}"></span><span class="n"></span>` +
-      `<span title="Dører åpnet">${p.task ? '✏️ ' : ''}🚪${p.doors}</span><span>${p.out ? 'Ute' : '❤️'.repeat(p.lives)}</span>`;
+      `<span title="Dører åpnet">${p.caught ? '🦊 ' : p.task ? '✏️ ' : ''}🚪${p.doors}</span><b style="color:var(--gold)">⭐ ${p.score}</b>`;
     r.querySelector('.n').textContent = p.name; el.append(r);
   }
 }
@@ -511,7 +529,6 @@ function draw(t) {
   ctx.textAlign = 'center'; ctx.font = `800 ${Math.max(11, cell * .42)}px Nunito, sans-serif`;
   for (const p of state.players) {
     const [x, z] = P(p.x, p.z);
-    if (p.out) { ctx.strokeStyle = '#777'; ctx.lineWidth = 2 * dpr; ctx.beginPath(); ctx.moveTo(x - 6, z - 6); ctx.lineTo(x + 6, z + 6); ctx.moveTo(x + 6, z - 6); ctx.lineTo(x - 6, z + 6); ctx.stroke(); continue; }
     if (p.inv && Math.floor(t / 150) % 2) continue;
     ctx.fillStyle = p.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * dpr;
     ctx.beginPath(); ctx.arc(x, z, cell * .3, 0, 7); ctx.fill(); ctx.stroke();

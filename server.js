@@ -12,14 +12,18 @@ const HOST_KEY = process.env.HOST_KEY || ''; // hvis satt må storskjermen åpne
 
 // ─── Justerbare innstillinger ───────────────────────────────────────────
 const CONFIG = {
-  lives: 3,               // liv per spiller
   playerSpeed: 2.4,       // ruter per sekund (samme verdi står i play.html)
   pickupDist: 0.55,       // hvor nær egget man må være
+  pointsPerStep: 1,       // poeng for hver ny rute man går på (ikke for å gå fram og tilbake)
+  pointsPerTask: 10,      // poeng for en løst oppgave
+  pointsForEgg: 25,       // ekstra poeng til den som finner egget
+  foxTaskPoints: 5,       // poeng for å svare riktig og komme fri fra reven (mindre enn en dør)
   foxHitDist: 0.5,        // hvor nær en rev må være for å ta deg
-  invulnMs: 2500,         // usårbar-tid etter å ha mistet et liv
-  respawnAtStart: true,   // true: tilbake til start når reven tar deg
+  invulnMs: 2500,         // trygg-tid etter at man har kommet fri fra reven
+  foxPauseMs: 2000,       // reven står stille så lenge etter at man har kommet fri, så man rekker å løpe
   foxes: 1,               // antall rever
-  doorShare: 0.15,        // andel av gangene mellom rutene som får en dør
+  pathDoors: { liten: 6, middels: 9, stor: 12 }, // dører jevnt fordelt på veien fra start til egget
+  sideDoorShare: 0.04,    // andel av de andre gangene som også får en dør
   doorReach: 1.4,         // hvor nær døra man må være for å få en oppgave
   wrongWaitMs: 3000,      // ventetid etter feil svar før man får en ny oppgave
   safeWhileSolving: true, // true: reven kan ikke ta deg mens du løser en oppgave
@@ -28,9 +32,7 @@ const CONFIG = {
   foxSightCells: 7,       // hvor langt en rev ser langs en korridor
   foxCanWin: true,        // true: revene vinner hvis en rev finner egget først
   foxEggDelaySec: 60,     // revene begynner å lete etter egget først etter så mange sekunder
-  extraOpenings: 0.08,    // ekstra åpninger i labyrinten, så man kan rømme rundt
-  eggRevealDist: 3,       // egget sendes til mobilen når man er så nær (gløden synes rundt hjørner)
-  eggSightDist: 9,        // ... eller har fri sikt til det innenfor denne avstanden (tåka slutter ved 8,5)
+  extraOpenings: 0.08,    // ekstra åpninger (sløyfer å rømme rundt), men aldri forbi en dør på veien til egget
   emptyLobbyMs: 60000,    // tilbake til lobbyen hvis ingen spillere er tilkoblet så lenge
   maxCustomTasks: 300,    // maks antall egne oppgaver i et sett
   tickHz: 20,
@@ -48,6 +50,7 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/play', (req, res) => res.sendFile(path.join(__dirname, 'public', 'play.html')));
+app.get('/veiledning', (req, res) => res.sendFile(path.join(__dirname, 'public', 'veiledning.html')));
 app.get('/health', (req, res) => res.send('ok'));
 app.get('/qr.png', async (req, res) => {
   const proto = String(req.headers['x-forwarded-proto'] || req.protocol).split(',')[0];
@@ -90,14 +93,36 @@ function generateMaze(cols, rows) {
     seen.add(nx + ',' + ny);
     stack.push([nx, ny]);
   }
-  // Noen ekstra åpninger gir sløyfer, så det finnes fluktveier fra revene
-  const extra = Math.floor(cols * rows * CONFIG.extraOpenings);
-  for (let i = 0, tries = 0; i < extra && tries < 1000; tries++) {
-    const x = 1 + rand(W - 2), y = 1 + rand(H - 2);
-    if ((x % 2) === (y % 2)) continue; // bare vegger mellom to celler
-    if (g[y][x] === 1) { g[y][x] = 0; i++; }
+  return g; // perfekt labyrint: nøyaktig én vei mellom to ruter
+}
+
+// Ekstra åpninger gir sløyfer å rømme rundt, men bare der de ikke lager en vei rundt
+// noen av dørene på veien til egget (hver av dem må fortsatt være eneste vei fram).
+function addLoops(g, pathDoors, egg, count) {
+  const W = g[0].length, H = g.length;
+  const doorsNeeded = () => pathDoors.every(d => {
+    g[d.z][d.x] = 1;
+    const reach = bfs(g, 1, 1)[egg.z][egg.x] >= 0;
+    g[d.z][d.x] = 0;
+    return !reach;
+  });
+  for (let i = 0, tries = 0; i < count && tries < 400; tries++) {
+    const x = 1 + rand(W - 2), z = 1 + rand(H - 2);
+    if ((x % 2) === (z % 2) || g[z][x] !== 1) continue; // bare vegger mellom to celler
+    g[z][x] = 0;
+    if (doorsNeeded()) i++; else g[z][x] = 1;
   }
-  return g;
+}
+
+// Korteste vei fra start til (x, z), gitt avstandene fra bfs()
+function pathTo(dist, x, z) {
+  const path = [[x, z]];
+  while (dist[z][x] > 0) {
+    const [dx, dz] = DIRS.find(([dx, dz]) => dist[z + dz][x + dx] === dist[z][x] - 1);
+    x += dx; z += dz;
+    path.push([x, z]);
+  }
+  return path.reverse();
 }
 
 function bfs(grid, sx, sz) {
@@ -124,7 +149,6 @@ function closedDoorAt(p, x, z) {
   const id = game.doorAt.get(Math.floor(x) + ',' + Math.floor(z));
   return id !== undefined && !p.opened.has(id);
 }
-const blockedFor = (p, x, z) => isWallAt(x, z) || closedDoorAt(p, x, z);
 const isSafe = p => CONFIG.safeWhileSolving && !!p.task;
 
 // Neste oppgave til en spiller: egne oppgaver (halvparten av gangene hvis standard også er valgt)
@@ -147,8 +171,12 @@ function nextColor() {
 
 function publicPlayer(p) {
   return { id: p.pid, name: p.name, color: p.color, x: r3(p.x), z: r3(p.z), a: r3(p.a),
-    lives: p.lives, out: p.out, inv: Date.now() < p.invulnUntil, doors: p.solved, task: !!p.task };
+    score: p.score, inv: Date.now() < p.invulnUntil, doors: p.solved, task: !!p.task, caught: !!p.caughtBy };
 }
+
+const scoreboard = () => [...players.values()]
+  .map(p => ({ id: p.pid, name: p.name, color: p.color, score: p.score, doors: p.solved }))
+  .sort((a, b) => b.score - a.score);
 
 function lobbyPayload() {
   return { phase: game.phase, settings: game.settings,
@@ -159,44 +187,63 @@ const addEvent = text => io.to('hosts').emit('event', { text, t: Date.now() });
 
 function baseGame() {
   return { phase: game.phase, grid: game.grid, start: game.start,
-    egg: game.egg && { x: game.egg.x, z: game.egg.z }, result: game.result, lives: CONFIG.lives,
+    egg: game.egg && { x: game.egg.x, z: game.egg.z }, result: game.result,
     doors: game.doors,
     round: game.round, elapsed: (game.endedAt || Date.now()) - game.startedAt };
 }
 
 function sendGameTo(p) {
   if (!p.connected) return;
-  const g = baseGame();
-  if (!p.eggSeen) g.egg = null; // egget sendes først når spilleren ser det (hindrer juks)
-  io.to(p.socketId).emit('game', { ...g,
-    you: { x: p.x, z: p.z, a: p.a, s: p.spawnId, lives: p.lives, out: p.out, opened: [...p.opened] } });
-}
-
-function canSeeEgg(p) {
-  const dx = game.egg.x - p.x, dz = game.egg.z - p.z, d = Math.hypot(dx, dz);
-  if (d < CONFIG.eggRevealDist) return true;
-  if (d > CONFIG.eggSightDist) return false;
-  for (let t = 0.1; t < d; t += 0.1) if (blockedFor(p, p.x + dx / d * t, p.z + dz / d * t)) return false;
-  return true;
+  io.to(p.socketId).emit('game', { ...baseGame(),
+    you: { x: p.x, z: p.z, a: p.a, s: p.spawnId, score: p.score, opened: [...p.opened] } });
 }
 
 function resetPlayer(p) {
-  p.x = game.start.x; p.z = game.start.z; p.a = game.start.a;
-  p.lives = CONFIG.lives; p.out = false; p.spawnId++; p.eggSeen = false;
-  p.opened = new Set(); p.solved = 0; p.task = null; p.cooldownUntil = 0; p.bag = null;
+  p.x = game.start.x; p.z = game.start.z; p.a = game.start.a; p.spawnId++;
+  p.score = 0; p.visited = new Set([Math.floor(p.x) + ',' + Math.floor(p.z)]);
+  p.opened = new Set(); p.solved = 0; p.task = null; p.cooldownUntil = 0; p.bag = null; p.caughtBy = null;
   p.invulnUntil = Date.now() + 1500; p.lastPosT = Date.now();
 }
 
 function startGame() {
   const n = SIZES[game.settings.size] || 12;
   const grid = generateMaze(n, n);
-  const dist = bfs(grid, 1, 1);
-  const cells = [];
+  let dist = bfs(grid, 1, 1);
   let max = 0;
+  for (let z = 1; z < grid.length; z += 2) for (let x = 1; x < grid[0].length; x += 2) max = Math.max(max, dist[z][x]);
+  const farCells = [];
   for (let z = 1; z < grid.length; z += 2)
-    for (let x = 1; x < grid[0].length; x += 2) { cells.push({ x, z, d: dist[z][x] }); max = Math.max(max, dist[z][x]); }
+    for (let x = 1; x < grid[0].length; x += 2) if (dist[z][x] >= max * 0.6) farCells.push({ x, z });
+  const eggCell = pick(farCells);
 
-  const eggCell = pick(cells.filter(c => c.d >= max * 0.6));
+  // Dørene settes jevnt fordelt langs den eneste veien til egget, så man må gjennom alle.
+  // Gangene ligger på oddetallsplassene i veien (rute, gang, rute, …).
+  const route = pathTo(dist, eggCell.x, eggCell.z), L = route.length - 1;
+  const count = Math.max(1, Math.min(CONFIG.pathDoors[game.settings.size] || 9, Math.floor(L / 4)));
+  const onPath = new Set();
+  for (let k = 1; k <= count; k++) {
+    let i = Math.round(k * L / (count + 1));
+    if (i % 2 === 0) i++;
+    if (i < L) onPath.add(route[i].join(','));
+  }
+  const pathDoors = [...onPath].map(s => { const [x, z] = s.split(',').map(Number); return { x, z }; });
+  addLoops(grid, pathDoors, eggCell, Math.floor(n * n * CONFIG.extraOpenings));
+
+  // Noen dører i sidegangene også
+  const passages = [];
+  for (let z = 1; z < grid.length - 1; z++)
+    for (let x = 1; x < grid[0].length - 1; x++)
+      if (grid[z][x] === 0 && (x % 2) !== (z % 2) && !onPath.has(x + ',' + z)) passages.push({ x, z });
+  passages.sort(() => Math.random() - 0.5);
+  const sideDoors = passages.slice(0, Math.round(passages.length * CONFIG.sideDoorShare));
+  game.doors = [...pathDoors, ...sideDoors].map((c, id) => ({ id, x: c.x, z: c.z }));
+  game.doorAt = new Map(game.doors.map(d => [d.x + ',' + d.z, d.id]));
+
+  // Reven plasseres langt fra både start og egg (i den ferdige labyrinten)
+  dist = bfs(grid, 1, 1);
+  const cells = [];
+  for (let z = 1; z < grid.length; z += 2) for (let x = 1; x < grid[0].length; x += 2) cells.push({ x, z, d: dist[z][x] });
+  max = Math.max(...cells.map(c => c.d));
   const eggDist = bfs(grid, eggCell.x, eggCell.z);
   let maxEgg = 0;
   for (const c of cells) maxEgg = Math.max(maxEgg, eggDist[c.z][c.x]);
@@ -209,20 +256,11 @@ function startGame() {
   }
   for (const c of foxCells) { if (chosen.length >= CONFIG.foxes) break; if (!chosen.includes(c)) chosen.push(c); }
 
-  // Dører i gangene mellom to ruter (der x og z har ulik paritet)
-  const passages = [];
-  for (let z = 1; z < grid.length - 1; z++)
-    for (let x = 1; x < grid[0].length - 1; x++)
-      if (grid[z][x] === 0 && (x % 2) !== (z % 2)) passages.push({ x, z });
-  passages.sort(() => Math.random() - 0.5);
-  game.doors = passages.slice(0, Math.round(passages.length * CONFIG.doorShare)).map((c, id) => ({ id, x: c.x, z: c.z }));
-  game.doorAt = new Map(game.doors.map(d => [d.x + ',' + d.z, d.id]));
-
   game.grid = grid;
   game.start = { x: 1.5, z: 1.5, a: grid[1][2] === 0 ? 0 : Math.PI / 2 };
   game.egg = { x: eggCell.x + 0.5, z: eggCell.z + 0.5, cx: eggCell.x, cz: eggCell.z };
   game.foxes = chosen.map(c => ({ x: c.x + 0.5, z: c.z + 0.5, a: 0, cx: c.x, cz: c.z, tx: c.x, tz: c.z,
-    px: -1, pz: -1, chasing: false }));
+    px: -1, pz: -1, chasing: false, pauseUntil: 0 }));
   game.phase = 'playing';
   game.result = null;
   game.round++;
@@ -239,11 +277,11 @@ function endGame(result) {
   game.phase = 'ended';
   game.result = result;
   game.endedAt = Date.now();
+  result.scores = scoreboard();
   io.emit('end', result);
   broadcastLobby();
   if (result.type === 'player') addEvent(`🏆 ${result.name} fant gull-egget!`);
-  else if (result.type === 'fox') addEvent('🦊 En rev fant gull-egget først!');
-  else addEvent('🦊 Revene tok alle spillerne!');
+  else addEvent('🦊 Reven fant gull-egget først!');
 }
 
 function toLobby() {
@@ -268,7 +306,7 @@ function chooseNext(f, now) {
   const g = game.grid;
   const open = DIRS.filter(([dx, dz]) => g[f.cz + dz][f.cx + dx] === 0);
   const prey = [...players.values()]
-    .filter(p => p.connected && !p.out && now >= p.invulnUntil && !isSafe(p))
+    .filter(p => p.connected && now >= p.invulnUntil && !isSafe(p))
     .map(p => ({ cx: Math.floor(p.x), cz: Math.floor(p.z) }));
 
   let dir = null, best = Infinity;
@@ -292,6 +330,7 @@ function chooseNext(f, now) {
 }
 
 function updateFox(f, dt, now) {
+  if (f.holding || now < f.pauseUntil) return; // holder noen fast, eller har nettopp sluppet noen
   let step = (f.chasing ? CONFIG.foxChaseSpeed : CONFIG.foxWanderSpeed) * dt;
   for (let guard = 0; guard < 4 && step > 0; guard++) {
     const tx = f.tx + 0.5, tz = f.tz + 0.5;
@@ -308,24 +347,26 @@ function updateFox(f, dt, now) {
   }
 }
 
-function hitPlayer(p, now) {
-  p.lives--;
+function sendTask(p) {
+  if (!p.connected || !p.task || p.task.answer === undefined) return;
+  const { answer, ...t } = p.task; // fasiten blir på serveren
+  io.to(p.socketId).emit('task', t);
+}
+
+// Reven tar verken liv eller poeng: den holder spilleren fast til hen svarer riktig på et revespørsmål
+function catchPlayer(p, f) {
+  p.caughtBy = f; f.holding = p; f.chasing = false;
+  p.task = { kind: 'fox', ...nextTask(p) };
+  sendTask(p);
+  addEvent(`🦊 Reven fanget ${p.name}`);
+}
+
+// Fri igjen: spilleren er trygg en stund, og reven står stille litt så man rekker å løpe
+function releasePlayer(p, now) {
+  const f = p.caughtBy;
+  p.caughtBy = null; p.task = null;
   p.invulnUntil = now + CONFIG.invulnMs;
-  p.task = null;
-  if (p.lives <= 0) {
-    p.out = true;
-    io.to(p.socketId).emit('hit', { lives: 0, out: true });
-    addEvent(`🦊 ${p.name} ble tatt og er ute`);
-    return;
-  }
-  let respawn = null;
-  if (CONFIG.respawnAtStart) {
-    p.spawnId++;
-    p.x = game.start.x; p.z = game.start.z; p.a = game.start.a; p.lastPosT = now;
-    respawn = { x: p.x, z: p.z, a: p.a, s: p.spawnId };
-  }
-  io.to(p.socketId).emit('hit', { lives: p.lives, respawn });
-  addEvent(`🦊 Reven tok ${p.name}, ${p.lives} liv igjen`);
+  if (f) { f.holding = null; f.pauseUntil = now + CONFIG.foxPauseMs; }
 }
 
 let lastTick = Date.now();
@@ -337,20 +378,18 @@ function tick() {
 
   for (const f of game.foxes) updateFox(f, dt, now);
 
-  const active = [...players.values()].filter(p => p.connected && !p.out);
-  for (const p of active) {
-    if (Math.hypot(p.x - game.egg.x, p.z - game.egg.z) < CONFIG.pickupDist)
+  const online = [...players.values()].filter(p => p.connected);
+  for (const p of online) {
+    if (Math.hypot(p.x - game.egg.x, p.z - game.egg.z) < CONFIG.pickupDist) {
+      p.score += CONFIG.pointsForEgg;
       return endGame({ type: 'player', id: p.pid, name: p.name, color: p.color });
-    if (!p.eggSeen && canSeeEgg(p)) {
-      p.eggSeen = true;
-      io.to(p.socketId).emit('egg', { x: game.egg.x, z: game.egg.z });
     }
     if (now < p.invulnUntil || isSafe(p)) continue;
-    if (game.foxes.some(f => Math.hypot(p.x - f.x, p.z - f.z) < CONFIG.foxHitDist)) hitPlayer(p, now);
+    const f = game.foxes.find(f => !f.holding && now >= f.pauseUntil && Math.hypot(p.x - f.x, p.z - f.z) < CONFIG.foxHitDist);
+    if (f) catchPlayer(p, f);
   }
   if (CONFIG.foxCanWin && now - game.startedAt > CONFIG.foxEggDelaySec * 1000 && game.foxes.some(f => f.cx === game.egg.cx && f.cz === game.egg.cz))
     return endGame({ type: 'fox' });
-  const online = [...players.values()].filter(p => p.connected);
   if (!online.length) { // alle har koblet fra: ikke la runden gå i det uendelige
     if (!game.emptySince) game.emptySince = now;
     else if (now - game.emptySince > CONFIG.emptyLobbyMs) {
@@ -358,7 +397,6 @@ function tick() {
       return toLobby();
     }
   } else game.emptySince = 0;
-  if (online.length && online.every(p => p.out)) return endGame({ type: 'allOut' });
 
   io.emit('state', {
     players: online.map(publicPlayer),
@@ -385,7 +423,7 @@ io.on('connection', socket => {
     let p = players.get(key);
     if (!p) {
       p = { key, pid: crypto.randomBytes(4).toString('hex'), name, color: nextColor(),
-        x: 0, z: 0, a: 0, lives: CONFIG.lives, out: false, spawnId: 0, invulnUntil: 0, lastPosT: 0,
+        x: 0, z: 0, a: 0, spawnId: 0, invulnUntil: 0, lastPosT: 0, score: 0, visited: new Set(),
         opened: new Set(), solved: 0, task: null, cooldownUntil: 0 };
       players.set(key, p);
       if (game.grid) { resetPlayer(p); if (game.phase === 'playing') addEvent(`${name} ble med`); }
@@ -401,7 +439,7 @@ io.on('connection', socket => {
   });
 
   socket.on('pos', d => {
-    if (!me || game.phase !== 'playing' || me.out || !d || d.s !== me.spawnId) return;
+    if (!me || game.phase !== 'playing' || !d || d.s !== me.spawnId || me.caughtBy) return; // fanget: står stille
     const x = +d.x, z = +d.z, a = +d.a;
     if (![x, z, a].every(Number.isFinite) || isWallAt(x, z)) return;
     const now = Date.now();
@@ -412,37 +450,50 @@ io.on('connection', socket => {
       if (closedDoorAt(me, me.x + (x - me.x) * t / dist, me.z + (z - me.z) * t / dist)) return;
     if (closedDoorAt(me, x, z)) return;
     me.x = x; me.z = z; me.a = a; me.lastPosT = now;
+    const cell = Math.floor(x) + ',' + Math.floor(z);
+    if (!me.visited.has(cell)) { me.visited.add(cell); me.score += CONFIG.pointsPerStep; }
   });
 
   // Spilleren står ved en lukket dør og ber om en oppgave
   socket.on('door', id => {
     const door = Number.isInteger(id) && game.doors[id];
-    if (!me || game.phase !== 'playing' || me.out || !door || me.opened.has(id)) return;
+    if (!me || game.phase !== 'playing' || !door || me.opened.has(id) || me.caughtBy) return;
     if (Math.hypot(me.x - door.x - 0.5, me.z - door.z - 0.5) > CONFIG.doorReach) return;
     if (Date.now() < me.cooldownUntil) return;
     // Samme oppgave igjen hvis den ikke er besvart, så man ikke kan bytte til en lettere
     if (!me.task || me.task.door !== id || me.task.answer === undefined)
-      me.task = { door: id, ...nextTask(me) };
-    const { answer, ...t } = me.task;
-    socket.emit('task', t);
+      me.task = { kind: 'door', door: id, ...nextTask(me) };
+    sendTask(me);
   });
 
   socket.on('answer', i => {
     const t = me && me.task;
     if (!t || t.answer === undefined || game.phase !== 'playing') return;
-    if (i === t.answer) {
-      me.task = null;
-      me.opened.add(t.door); me.solved++;
-      socket.emit('answerResult', { ok: true, correct: t.answer, door: t.door });
-      addEvent(`🚪 ${me.name} åpnet en dør`);
+    const p = me;
+    if (i === t.answer && t.kind === 'fox') {
+      releasePlayer(p, Date.now()); p.score += CONFIG.foxTaskPoints;
+      socket.emit('answerResult', { ok: true, kind: 'fox', correct: t.answer, points: CONFIG.foxTaskPoints });
+      addEvent(`🏃 ${p.name} svarte riktig og slapp fri fra reven`);
+    } else if (i === t.answer) {
+      p.task = null;
+      p.opened.add(t.door); p.solved++; p.score += CONFIG.pointsPerTask;
+      socket.emit('answerResult', { ok: true, kind: 'door', correct: t.answer, door: t.door, points: CONFIG.pointsPerTask });
+      addEvent(`🚪 ${p.name} åpnet en dør`);
     } else {
-      me.task = { door: t.door }; // fortsatt trygg mens man venter på neste oppgave
-      me.cooldownUntil = Date.now() + CONFIG.wrongWaitMs;
-      socket.emit('answerResult', { ok: false, correct: t.answer, door: t.door, wait: CONFIG.wrongWaitMs });
+      p.task = { kind: t.kind, door: t.door }; // fortsatt trygg (og fanget) mens man venter på neste oppgave
+      if (t.kind === 'fox') { // reven gir et nytt spørsmål selv etter ventetiden
+        setTimeout(() => {
+          if (p.caughtBy && p.task && p.task.answer === undefined && game.phase === 'playing') {
+            p.task = { kind: 'fox', ...nextTask(p) };
+            sendTask(p);
+          }
+        }, CONFIG.wrongWaitMs);
+      } else p.cooldownUntil = Date.now() + CONFIG.wrongWaitMs;
+      socket.emit('answerResult', { ok: false, kind: t.kind, correct: t.answer, door: t.door, wait: CONFIG.wrongWaitMs });
     }
   });
 
-  socket.on('cancelTask', () => { if (me) me.task = null; });
+  socket.on('cancelTask', () => { if (me && !me.caughtBy) me.task = null; }); // man kan ikke gå fra reven
 
   socket.on('settings', (s = {}) => {
     if (!isHost() || game.phase === 'playing') return;
@@ -474,6 +525,7 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     if (!me || me.socketId !== socket.id) return;
     me.connected = false;
+    if (me.caughtBy) releasePlayer(me, Date.now()); // ellers står reven fast
     if (game.phase === 'lobby') players.delete(me.key);
     broadcastLobby();
   });

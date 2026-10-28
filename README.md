@@ -2,6 +2,8 @@
 
 Flerspiller 3D-labyrint i nettleseren. Storskjermen viser QR-kode og kart, deltakerne spiller på mobilen.
 
+Spillveiledning for lærere og foreldre: `/veiledning` (lenke i lobbyen).
+
 ## Kjør lokalt
     npm install
     npm start
@@ -21,9 +23,10 @@ Vil du hindre at andre styrer spillet: sett miljøvariabelen `HOST_KEY` (Render 
 og åpne storskjermen med `https://…onrender.com/?key=<nøkkelen>`. Uten `HOST_KEY` er storskjermen åpen.
 
 ## Justering
-Øverst i `server.js` (CONFIG): antall liv, revens fart og syn, om reven kan vinne,
-hvor lenge før reven begynner å lete etter egget, om man sendes til start når man blir tatt,
-hvor mange dører det er, ventetid etter feil svar og om man er trygg mens man løser en oppgave.
+Øverst i `server.js` (CONFIG): poeng for steg, oppgaver, revespørsmål og egget,
+revens fart og syn, om reven kan vinne og hvor lenge før den leter etter egget,
+hvor mange dører det er på veien til egget (`pathDoors`) og i sidegangene, ventetid etter feil svar
+og om man er trygg mens man løser en oppgave.
 Oppgavene lages i `tasks.js` (ordbank, rim og oppgavetyper per trinn).
 
 ## Egne oppgaver

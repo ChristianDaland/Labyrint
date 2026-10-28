@@ -44,7 +44,10 @@
   #hud { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between;
     align-items: center; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top));
     pointer-events: none; text-shadow: 0 1px 3px #000; }
-  #hearts { font-size: 22px; letter-spacing: 2px; }
+  #score { font: 400 24px 'Lilita One', sans-serif; color: var(--gold); background: rgba(0,0,0,.35); padding: 4px 12px;
+    border-radius: 99px; transition: transform .15s; }
+  #score.bump { transform: scale(1.25); }
+  #score.lost { color: #ff7a5c; }
   #mapBtn { pointer-events: auto; font: 800 16px 'Nunito', sans-serif; color: var(--cream); background: rgba(0,0,0,.45);
     border: 2px solid rgba(243,234,210,.35); border-radius: 99px; padding: 8px 14px; min-height: 44px; touch-action: manipulation; }
   #mapBtn[aria-pressed="true"] { background: var(--gold); color: #3b2805; border-color: var(--gold); text-shadow: none; }
@@ -77,6 +80,12 @@
     padding: 24px; z-index: 5; }
   #overlay h2 { font-size: 34px; color: var(--gold); line-height: 1.1; }
   #ovIcon { font-size: 64px; margin-bottom: 10px; }
+  #ovScores { list-style: none; padding: 0; margin: 18px 0 4px; display: grid; gap: 6px; text-align: left; }
+  #ovScores li { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.06); padding: 8px 12px;
+    border-radius: 12px; font-weight: 800; }
+  #ovScores li.mine { outline: 2px solid var(--gold); }
+  #ovScores .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #ovScores b { color: var(--gold); }
 
   /* Oppgave ved døra */
   #task { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; padding: 20px;
@@ -97,6 +106,21 @@
   #tFeedback { min-height: 34px; margin-top: 16px; font-size: 22px; font-weight: 800; }
   #tClose { margin-top: 10px; background: none; border: 0; color: var(--muted); font: 800 16px 'Nunito', sans-serif;
     text-decoration: underline; padding: 10px; }
+  #tHead { margin: 0 auto 14px; padding: 8px 16px; border-radius: 99px; width: fit-content; max-width: 100%;
+    font-weight: 800; font-size: 17px; background: rgba(192,138,74,.25); color: #e8c79a; }
+  #tHead small { display: block; font-size: 15px; font-weight: 700; opacity: .85; }
+
+  /* Revespørsmål: glødende oransje/rødt, så det ikke kan forveksles med en dør */
+  #task.fox { background: radial-gradient(circle at 50% 30%, rgba(170,62,18,.97), rgba(52,12,6,.98) 70%); }
+  #task.fox #tHead { background: #ff8a3d; color: #3a1404; font-size: 22px; border-radius: 18px; padding: 10px 18px;
+    box-shadow: 0 0 30px rgba(255,138,61,.6); animation: foxPulse 1.2s ease-in-out infinite; }
+  #task.fox #tSpeak { background: #7a2a10; box-shadow: 0 4px 0 #3a1004; }
+  #task.fox #tOpts button { background: #ffd2a8; color: #3a1404; box-shadow: 0 6px 0 #c06a2c; }
+  #task.fox #tOpts button.right { background: #4cc46a; color: #fff; box-shadow: 0 6px 0 #2d7f42; }
+  #task.fox #tOpts button.wrong { background: #7a1a10; color: #fff; box-shadow: 0 6px 0 #3a0804; }
+  #task.fox #tClose { display: none; }
+  @keyframes foxPulse { 50% { transform: scale(1.04); } }
+  @media (prefers-reduced-motion: reduce) { #task.fox #tHead { animation: none; } }
 </style>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 </head>
@@ -125,7 +149,7 @@
     <canvas id="map2d" class="hidden"></canvas>
     <div id="danger"></div>
     <div id="flash"></div>
-    <div id="hud"><div id="hearts"></div><button id="mapBtn" aria-pressed="false">🗺️ Kart</button><div id="tag"><span class="dot"></span><span class="meName"></span></div></div>
+    <div id="hud"><div id="score">⭐ 0</div><button id="mapBtn" aria-pressed="false">🗺️ Kart</button><div id="tag"><span class="dot"></span><span class="meName"></span></div></div>
     <div id="msg"></div>
   </div>
   <div id="pad">
@@ -147,6 +171,7 @@
 
 <div id="task" class="hidden">
   <div class="card">
+    <div id="tHead"></div>
     <div id="tPic"></div>
     <div id="tQ"></div>
     <button id="tSpeak" aria-label="Les opp oppgaven">🔊</button>
@@ -157,7 +182,7 @@
 </div>
 
 <div id="overlay" class="hidden">
-  <div class="card"><div id="ovIcon"></div><h2 id="ovTitle"></h2><p id="ovText"></p></div>
+  <div class="card"><div id="ovIcon"></div><h2 id="ovTitle"></h2><ol id="ovScores"></ol><p id="ovText"></p></div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -175,7 +200,7 @@ const store = {
 };
 
 let me = null, key = store.get('gullegg-key'), joinedName = null;
-let phase = 'lobby', grid = null, out = false, lives = 3, maxLives = 3, spawnId = 0;
+let phase = 'lobby', grid = null, score = 0, spawnId = 0;
 const pos = { x: 1.5, z: 1.5, a: 0 };
 const input = { up: false, down: false, left: false, right: false };
 
@@ -212,46 +237,50 @@ socket.on('lobby', d => {
   if (d.phase === 'lobby' && me) show('wait');
 });
 socket.on('game', d => {
-  phase = d.phase; maxLives = d.lives;
+  phase = d.phase;
   if (JSON.stringify(d.grid) !== JSON.stringify(grid)) { buildLevel(d.grid, d.doors); setMap(false); }
   for (const id of d.you.opened) openDoor(id, true);
   closeTask(); // ved gjenoppkobling sender serveren samme oppgave igjen når man står ved døra
   placeEgg(d.egg);
   pos.x = d.you.x; pos.z = d.you.z; pos.a = d.you.a;
-  spawnId = d.you.s; lives = d.you.lives; out = d.you.out;
-  renderHearts();
+  spawnId = d.you.s; setScore(d.you.score);
   show('game');
   if (d.phase === 'ended' && d.result) showEnd(d.result);
-  else { $('#overlay').classList.add('hidden'); message(out ? 'Du er ute – se på resten av runden' : 'Finn gull-egget!', 2500); }
+  else { $('#overlay').classList.add('hidden'); message('Finn gull-egget! Trykk Kart for å se hvor det er.', 3000); }
 });
 socket.on('state', applyState);
-socket.on('egg', placeEgg);
-socket.on('hit', d => {
-  lives = d.lives; renderHearts(); closeTask();
-  $('#flash').style.transition = 'none'; $('#flash').style.opacity = 1;
-  requestAnimationFrame(() => { $('#flash').style.transition = 'opacity .8s'; $('#flash').style.opacity = 0; });
-  if (navigator.vibrate) navigator.vibrate(300);
-  if (d.out) { out = true; message('Reven tok deg – du er ute! 🦊', 0); return; }
-  if (d.respawn) { pos.x = d.respawn.x; pos.z = d.respawn.z; pos.a = d.respawn.a; spawnId = d.respawn.s; }
-  message(`Au! Reven tok deg. ${lives} liv igjen${d.respawn ? ', tilbake til start' : ''}`, 2600);
-});
 socket.on('end', showEnd);
 
 function showEnd(r) {
   phase = 'ended';
   closeTask();
-  let icon = '🦊', title = 'Revene vant!', text = 'Vent på neste runde.';
-  if (r.type === 'player') {
-    icon = '🥚';
-    title = me && r.id === me.id ? 'Du fant gull-egget!' : `${r.name} fant gull-egget!`;
-  } else if (r.type === 'fox') title = 'En rev tok gull-egget!';
-  else title = 'Revene tok alle!';
-  $('#ovIcon').textContent = icon; $('#ovTitle').textContent = title; $('#ovText').textContent = text;
+  const win = r.type === 'player';
+  $('#ovIcon').textContent = win ? '🥚' : '🦊';
+  $('#ovTitle').textContent = !win ? 'Reven tok gull-egget!' : me && r.id === me.id ? 'Du fant gull-egget!' : `${r.name} fant gull-egget!`;
+  $('#ovText').textContent = 'Vent på neste runde.';
+  $('#msg').classList.remove('show'); clearTimeout(msgTimer);
+  const mine = me && (r.scores || []).find(p => p.id === me.id);
+  if (mine) setScore(mine.score); // med eggbonusen
+  const ol = $('#ovScores'); ol.innerHTML = '';
+  for (const p of (r.scores || []).slice(0, 8)) {
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="dot"></span><span class="n"></span><b></b>';
+    li.querySelector('.dot').style.background = p.color;
+    li.querySelector('.n').textContent = p.name + (me && p.id === me.id ? ' (deg)' : '');
+    li.querySelector('b').textContent = `⭐ ${p.score}`;
+    if (me && p.id === me.id) li.className = 'mine';
+    ol.append(li);
+  }
   $('#overlay').classList.remove('hidden');
 }
 
-function renderHearts() {
-  $('#hearts').textContent = '❤️'.repeat(Math.max(lives, 0)) + '🖤'.repeat(Math.max(maxLives - lives, 0));
+// Poeng i statuslinja, med en liten sprett når de endres
+function setScore(v) {
+  if (v === score) { $('#score').textContent = `⭐ ${v}`; return; }
+  const el = $('#score');
+  el.classList.toggle('lost', v < score);
+  score = v; el.textContent = `⭐ ${v}`;
+  el.classList.add('bump'); setTimeout(() => el.classList.remove('bump', 'lost'), 400);
 }
 let msgTimer = null;
 function message(text, ms) {
@@ -262,8 +291,9 @@ function message(text, ms) {
 async function keepAwake() { try { await navigator.wakeLock?.request('screen'); } catch {} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && joinedName) keepAwake(); });
 
-// ─── Oppgaver ved dørene ────────────────────────────────────────────────
-let taskDoor = null, dismissed = null, lastAsk = 0, speakText = '';
+// ─── Oppgaver: ved dørene og når reven har fanget deg ──────────────────
+// taskKind: null (ingen oppgave), 'door' eller 'fox'
+let taskKind = null, taskDoor = null, dismissed = null, lastAsk = 0, speakText = '';
 const canSpeak = 'speechSynthesis' in window;
 if (!canSpeak) $('#tSpeak').classList.add('hidden');
 
@@ -280,14 +310,30 @@ function speak(text) {
 $('#tSpeak').onclick = () => speak(speakText);
 
 function closeTask() {
-  taskDoor = null;
+  taskKind = null; taskDoor = null;
   $('#task').classList.add('hidden');
   if (canSpeak) speechSynthesis.cancel();
 }
-$('#tClose').onclick = () => { socket.emit('cancelTask'); dismissed = doors[taskDoor]; closeTask(); };
+$('#tClose').onclick = () => {
+  if (taskKind !== 'door') return; // man kan ikke gå fra reven
+  socket.emit('cancelTask'); dismissed = doors[taskDoor]; closeTask();
+};
+
+function flashHit() {
+  $('#flash').style.transition = 'none'; $('#flash').style.opacity = 1;
+  requestAnimationFrame(() => { $('#flash').style.transition = 'opacity .8s'; $('#flash').style.opacity = 0; });
+  if (navigator.vibrate) navigator.vibrate(300);
+}
 
 socket.on('task', t => {
-  taskDoor = t.door; speakText = t.speak;
+  const fox = t.kind === 'fox', justCaught = fox && taskKind !== 'fox';
+  if (justCaught) flashHit();
+  taskKind = fox ? 'fox' : 'door'; taskDoor = fox ? null : t.door;
+  speakText = (justCaught ? 'Reven har fanget deg! Svar riktig for å komme fri. ' : '') + t.speak;
+  $('#task').classList.toggle('fox', fox);
+  const head = $('#tHead');
+  head.textContent = fox ? '🦊 Reven har fanget deg!' : '🚪 Løs oppgaven for å åpne døra';
+  if (fox) { const sm = document.createElement('small'); sm.textContent = 'Svar riktig for å komme fri'; head.append(sm); }
   $('#tPic').textContent = t.pic || '';
   $('#tPic').classList.toggle('letter', /^[A-ZÆØÅ]$/.test(t.pic || ''));
   $('#tQ').textContent = t.q;
@@ -302,22 +348,26 @@ socket.on('task', t => {
   for (const k in input) input[k] = false; // slipp pilene mens oppgaven er oppe
   document.querySelectorAll('.btn.on').forEach(b => b.classList.remove('on'));
   $('#task').classList.remove('hidden');
-  speak(t.speak);
+  speak(speakText);
 });
 
 socket.on('answerResult', r => {
   const btns = [...$('#tOpts').children], right = btns[r.correct];
   right?.classList.add('right');
+  const fox = r.kind === 'fox';
+  const still = () => fox ? taskKind === 'fox' : taskKind === 'door' && taskDoor === r.door;
   if (r.ok) {
-    $('#tFeedback').textContent = 'Riktig! Døra åpnes 🎉';
-    speak('Riktig!');
-    openDoor(r.door);
-    setTimeout(() => { if (taskDoor === r.door) closeTask(); }, 1100);
+    $('#tFeedback').textContent = fox ? `Riktig! Du er fri. Løp! +${r.points} poeng 🏃` : `Riktig! +${r.points} poeng 🎉`;
+    speak(fox ? 'Riktig! Du er fri. Løp!' : 'Riktig!');
+    if (!fox) openDoor(r.door);
+    setTimeout(() => { if (still()) closeTask(); }, 1100);
   } else {
     btns.find(b => b.classList.contains('picked'))?.classList.add('wrong');
-    $('#tFeedback').textContent = `Ikke helt. Riktig svar er ${right?.textContent}. Du får en ny oppgave …`;
+    $('#tFeedback').textContent = `Ikke helt. Riktig svar er ${right?.textContent}. ` +
+      (fox ? 'Reven gir deg et nytt spørsmål …' : 'Du får en ny oppgave …');
     speak(`Ikke helt. Riktig svar er ${right?.textContent}.`);
-    setTimeout(() => { if (taskDoor === r.door) socket.emit('door', r.door); }, r.wait);
+    // Ved døra ber vi om ny oppgave selv; reven sender et nytt spørsmål av seg selv
+    if (!fox) setTimeout(() => { if (still()) socket.emit('door', r.door); }, r.wait);
   }
 });
 
@@ -402,7 +452,7 @@ function drawMap(t) {
     const [x, z] = P(d.x, d.z);
     if (d.x % 2 === 0) mctx.fillRect(x + (cell - th) / 2, z, th, cell); else mctx.fillRect(x, z + (cell - th) / 2, cell, th);
   }
-  // Egget, bare hvis du har sett det
+  // Egget
   if (eggGroup) {
     const [x, z] = P(eggGroup.position.x, eggGroup.position.z), r = cell * (1.2 + Math.sin(t / 300) * 0.15);
     const g = mctx.createRadialGradient(x, z, 0, x, z, r);
@@ -412,9 +462,19 @@ function drawMap(t) {
   }
   // Andre spillere
   for (const o of others.values()) {
-    if (o.out) continue;
     const [x, z] = P(o.x, o.z);
     mctx.fillStyle = o.color; mctx.beginPath(); mctx.arc(x, z, cell * .22, 0, 7); mctx.fill();
+  }
+  // Reven, med rød ring når den jager noen
+  mctx.textAlign = 'center'; mctx.textBaseline = 'middle'; mctx.font = `${cell * 0.95}px sans-serif`;
+  for (const f of foxes) {
+    if (f.tx === undefined) continue;
+    const [x, z] = P(f.x, f.z);
+    if (f.c) {
+      mctx.strokeStyle = 'rgba(255,70,40,.9)'; mctx.lineWidth = Math.max(2, cell * .1);
+      mctx.beginPath(); mctx.arc(x, z, cell * (.6 + Math.sin(t / 120) * .08), 0, 7); mctx.stroke();
+    }
+    mctx.fillText('🦊', x, z);
   }
   // Deg selv: prikk med pil i synsretningen
   const [x, z] = P(pos.x, pos.z);
@@ -607,11 +667,11 @@ function applyState(d) {
   if (!grid) return;
   const seen = new Set();
   for (const p of d.players) {
-    if (me && p.id === me.id) { if (p.lives !== lives) { lives = p.lives; renderHearts(); } continue; }
+    if (me && p.id === me.id) { setScore(p.score); continue; }
     seen.add(p.id);
     let o = others.get(p.id);
     if (!o) { o = makeAvatar(p); others.set(p.id, o); }
-    o.tx = p.x; o.tz = p.z; o.ta = p.a; o.inv = p.inv; o.out = p.out;
+    o.tx = p.x; o.tz = p.z; o.ta = p.a; o.inv = p.inv;
   }
   for (const [id, o] of others) if (!seen.has(id)) { dispose(o.group); others.delete(id); }
   while (foxes.length < d.foxes.length) { const g = makeFox(); scene.add(g); foxes.push({ group: g, x: d.foxes[foxes.length].x, z: d.foxes[foxes.length].z, a: 0 }); }
@@ -640,7 +700,7 @@ function moveSelf(dt) {
 }
 
 setInterval(() => {
-  if (phase === 'playing' && !out && grid) socket.emit('pos', { x: pos.x, z: pos.z, a: pos.a, s: spawnId });
+  if (phase === 'playing' && grid) socket.emit('pos', { x: pos.x, z: pos.z, a: pos.a, s: spawnId });
 }, 66);
 
 const lerpAngle = (a, b, t) => a + (Math.atan2(Math.sin(b - a), Math.cos(b - a))) * t;
@@ -650,7 +710,7 @@ function loop(t) {
   requestAnimationFrame(loop);
   const dt = Math.min((t - last) / 1000, 0.1); last = t;
   if (!grid) return;
-  if (phase === 'playing' && !out && taskDoor === null) {
+  if (phase === 'playing' && taskKind === null) {
     moveSelf(dt);
     if (dismissed && Math.hypot(dismissed.x + 0.5 - pos.x, dismissed.z + 0.5 - pos.z) > 1.3) dismissed = null;
     const d = facingDoor();
@@ -665,7 +725,7 @@ function loop(t) {
   for (const o of others.values()) {
     o.x += (o.tx - o.x) * k; o.z += (o.tz - o.z) * k; o.a = lerpAngle(o.a, o.ta, k);
     o.group.position.set(o.x, 0, o.z); o.group.rotation.y = -o.a;
-    o.group.visible = !o.out && (!o.inv || Math.floor(t / 120) % 2 === 0);
+    o.group.visible = !o.inv || Math.floor(t / 120) % 2 === 0;
   }
   let danger = 0;
   for (const f of foxes) {
@@ -678,7 +738,7 @@ function loop(t) {
     const d = Math.hypot(f.x - pos.x, f.z - pos.z);
     if (f.c && d < 5) danger = Math.max(danger, 1 - d / 5);
   }
-  $('#danger').style.opacity = out ? 0 : danger.toFixed(2);
+  $('#danger').style.opacity = danger.toFixed(2);
 
   if (eggGroup) {
     const egg = eggGroup.getObjectByName('egg');
@@ -686,7 +746,7 @@ function loop(t) {
   }
 
   const moving = input.up || input.down;
-  camera.position.set(pos.x, EYE + (moving && !out ? Math.sin(walkPhase) * 0.025 : 0), pos.z);
+  camera.position.set(pos.x, EYE + (moving ? Math.sin(walkPhase) * 0.025 : 0), pos.z);
   camera.rotation.y = -pos.a - Math.PI / 2;
   torch.position.copy(camera.position);
   if (showMap) drawMap(t); else renderer.render(scene, camera);
