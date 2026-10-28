@@ -117,7 +117,7 @@ export function allPhrases(samples) {
   for (let n = 0; n <= MAX_NUMBER; n++) { add(T.starsHave(n)); add(T.newEggs(Array(n).fill({ stars: 3 }))); add(T.roundDone(n)); }
   for (const m of MILESTONES) add(T.newDiploma(m.text));
   for (const s of [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS]) add(T.newDiploma(s.diploma));
-  for (const s of ALL_SENTENCES) { out.add(`Lag setningen: ${s}`); add(T.sentence(s)); for (const w of sentenceWords(s)) add(T.word(w.replace('.', ''))); }
+  for (const s of ALL_SENTENCES) { out.add(`Lag setningen: ${s}`); add(T.sentence(s)); for (const w of sentenceWords(s)) add(T.word(w)); }
   for (const w of EXTRA_WORDS) add(T.word(w));
   add(T.sentenceStart());
   for (const w of ALL_SPELL_WORDS) { out.add(`Stav ordet ${w}.`); add(T.word(w)); }

@@ -276,17 +276,18 @@ const SENTENCES = {
 };
 export const ALL_SENTENCES = Object.values(SENTENCES).flat().map(([s]) => s);
 export const EXTRA_WORDS = ['hopper', 'blå', 'stor', 'katt', 'løper', 'under', 'glad', 'fisk', 'synger', 'liten'];
-export const sentenceWords = s => s.split(' ');
+// Ordbrikkene: bare store bokstaver og uten punktum, så stor forbokstav og punktum ikke avslører rekkefølgen
+export const sentenceWords = s => s.replace('.', '').toUpperCase().split(' ');
 
-// Setningsoppgave: { skill, kind: 'setning', sentence, words, pic, tiles, ghost, speak }
-function sentence(skill, list, { ghost = false, extra = 0 } = {}) {
+// Setningsoppgave: { skill, kind: 'setning', sentence, words, pic, tiles, speak }. Rutene er alltid tomme:
+// barnet må lytte til setningen og lese ordene (ingen hjelpetekst å matche mot).
+function sentence(skill, list, { extra = 0 } = {}) {
   const [s, pic] = pick(SENTENCES[list]), words = sentenceWords(s);
-  const extras = shuffle(EXTRA_WORDS.filter(w => !words.some(x => x.toLowerCase().replace('.', '') === w))).slice(0, extra);
-  return { skill, kind: 'setning', sentence: s, words, pic, tiles: shuffle([...words, ...extras]), ghost, speak: `Lag setningen: ${s}` };
+  const extras = shuffle(EXTRA_WORDS.map(up).filter(w => !words.includes(w))).slice(0, extra);
+  return { skill, kind: 'setning', sentence: s, words, pic, tiles: shuffle([...words, ...extras]), speak: `Lag setningen: ${s}` };
 }
 
 export const SENTENCE_SKILLS = [
-  { id: 'setnkopi', subject: 'setning', diploma: 'Du kan bygge setninger!', make: s => sentence(s, 'tre', { ghost: true }) },
   { id: 'setntre', subject: 'setning', diploma: 'Du kan lage setninger med tre ord!', make: s => sentence(s, 'tre') },
   { id: 'setnfire', subject: 'setning', diploma: 'Du kan lage setninger med fire ord!', make: s => sentence(s, 'fire') },
   { id: 'setnvelg', subject: 'setning', diploma: 'Du finner de riktige ordene!', make: s => sentence(s, 'fire', { extra: 1 }) },

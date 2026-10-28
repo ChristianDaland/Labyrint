@@ -78,15 +78,14 @@ test('Ordtoget: setningene, ordbrikkene og ekstra ord', () => {
   for (const s of SENTENCE_SKILLS) for (let i = 0; i < 300; i++) {
     const t = makeTask(s.id);
     assert.equal(t.kind, 'setning');
-    assert.equal(t.words.join(' '), t.sentence);
-    assert.match(t.words[0], /^[A-ZÆØÅ]/, `${s.id}: stor forbokstav`);
-    assert.ok(t.sentence.endsWith('.'));
+    assert.equal(t.words.join(' '), t.sentence.replace('.', '').toUpperCase());
+    assert.ok(t.tiles.every(w => /^[A-ZÆØÅ]+$/.test(w)), `${s.id}: bare store bokstaver, uten punktum: ${t.tiles}`);
     const rest = [...t.tiles];
     for (const w of t.words) rest.splice(rest.indexOf(w), 1);
     assert.equal(rest.length, ['setnvelg', 'setnlang'].includes(s.id) ? 1 : 0, s.id);
     assert.ok(rest.every(w => !t.words.includes(w)));
-    assert.equal(t.ghost, s.id === 'setnkopi');
-    const n = { setnkopi: 3, setntre: 3, setnfire: 4, setnvelg: 4, setnlang: 5 }[s.id];
+    assert.ok(!t.ghost, `${s.id}: rutene skal være tomme`);
+    const n = { setntre: 3, setnfire: 4, setnvelg: 4, setnlang: 5 }[s.id];
     assert.ok(t.words.length >= n && t.words.length <= n + 1, `${s.id}: ${t.sentence}`);
   }
   assert.equal(diplomaGroup({ id: 'kan-setnfire' }), 'norsk');
