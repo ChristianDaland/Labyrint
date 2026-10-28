@@ -3,7 +3,8 @@
 
 import { SKILL_BY_ID } from './oppgaver.js';
 
-export const newRewards = () => ({ eggs: [], stars: 0, diplomas: [], foxEscapes: 0 });
+// seenEggs/seenDiplomas: hvor mange rommet allerede har vist, så nye kan feires når man kommer tilbake
+export const newRewards = () => ({ eggs: [], stars: 0, diplomas: [], foxEscapes: 0, seenEggs: 0, seenDiplomas: 0 });
 
 // 1–3 stjerner etter andelen riktige (av 10: 0–5 → 1, 6–8 → 2, 9–10 → 3)
 export function starsFor(right, total) {

@@ -16,6 +16,15 @@ Ny kjerne i `public/kjerne/` (ES-moduler uten byggesteg, felles for alle spillen
 - `lagring.js` – profiler (dyr + farge, aldri navn), alt i `localStorage` under nøkkelen `gullegget` med versjonsnummer; tåler ødelagte data, sikkerhetskopi (eksport/import), `requestPersist()`.
 - `lyd.js` – Web Audio-effekter (pling, oops, fanfare, flap, bump, creak, bark, growl) som også kan tas opp offline, opplesning (nb-NO) og plass til innspilte bokstavlyder (`LETTER_FILES`).
 - Alle stier er relative (siden ligger under `/Labyrint/` på GitHub Pages).
+
+Rommet `public/rom.html` (startskjerm; blir `index.html` i steg 4):
+- **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
+- **Rommet:** figur, ⭐ stjerner, gullegg-teller, diplomer på klossvegg (tomme «?»-rammer viser at det finnes flere), gullegg på hyller (antall per hylle etter skjermbredde), krukker for matte/norsk (fremgang i ferdighetene) og spillkort.
+- **Opplesning:** alt leses opp ved trykk.
+- **Spillkort:** ett trykk sier navnet, to trykk starter.
+- **Feiring:** nye egg og diplomer siden sist feires (fanfare, diplom vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
+- **Voksenmeny:** ⚙️, holdes inne i 3 s. Inneholder bytt/ny/slett figur, fag (begge/matte/norsk), lyd av/på, sikkerhetskopi lagre/hent, og hint om Hjem-skjerm.
+- **Spillene lastes inn som moduler** (`spill/*.js`) i samme side, ikke egne sider, så lyden forblir låst opp. `GAMES` i rom.html; `ready: false` til spillet finnes.
 - Tester: `npm test` (Node, `test/kjerne.test.mjs`).
 
 ## Spillveiledning – hold den oppdatert

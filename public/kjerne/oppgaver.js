@@ -174,3 +174,6 @@ export const SKILL_BY_ID = Object.fromEntries(SKILLS.map(s => [s.id, s]));
 export const skillsOf = subject => SKILLS.filter(s => s.subject === subject);
 
 export const makeTask = skillId => SKILL_BY_ID[skillId].make(skillId);
+
+// Kort betegnelse til opplesning: «Du kan pluss opp til 10!» → «pluss opp til 10»
+export const skillLabel = skillId => SKILL_BY_ID[skillId].diploma.replace(/^Du \S+ /, '').replace(/!$/, '');

@@ -1,6 +1,9 @@
 # Plan: Gull-egget som læringsspill – versjon 1
 
-Status (28.10.2026): planen er godkjent. **Steg 1 (grunnmur) er ferdig**: `public/kjerne/` med oppgaver, læringsmotor, belønninger, lagring og lyd, testet med `npm test` og i nettleser. Neste: steg 2 (rommet).
+Status (28.10.2026): planen er godkjent.
+- **Steg 1 (grunnmur) er ferdig:** `public/kjerne/` med oppgaver, læringsmotor, belønninger, lagring og lyd, testet med `npm test` og i nettleser.
+- **Steg 2 (rommet) er ferdig:** `public/rom.html`, testet i nettleser som iPhone (høykant) og iPad (liggende).
+- **Neste:** steg 3 (Flakse-fuglen).
 
 ## 1. Mål og rammer
 
@@ -145,11 +148,13 @@ Diplomene viser *hva han har lært*, for eksempel «Du kan pluss innenfor 10!»,
 - **Statisk nettside,** ren HTML og JavaScript uten byggesteg, som i dag. Three.js brukes bare i labyrinten.
 - **Foreslått struktur:**
 
+Endret i steg 2: spillene er **moduler som lastes inn i rommet**, ikke egne sider. På iPhone og iPad må lyd låses opp med et trykk etter hver sidelasting. Med egne sider ville feiringen være stum når han kommer tilbake til rommet. Nå er lyden låst opp hele tiden, og rommet deler ut belønningene på ett sted.
+
 ```
 public/
-  index.html          rommet + profilvalg
-  flakse.html         Flakse-fuglen
-  labyrint.html       labyrinten (enspiller)
+  rom.html            rommet + profilvalg + voksenmeny (blir index.html når det gamle spillet fjernes i steg 4)
+  spill/flakse.js     Flakse-fuglen (lastes inn i rommet)
+  spill/labyrint.js   labyrinten, enspiller (lastes inn i rommet)
   veiledning.html     skrives om for den nye løsningen
   manifest.json       hjem-skjerm-app (navn, ikon, fullskjerm)
   ikoner/             app-ikoner
