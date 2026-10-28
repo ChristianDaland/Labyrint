@@ -261,6 +261,38 @@ const MATH_PUZZLES = {
 };
 export const makeMathPuzzle = skillId => MATH_PUZZLES[skillId](skillId);
 
+// ─── Setninger (eget fag med eget spill, Ordtoget) ─────────────────────
+// [setning, bilde]. Setninger der rekkefølgen er tydelig (subjekt først), så bare én rekkefølge er naturlig.
+const SENTENCES = {
+  tre: [['Katten drikker melk.', '🐱🥛'], ['Hunden spiser pølse.', '🐶🌭'], ['Musa spiser ost.', '🐭🧀'], ['Apen spiser banan.', '🐒🍌'],
+    ['Kaninen spiser gulrot.', '🐰🥕'], ['Bjørnen liker honning.', '🐻🍯'], ['Gutten sparker ballen.', '👦⚽'], ['Jenta spiser is.', '👧🍦'],
+    ['Kua gir melk.', '🐮🥛'], ['Fuglen spiser mark.', '🐦🪱'], ['Frosken fanger fluer.', '🐸🪰'], ['Pappa baker brød.', '👨🍞']],
+  fire: [['Katten sover i sola.', '🐱☀️'], ['Apen klatrer i treet.', '🐒🌳'], ['Fisken bor i vannet.', '🐟💧'], ['Fuglen sitter på taket.', '🐦🏠'],
+    ['Jenta leser en bok.', '👧📖'], ['Hunden løper etter ballen.', '🐶⚽'], ['Bjørnen sover om vinteren.', '🐻❄️'],
+    ['Snømannen har en gulrot.', '⛄🥕'], ['Barna leker i snøen.', '🧒❄️'], ['Mamma kjører en bil.', '👩🚗']],
+  fem: [['Jeg har en rød ball.', '🔴⚽'], ['Gutten bygger et stort hus.', '👦🏠'], ['Jenta har en ny sykkel.', '👧🚲'],
+    ['Elefanten har en lang snabel.', '🐘'], ['Sjiraffen har en lang hals.', '🦒'], ['Katten liker å drikke melk.', '🐱🥛'],
+    ['Pingvinen bor der det er kaldt.', '🐧❄️'], ['Vi spiser kake på bursdagen.', '🎂']],
+};
+export const ALL_SENTENCES = Object.values(SENTENCES).flat().map(([s]) => s);
+export const EXTRA_WORDS = ['hopper', 'blå', 'stor', 'katt', 'løper', 'under', 'glad', 'fisk', 'synger', 'liten'];
+export const sentenceWords = s => s.split(' ');
+
+// Setningsoppgave: { skill, kind: 'setning', sentence, words, pic, tiles, ghost, speak }
+function sentence(skill, list, { ghost = false, extra = 0 } = {}) {
+  const [s, pic] = pick(SENTENCES[list]), words = sentenceWords(s);
+  const extras = shuffle(EXTRA_WORDS.filter(w => !words.some(x => x.toLowerCase().replace('.', '') === w))).slice(0, extra);
+  return { skill, kind: 'setning', sentence: s, words, pic, tiles: shuffle([...words, ...extras]), ghost, speak: `Lag setningen: ${s}` };
+}
+
+export const SENTENCE_SKILLS = [
+  { id: 'setnkopi', subject: 'setning', diploma: 'Du kan bygge setninger!', make: s => sentence(s, 'tre', { ghost: true }) },
+  { id: 'setntre', subject: 'setning', diploma: 'Du kan lage setninger med tre ord!', make: s => sentence(s, 'tre') },
+  { id: 'setnfire', subject: 'setning', diploma: 'Du kan lage setninger med fire ord!', make: s => sentence(s, 'fire') },
+  { id: 'setnvelg', subject: 'setning', diploma: 'Du finner de riktige ordene!', make: s => sentence(s, 'fire', { extra: 1 }) },
+  { id: 'setnlang', subject: 'setning', diploma: 'Du kan lage lange setninger!', make: s => sentence(s, 'fem', { extra: 1 }) },
+];
+
 // Staving: brukes bare i Ordbyggeren (oppgavene er ikke flervalg), så de står utenfor SKILLS
 export const SPELL_SKILLS = [
   { id: 'stavkopi', subject: 'stave', diploma: 'Du kan bygge ord!', make: s => spell(s, 'kort', { ghost: true }) },
@@ -270,8 +302,9 @@ export const SPELL_SKILLS = [
   { id: 'stavdobbel', subject: 'stave', diploma: 'Du kan stave ord med dobbel bokstav!', make: s => spell(s, 'dobbel', { extra: 2 }) },
   { id: 'stavlang', subject: 'stave', diploma: 'Du kan stave lange ord!', make: s => spell(s, 'lang', { extra: 2 }) },
 ];
-export const SKILL_BY_ID = Object.fromEntries([...SKILLS, ...SPELL_SKILLS].map(s => [s.id, s]));
-export const skillsOf = subject => [...SKILLS, ...SPELL_SKILLS].filter(s => s.subject === subject);
+const ALL_SKILLS = [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS];
+export const SKILL_BY_ID = Object.fromEntries(ALL_SKILLS.map(s => [s.id, s]));
+export const skillsOf = subject => ALL_SKILLS.filter(s => s.subject === subject);
 
 export const makeTask = skillId => SKILL_BY_ID[skillId].make(skillId);
 

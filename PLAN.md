@@ -9,6 +9,7 @@ Status (28.10.2026): planen er godkjent.
 - **Slangen er lagt til** som tredje spill: `public/spill/slange.js`. Spis skiltet med riktig svar; kan ikke krasje.
 - **Ordbyggeren er lagt til:** `public/spill/ordbygger.js`. Staving med bokstavbrikker, eget fag `stave` med seks nivåer.
 - **Tallbyggeren er lagt til:** `public/spill/tallbygger.js`. Regnestykker der tall dras på plass, med matte-nivået. Felles motor med Ordbyggeren i `brikker.js`.
+- **Ordtoget er lagt til:** `public/spill/ordtog.js`. Lag enkle setninger med ordbrikker, eget fag `setning` med fem nivåer.
 - **Neste:** test med barn, deretter steg 6 (innspilte bokstavlyder, som også gir lyd på brikkene i Ordbyggeren) og flere spill.
 
 ## 1. Mål og rammer
@@ -35,6 +36,7 @@ Bestemt så langt:
 | Slangen | |
 | Ordbyggeren (staving) | |
 | Tallbyggeren (regnestykker) | |
+| Ordtoget (setninger) | |
 | Felles læringsmotor som tilpasser seg | Redigering av egne oppgaver (finnes i dag, kommer tilbake senere) |
 | Profiler (velg figur) på samme enhet | Innspilte bokstavlyder (planlagt rett etter) |
 | Lagring på enheten, med sikkerhetskopi | Å forme bokstaver med fingeren |

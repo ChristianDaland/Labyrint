@@ -23,6 +23,11 @@ const CSS = `
     background: radial-gradient(circle at 50% 30%, #fff1d6, #f2d3a2 70%); color: #3b2414; font-family: 'Nunito', system-ui, sans-serif;
     display: flex; flex-direction: column; }
   .bk.matte { background: radial-gradient(circle at 50% 30%, #e6f4ff, #b9dcf5 70%); }
+  .bk.ord { background: radial-gradient(circle at 50% 30%, #eefbe6, #c6e8b4 70%); }
+  /* Ordbrikker: bredde etter ordet, mindre skrift */
+  .bk.ord .bk-tile { font-size: calc(var(--s) * .44); padding: 0 14px; }
+  .bk.ord .bk-slot { width: auto; min-width: calc(var(--s) * 1.5); padding: 0 6px; font-size: calc(var(--s) * .44); }
+  .bk.ord .bk-slot.full { padding: 0; }
   .bk-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
     padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
     padding-top: max(8px, env(safe-area-inset-top)); background: rgba(94,56,32,.92); color: #fff4dc; }
@@ -97,7 +102,8 @@ export function startBrikkespill({ root, profile, store, onExit, game, round, th
 
   // Brikkestørrelse: hele oppgaven (og brikkene) skal få plass i bredden
   function size() {
-    const n = Math.max(st.task.parts.length, Math.ceil(st.task.tiles.length / 2), 4), gap = 10;
+    const words = root.classList.contains('ord'); // ordbrikker er bredere
+    const n = words ? Math.max(4, st.task.parts.length * 1.7) : Math.max(st.task.parts.length, Math.ceil(st.task.tiles.length / 2), 4), gap = 10;
     const w = Math.min(root.clientWidth - 28, 760);
     const s = Math.floor(Math.max(44, Math.min(92, (w - gap * (n - 1)) / n, root.clientHeight * 0.1)));
     root.style.setProperty('--s', s + 'px'); root.style.setProperty('--gap', gap + 'px');

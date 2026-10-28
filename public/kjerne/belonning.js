@@ -29,7 +29,7 @@ export const treasure = n => ({ crowns: Math.floor(n / 100), diamonds: Math.floo
 // Diplomene henger i en ramme per gruppe på veggen
 export const DIPLOMA_GROUPS = ['matte', 'norsk', 'stave', 'ekstra'];
 export function diplomaGroup(d) {
-  if (d.id.startsWith('kan-')) return SKILL_BY_ID[d.id.slice(4)]?.subject || 'ekstra';
+  if (d.id.startsWith('kan-')) { const s = SKILL_BY_ID[d.id.slice(4)]?.subject; return s === 'setning' ? 'norsk' : s || 'ekstra'; }
   if (d.id.startsWith('matte')) return 'matte';
   if (d.id.startsWith('norsk')) return 'norsk';
   return 'ekstra';

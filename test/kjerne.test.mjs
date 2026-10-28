@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SKILLS, SPELL_SKILLS, SKILL_BY_ID, skillsOf, makeTask, makeMathPuzzle } from '../public/kjerne/oppgaver.js';
+import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, SKILL_BY_ID, skillsOf, makeTask, makeMathPuzzle } from '../public/kjerne/oppgaver.js';
 import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, today, WINDOW } from '../public/kjerne/laering.js';
 import { starsFor, finishRound, awardSkills, newRewards, eggKind, countEggs, treasure, diplomaGroup } from '../public/kjerne/belonning.js';
 import { createStore, newProfile, profileName, KEY, VERSION } from '../public/kjerne/lagring.js';
@@ -72,6 +72,24 @@ test('Tallbyggeren: regnestykkene stemmer, og svarene finnes blant brikkene', ()
       assert.ok(rest.every(v => !answers.includes(v)));
     }
   }
+});
+
+test('Ordtoget: setningene, ordbrikkene og ekstra ord', () => {
+  for (const s of SENTENCE_SKILLS) for (let i = 0; i < 300; i++) {
+    const t = makeTask(s.id);
+    assert.equal(t.kind, 'setning');
+    assert.equal(t.words.join(' '), t.sentence);
+    assert.match(t.words[0], /^[A-ZÆØÅ]/, `${s.id}: stor forbokstav`);
+    assert.ok(t.sentence.endsWith('.'));
+    const rest = [...t.tiles];
+    for (const w of t.words) rest.splice(rest.indexOf(w), 1);
+    assert.equal(rest.length, ['setnvelg', 'setnlang'].includes(s.id) ? 1 : 0, s.id);
+    assert.ok(rest.every(w => !t.words.includes(w)));
+    assert.equal(t.ghost, s.id === 'setnkopi');
+    const n = { setnkopi: 3, setntre: 3, setnfire: 4, setnvelg: 4, setnlang: 5 }[s.id];
+    assert.ok(t.words.length >= n && t.words.length <= n + 1, `${s.id}: ${t.sentence}`);
+  }
+  assert.equal(diplomaGroup({ id: 'kan-setnfire' }), 'norsk');
 });
 
 test('regnestykkene har riktig fasit og holder seg innenfor tallområdet', () => {
@@ -178,8 +196,8 @@ test('statistikk per fag og per dag', () => {
   const p = profile(), d = new Date(2026, 9, 28, 12);
   recordAnswer(p, 'pluss5', true, d); recordAnswer(p, 'rim', false, d); recordAnswer(p, 'rim', true, d);
   recordAnswer(p, 'stavkopi', true, d);
-  assert.deepEqual(p.stats.right, { matte: 1, norsk: 1, stave: 1 });
-  assert.deepEqual(p.stats.wrong, { matte: 0, norsk: 1, stave: 0 });
+  assert.deepEqual(p.stats.right, { matte: 1, norsk: 1, stave: 1, setning: 0 });
+  assert.deepEqual(p.stats.wrong, { matte: 0, norsk: 1, stave: 0, setning: 0 });
   assert.deepEqual(p.stats.days['2026-10-28'], { right: 3, wrong: 1 });
   assert.equal(today(d), '2026-10-28');
   assert.deepEqual(recordAnswer(p, 'finnes-ikke', true), []);
@@ -285,8 +303,8 @@ test('eldre lagring uten nye felt fylles ut', () => {
   const p = createStore(st).profiles()[0];
   assert.equal(p.rewards.eggs.length, 1);
   assert.deepEqual(p.rewards.diplomas, []);
-  assert.deepEqual(p.stats.right, { matte: 0, norsk: 0, stave: 0 });
-  assert.deepEqual(p.learning.level, { matte: 0, norsk: 0, stave: 0 });
+  assert.deepEqual(p.stats.right, { matte: 0, norsk: 0, stave: 0, setning: 0 });
+  assert.deepEqual(p.learning.level, { matte: 0, norsk: 0, stave: 0, setning: 0 });
   assert.equal(p.settings.subject, 'begge');
 });
 

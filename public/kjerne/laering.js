@@ -10,13 +10,14 @@ import { SKILL_BY_ID, skillsOf, makeTask } from './oppgaver.js';
 export const WINDOW = 10, UP = 8, DOWN = 5;
 export const SUBJECTS = ['matte', 'norsk'];
 
-// «stave» (staving) er et eget fag som bare Ordbyggeren bruker
-export const newLearning = () => ({ level: { matte: 0, norsk: 0, stave: 0 }, recent: {} });
-export const newStats = () => ({ days: {}, right: { matte: 0, norsk: 0, stave: 0 }, wrong: { matte: 0, norsk: 0, stave: 0 } });
+// «stave» (staving) og «setning» er egne fag som bare Ordbyggeren og Ordtoget bruker
+const zero = () => ({ matte: 0, norsk: 0, stave: 0, setning: 0 });
+export const newLearning = () => ({ level: zero(), recent: {} });
+export const newStats = () => ({ days: {}, right: zero(), wrong: zero() });
 
 const errorRate = arr => arr && arr.length ? 1 - arr.reduce((a, b) => a + b, 0) / arr.length : 0.5;
 
-// Ferdigheten neste oppgave skal øve på. `subject` er 'matte', 'norsk', 'stave' eller 'begge' (matte og norsk).
+// Ferdigheten neste oppgave skal øve på. `subject` er 'matte', 'norsk', 'stave', 'setning' eller 'begge' (matte og norsk).
 export function chooseSkill(learning, subject = 'begge', rnd = Math.random) {
   const s = skillsOf(subject).length ? subject : rnd() < 0.5 ? 'matte' : 'norsk';
   const list = skillsOf(s), cur = Math.min(learning.level[s], list.length - 1);

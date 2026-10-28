@@ -3,10 +3,10 @@
 // alle bitene som trengs. Nye setninger legges inn her, så de kommer med neste gang lydfilene lages.
 
 import { ANIMALS, COLORS, profileName } from './lagring.js';
-import { SKILLS, SPELL_SKILLS, ALL_SPELL_WORDS, ALPHABET, skillsOf, skillLabel, makeTask, makeMathPuzzle } from './oppgaver.js';
+import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, ALL_SPELL_WORDS, ALL_SENTENCES, EXTRA_WORDS, sentenceWords, ALPHABET, skillsOf, skillLabel, makeTask, makeMathPuzzle } from './oppgaver.js';
 import { MILESTONES, EGG_KINDS, EGG_NAMES, eggKind } from './belonning.js';
 
-export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen', ordbygger: 'Ordbyggeren', tallbygger: 'Tallbyggeren' };
+export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen', ordbygger: 'Ordbyggeren', tallbygger: 'Tallbyggeren', ordtog: 'Ordtoget' };
 const MAX_NUMBER = 300; // tall som finnes som lydfil (større tall leses av enhetens stemme)
 const stars = n => (n === 1 ? 'stjerne.' : 'stjerner.');
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -77,6 +77,10 @@ export const T = {
   // Tallbyggeren
   mathStart: () => ['Dra tallene på plass, eller trykk på dem.'],
 
+  // Ordtoget
+  sentenceStart: () => ['Lag setningen med ordene.', 'Dra dem på plass, eller trykk på dem.'],
+  sentence: s => [s],
+
   // Labyrinten
   mazeStart: () => ['Finn gull-egget!', 'Trykk på pilene for å gå.'],
   foxCaught: () => ['Reven har fanget deg!', 'Svar riktig for å komme fri.'],
@@ -112,7 +116,10 @@ export function allPhrases(samples) {
   }
   for (let n = 0; n <= MAX_NUMBER; n++) { add(T.starsHave(n)); add(T.newEggs(Array(n).fill({ stars: 3 }))); add(T.roundDone(n)); }
   for (const m of MILESTONES) add(T.newDiploma(m.text));
-  for (const s of [...SKILLS, ...SPELL_SKILLS]) add(T.newDiploma(s.diploma));
+  for (const s of [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS]) add(T.newDiploma(s.diploma));
+  for (const s of ALL_SENTENCES) { out.add(`Lag setningen: ${s}`); add(T.sentence(s)); for (const w of sentenceWords(s)) add(T.word(w.replace('.', ''))); }
+  for (const w of EXTRA_WORDS) add(T.word(w));
+  add(T.sentenceStart());
   for (const w of ALL_SPELL_WORDS) { out.add(`Stav ordet ${w}.`); add(T.word(w)); }
   for (const L of ALPHABET) add(T.letter(L));
   add(T.spellStart()); add(T.mathStart());
