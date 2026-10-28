@@ -445,8 +445,9 @@ export default async function start({ root, profile, store, onExit }) {
     msg.innerHTML = `${found[0]}<div class="stars">${'⭐'.repeat(n)}</div>`;
     msg.classList.remove('hidden');
     lyd.fanfare();
-    lyd.say([...found, ...T.roundDone(n)]);
-    setTimeout(() => close({ game: 'labyrint', right: st.right, total: Math.max(st.total, 1), foxEscapes: st.foxEscapes }), 4500);
+    // Tilbake til rommet først når stemmen er ferdig (men tidligst etter 4,5 s), ellers kuttes setningen
+    Promise.all([lyd.say([...found, ...T.roundDone(n)]), new Promise(r => setTimeout(r, 4500))])
+      .then(() => close({ game: 'labyrint', right: st.right, total: Math.max(st.total, 1), foxEscapes: st.foxEscapes }));
   }
 
   // ─── Revelyd: knurring som blir sterkere jo nærmere, fra den siden reven er på ──

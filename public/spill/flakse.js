@@ -171,8 +171,9 @@ export default function start({ root, profile, store, onExit }) {
     msg.innerHTML = `Bra jobba!<div class="stars">${'⭐'.repeat(n)}</div>`;
     msg.classList.remove('hidden');
     lyd.fanfare();
-    lyd.say(T.roundDone(n));
-    setTimeout(() => close({ game: 'flakse', right: st.right, total: ROUND }), 3500);
+    // Tilbake til rommet først når stemmen er ferdig (men tidligst etter 3,5 s), ellers kuttes setningen
+    Promise.all([lyd.say(T.roundDone(n)), new Promise(r => setTimeout(r, 3500))])
+      .then(() => close({ game: 'flakse', right: st.right, total: ROUND }));
   }
 
   // ─── Styring ────────────────────────────────────────────────────────
