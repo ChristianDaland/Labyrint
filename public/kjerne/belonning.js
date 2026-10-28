@@ -22,6 +22,19 @@ export const countEggs = eggs => {
   return n;
 };
 
+// Skatten i rommet: 10 egg blir til en diamant, og 10 diamanter til en krone. Bare de løse eggene (0–9) står
+// på hylla, så rommet ikke fylles opp. Eggene lagres fortsatt hver for seg (`rewards.eggs`).
+export const treasure = n => ({ crowns: Math.floor(n / 100), diamonds: Math.floor(n % 100 / 10), loose: n % 10 });
+
+// Diplomene henger i en ramme per gruppe på veggen
+export const DIPLOMA_GROUPS = ['matte', 'norsk', 'stave', 'ekstra'];
+export function diplomaGroup(d) {
+  if (d.id.startsWith('kan-')) return SKILL_BY_ID[d.id.slice(4)]?.subject || 'ekstra';
+  if (d.id.startsWith('matte')) return 'matte';
+  if (d.id.startsWith('norsk')) return 'norsk';
+  return 'ekstra';
+}
+
 // Milepæl-diplomer. `check(profile, round)` sjekkes når en runde er ferdig.
 export const MILESTONES = [
   { id: 'egg1', text: 'Ditt første egg!', check: p => p.rewards.eggs.length >= 1 },

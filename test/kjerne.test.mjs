@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 import { SKILLS, SPELL_SKILLS, SKILL_BY_ID, skillsOf, makeTask, makeMathPuzzle } from '../public/kjerne/oppgaver.js';
 import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, today, WINDOW } from '../public/kjerne/laering.js';
-import { starsFor, finishRound, awardSkills, newRewards, eggKind, countEggs } from '../public/kjerne/belonning.js';
+import { starsFor, finishRound, awardSkills, newRewards, eggKind, countEggs, treasure, diplomaGroup } from '../public/kjerne/belonning.js';
 import { createStore, newProfile, profileName, KEY, VERSION } from '../public/kjerne/lagring.js';
 import * as lyd from '../public/kjerne/lyd.js';
 import { T, allPhrases, spoken } from '../public/kjerne/tale.js';
@@ -416,4 +416,15 @@ test('slangen: snur aldri rett bakover og svinger selv ved kanten', () => {
   assert.deepEqual(steer(9, 14, [8, 12], R, null), U);  // høyre kant, nederst: svinger opp
   assert.deepEqual(steer(9, 14, [8, 0], R, null), D);   // hjørne: eneste vei
   assert.deepEqual(steer(9, 14, [0, 13], D, null), R);
+});
+
+test('skatten: 10 egg blir en diamant, 10 diamanter en krone; diplomene i grupper', () => {
+  assert.deepEqual(treasure(0), { crowns: 0, diamonds: 0, loose: 0 });
+  assert.deepEqual(treasure(9), { crowns: 0, diamonds: 0, loose: 9 });
+  assert.deepEqual(treasure(10), { crowns: 0, diamonds: 1, loose: 0 });
+  assert.deepEqual(treasure(237), { crowns: 2, diamonds: 3, loose: 7 });
+  const g = id => diplomaGroup({ id });
+  assert.deepEqual(['kan-pluss10', 'kan-rim', 'kan-stavkort', 'matte50', 'norsk200', 'egg5', 'rev5', 'stjerner3', 'gull5'].map(g),
+    ['matte', 'norsk', 'stave', 'matte', 'norsk', 'ekstra', 'ekstra', 'ekstra', 'ekstra']);
+  assert.deepEqual(T.diplomaGroup('stave', 1), ['Stave-diplomer.', 'Du har', '1', 'diplom.']);
 });

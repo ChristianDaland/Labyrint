@@ -144,12 +144,12 @@
   .jar .bar2 { flex: 1; height: 18px; border-radius: 99px; background: rgba(43,26,16,.15); overflow: hidden; }
   .jar .fill { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #f7d46a, #e0a020); transition: width .8s; }
 
-  .games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 14px;
+  .games { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px;
     padding-bottom: max(14px, env(safe-area-inset-bottom)); padding-left: max(14px, env(safe-area-inset-left));
     padding-right: max(14px, env(safe-area-inset-right));
     background: repeating-linear-gradient(90deg, var(--floor) 0 120px, var(--floor-2) 120px 124px); }
-  .game { position: relative; min-height: 120px; border-radius: 26px; background: var(--panel); box-shadow: 0 8px 0 rgba(0,0,0,.3);
-    display: grid; place-items: center; font-size: 72px; transition: transform .15s; }
+  .game { position: relative; min-height: 104px; border-radius: 24px; background: var(--panel); box-shadow: 0 8px 0 rgba(0,0,0,.3);
+    display: grid; place-items: center; font-size: 60px; transition: transform .15s; }
   .game.sel { outline: 6px solid var(--gold); transform: translateY(-4px); }
   .game .lock { position: absolute; top: 8px; right: 10px; font-size: 30px; }
   .game.locked .em { opacity: .45; filter: grayscale(.6); }
@@ -162,8 +162,8 @@
     .scene { grid-column: 1; grid-row: 2 / 4; }
     .jars { grid-column: 2; grid-row: 3; flex-direction: column; align-items: stretch; }
     .jar { flex: none; }
-    .games { grid-column: 2; grid-row: 2; grid-template-columns: 1fr; align-content: center; }
-    .game { min-height: 150px; font-size: 90px; }
+    .games { grid-column: 2; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; }
+    .game { min-height: 130px; font-size: 76px; }
   }
   @media (max-width: 480px) { .frame { width: 78px; height: 88px; font-size: 38px; } .wall { gap: 12px; } }
   /* Lave skjermer (iPhone på tvers): mindre figurer og knapper, så alt får plass */
@@ -198,6 +198,17 @@
   #celebrate .frame::before { display: none; }
   #celebrate h2 { font-size: clamp(26px, 6vw, 40px); max-width: 18ch; margin: 0 auto 20px; }
   @keyframes pop { from { transform: scale(.3) rotate(-10deg); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* Diplomene i en gruppe (åpnes fra rammen på veggen) */
+  #dipList .big { width: min(640px, 100%); text-align: center; color: var(--cream); }
+  #dipList h2 { font-size: clamp(24px, 5.5vw, 36px); margin-bottom: 18px; }
+  #dipList .wall { margin-bottom: 22px; }
+  #dipList .cap { display: block; width: 104px; font: 800 12px/1.2 'Nunito', sans-serif; color: var(--cream); margin-top: 8px; }
+  .frame .count { position: absolute; top: -12px; right: -12px; min-width: 32px; height: 32px; padding: 0 8px; border-radius: 99px;
+    background: var(--gold); color: #3b2805; font: 400 20px/32px 'Lilita One', sans-serif; box-shadow: 0 3px 0 #a57a17; }
+  .frame.none { opacity: .55; }
+  .treasure { font-size: 46px; line-height: 1; filter: drop-shadow(0 4px 0 rgba(0,0,0,.2)); }
+  .treasure .x { font: 400 24px 'Lilita One', sans-serif; color: var(--cream); margin-left: 2px; }
 
   #adult .panel { width: min(520px, 100%); max-height: 100%; overflow: auto; background: var(--panel); color: var(--panel-ink);
     border-radius: 22px; padding: 22px; font: 700 16px/1.45 'Nunito', sans-serif; user-select: text; -webkit-user-select: text; }
@@ -267,6 +278,14 @@
   </div>
 </div>
 
+<div id="dipList" class="overlay hidden">
+  <div class="big">
+    <h2 id="dlTitle"></h2>
+    <div class="wall" id="dlWall"></div>
+    <button class="bigok" id="dlOk" aria-label="Lukk">✔</button>
+  </div>
+</div>
+
 <div id="adult" class="overlay hidden">
   <div class="panel" role="dialog" aria-labelledby="adultTitle">
     <h2 id="adultTitle">For voksne</h2>
@@ -319,7 +338,7 @@
 import { createStore, requestPersist, downloadBackup, ANIMALS, COLORS, profileName, profileEmoji, profileColor } from './kjerne/lagring.js';
 import { progress } from './kjerne/laering.js';
 import { SKILL_BY_ID } from './kjerne/oppgaver.js';
-import { finishRound, eggKind, countEggs } from './kjerne/belonning.js';
+import { finishRound, eggKind, countEggs, treasure, DIPLOMA_GROUPS, diplomaGroup } from './kjerne/belonning.js';
 import { holdButton } from './kjerne/ui.js';
 import { T } from './kjerne/tale.js';
 import * as lyd from './kjerne/lyd.js';
@@ -419,9 +438,6 @@ $('#crOk').onclick = () => {
 };
 
 // ─── Rommet ─────────────────────────────────────────────────────────────
-const MAX_SHELVES = 3;
-// Så mange egg som får plass på én hylle i bredden (hvert egg tar ca. 52 px)
-const perShelf = () => Math.max(4, Math.min(10, Math.floor(($('#shelves').clientWidth - 28) / 52)));
 
 // Ikonet på diplomet (HTML). Gullegg tegnes selv: 🥚-emojien er et brunt hverdagsegg.
 function diplomaIcon(d) {
@@ -433,6 +449,25 @@ function diplomaIcon(d) {
   if (d.id === 'rev5') return '🦊';
   return '🏅';
 }
+
+const GROUP_ICONS = { matte: '➕', norsk: '📖', stave: '🧩', ekstra: '⭐' };
+// Alle diplomene i en gruppe, store nok til å trykke på; hvert leses opp
+function openDiplomas(group, list) {
+  lyd.say(T.diplomaGroup(group, list.length));
+  if (!list.length) return;
+  $('#dlTitle').textContent = T.diplomaGroup(group, list.length)[0].replace('.', '');
+  const w = $('#dlWall'); w.innerHTML = '';
+  for (const d of list) {
+    const b = document.createElement('button');
+    b.style.cssText = 'background:none;border:0;display:grid;justify-items:center;color:inherit';
+    b.innerHTML = `<span class="frame"><span>${diplomaIcon(d)}</span><span class="ribbon">🎀</span></span><span class="cap">${d.text}</span>`;
+    b.setAttribute('aria-label', d.text);
+    b.onclick = () => lyd.say(T.diploma(d.text));
+    w.append(b);
+  }
+  $('#dipList').classList.remove('hidden');
+}
+$('#dlOk').onclick = () => { lyd.stopSpeaking(); $('#dipList').classList.add('hidden'); };
 
 function openRoom(greet) {
   const p = store.active();
@@ -449,42 +484,51 @@ function renderRoom(p, markNew) {
   $('#starN').textContent = p.rewards.stars;
   $('#eggN').textContent = p.rewards.eggs.length;
 
-  // Diplomer på veggen, pluss noen tomme rammer som viser at det finnes flere å få
+  // Diplomer: én ramme per gruppe på veggen, med antall. Trykk åpner alle diplomene i gruppa.
   const wall = $('#wall'); wall.innerHTML = '';
-  p.rewards.diplomas.forEach((d, i) => {
+  for (const g of DIPLOMA_GROUPS) {
+    const list = p.rewards.diplomas.map((d, i) => ({ d, i })).filter(x => diplomaGroup(x.d) === g);
     const f = document.createElement('button');
-    f.className = 'frame' + (markNew && i >= p.rewards.seenDiplomas ? ' new' : '');
-    f.innerHTML = `<span>${diplomaIcon(d)}</span><span class="ribbon">🎀</span>`;
-    f.setAttribute('aria-label', d.text);
-    f.onclick = () => lyd.say(T.diploma(d.text));
-    wall.append(f);
-  });
-  for (let i = 0; i < Math.max(1, 3 - p.rewards.diplomas.length); i++) {
-    const f = document.createElement('button');
-    f.className = 'frame empty'; f.textContent = '?';
-    f.onclick = () => lyd.say(T.emptyFrame());
+    f.className = 'frame' + (list.length ? '' : ' none') + (markNew && list.some(x => x.i >= p.rewards.seenDiplomas) ? ' new' : '');
+    f.innerHTML = `<span>${GROUP_ICONS[g]}</span>${list.length ? `<span class="count">${list.length}</span>` : ''}`;
+    f.setAttribute('aria-label', T.diplomaGroup(g, list.length).join(' '));
+    f.onclick = () => openDiplomas(g, list.map(x => x.d));
     wall.append(f);
   }
 
-  // Egg (gull, sølv, bronse) på hyllene (nyeste til slutt), og tomme plasser som viser hvor neste egg havner
-  const SHELF = perShelf();
-  const eggs = p.rewards.eggs, shown = eggs.slice(-SHELF * MAX_SHELVES), hidden = eggs.length - shown.length;
+  // Hylla: diamanter og kroner (10 egg = 1 diamant, 10 diamanter = 1 krone), og de løse eggene (0–9)
+  // med tomme plasser opp til 10, så barnet ser hvor mange egg som mangler til neste diamant
+  const eggs = p.rewards.eggs, have = treasure(eggs.length), before = treasure(p.rewards.seenEggs);
   const shelves = $('#shelves'); shelves.innerHTML = '';
-  const slots = shown.length + 1, rows = Math.min(MAX_SHELVES, Math.max(1, Math.ceil(slots / SHELF)));
-  for (let r = 0; r < rows; r++) {
-    const shelf = document.createElement('div'); shelf.className = 'shelf';
-    if (r === 0 && hidden) { const m = document.createElement('span'); m.className = 'more'; m.textContent = '+' + hidden; shelf.append(m); }
-    for (let i = r * SHELF; i < Math.min((r + 1) * SHELF, shown.length + 1); i++) {
-      const e = shown[i], s = document.createElement('button');
-      const idx = hidden + i;
+  const newShelf = () => { const s = document.createElement('div'); s.className = 'shelf'; shelves.append(s); return s; };
+  if (have.crowns || have.diamonds) {
+    const shelf = newShelf();
+    const gem = (icon, n, isNew, say, label) => {
+      const b = document.createElement('button');
+      b.className = 'slot treasure' + (isNew && markNew ? ' new' : '');
+      b.innerHTML = icon + (n > 1 ? `<span class="x">×${n}</span>` : '');
+      b.setAttribute('aria-label', label); b.onclick = () => lyd.say(say());
+      shelf.append(b);
+    };
+    if (have.crowns) gem('👑', have.crowns, have.crowns > before.crowns, T.crown, `${have.crowns} kroner`);
+    const newDiamonds = Math.max(0, have.diamonds - (have.crowns > before.crowns ? 0 : before.diamonds));
+    for (let i = 0; i < have.diamonds; i++) gem('💎', 1, i >= have.diamonds - newDiamonds, T.diamond, 'Diamant');
+  }
+  // Alle ti plassene på én hylle: eggene krymper på smale skjermer
+  const loose = eggs.slice(eggs.length - have.loose);
+  {
+    const shelf = newShelf(), size = Math.min(42, Math.floor(((shelves.clientWidth || 360) - 28 - 9 * 6) / 10));
+    shelf.style.gap = '6px';
+    for (let i = 0; i < 10; i++) {
+      const e = loose[i], s = document.createElement('button'), idx = eggs.length - have.loose + i;
       s.className = 'slot' + (!e ? ' empty' : markNew && idx >= p.rewards.seenEggs ? ' new' : '');
-      if (e) s.style.animationDelay = `${(idx - p.rewards.seenEggs) * 0.25}s`;
+      s.style.fontSize = size + 'px';
+      if (e) s.style.animationDelay = `${Math.max(0, idx - p.rewards.seenEggs) * 0.25}s`;
       s.innerHTML = `<span class="egg ${e ? eggKind(e) : ''}"></span>${e ? `<span class="st">${'⭐'.repeat(e.stars)}</span>` : ''}`;
       s.setAttribute('aria-label', e ? T.egg(e).join(' ') : 'Plass til neste egg');
       s.onclick = () => lyd.say(e ? T.egg(e) : T.emptyEgg());
       shelf.append(s);
     }
-    shelves.append(shelf);
   }
 
   // Krukkene viser hvor langt spilleren er kommet i hvert fag
@@ -524,9 +568,20 @@ function celebrate(p) {
     lyd.fanfare();
     lyd.say(T.newEggs(p.rewards.eggs.slice(p.rewards.seenEggs)));
   }
-  const queue = [...newDiplomas];
+  // Ble det nye diamanter eller kroner? De feires stort før diplomene.
+  const was = treasure(p.rewards.seenEggs), now = treasure(p.rewards.eggs.length);
+  const gems = [];
+  if (now.crowns > was.crowns) gems.push({ icon: '👑', text: 'Ti diamanter ble til en krone!', say: T.newCrown() });
+  else if (now.crowns * 10 + now.diamonds > was.crowns * 10 + was.diamonds) gems.push({ icon: '💎', text: 'Ti egg ble til en diamant!', say: T.newDiamond() });
+  const queue = [...gems, ...newDiplomas];
   const showNext = () => {
     const d = queue.shift();
+    if (d?.icon) {
+      $('#celFrame').innerHTML = d.icon; $('#celText').textContent = d.text;
+      $('#celebrate').classList.remove('hidden');
+      lyd.fanfare(); lyd.say(d.say);
+      return;
+    }
     if (!d) {
       $('#celebrate').classList.add('hidden');
       p.rewards.seenEggs = p.rewards.eggs.length;

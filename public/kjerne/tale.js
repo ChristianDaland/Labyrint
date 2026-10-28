@@ -10,6 +10,7 @@ export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', sla
 const MAX_NUMBER = 300; // tall som finnes som lydfil (større tall leses av enhetens stemme)
 const stars = n => (n === 1 ? 'stjerne.' : 'stjerner.');
 const cap = s => s[0].toUpperCase() + s.slice(1);
+const GROUP_NAMES = { matte: 'Matte-diplomer', norsk: 'Norsk-diplomer', stave: 'Stave-diplomer', ekstra: 'Stjerne-diplomer' };
 const FOUND = { gull: 'Du fant gull-egget!', solv: 'Du fant sølvegget!', bronse: 'Du fant bronse-egget!' };
 
 // Svaralternativer slik de skal uttales: «KATT» → «katt» (store bokstaver kan bli stavet), enkeltbokstaver som de er
@@ -41,7 +42,12 @@ export const T = {
   diploma: text => [text],
   emptyFrame: () => ['Her kan det komme et nytt diplom!'],
   egg: e => [`${cap(EGG_NAMES[eggKind(e)])} fra ${GAME_NAMES[e.game] || 'et spill'}.`, String(e.stars), stars(e.stars)],
-  emptyEgg: () => ['Her kommer neste egg. Spill for å vinne det!'],
+  emptyEgg: () => ['Her kommer neste egg.', 'Ti egg blir til en diamant!'],
+  diamond: () => ['En diamant.', 'Den er laget av ti egg.'],
+  crown: () => ['En krone.', 'Den er laget av ti diamanter.'],
+  newDiamond: () => ['Ti egg ble til en diamant!'],
+  newCrown: () => ['Ti diamanter ble til en krone!'],
+  diplomaGroup: (group, n) => [`${GROUP_NAMES[group]}.`, ...(n ? ['Du har', String(n), n === 1 ? 'diplom.' : 'diplomer.'] : ['Spill for å få det første!'])],
   subject: (subject, level) => {
     const list = skillsOf(subject);
     if (level >= list.length) return [`Du kan alt i ${subject}! Fantastisk!`];
@@ -97,7 +103,7 @@ export function taskPhrases(samples = 4000) {
 export function allPhrases(samples) {
   const out = new Set(taskPhrases(samples));
   const add = parts => parts.forEach(p => out.add(p));
-  for (const f of [T.whoAreYou, T.pickAnimalFirst, T.pickAnimalNew, T.emptyFrame, T.emptyEgg, T.flapStart, T.snakeStart, T.rotate, T.mazeStart, T.foxCaught, T.foxFree]) add(f());
+  for (const f of [T.whoAreYou, T.pickAnimalFirst, T.pickAnimalNew, T.emptyFrame, T.emptyEgg, T.diamond, T.crown, T.newDiamond, T.newCrown, T.flapStart, T.snakeStart, T.rotate, T.mazeStart, T.foxCaught, T.foxFree]) add(f());
   for (let n = 1; n <= 3; n++) { add(T.foundEgg(EGG_KINDS[n])); add(T.newEggs([{ stars: n }])); }
   for (let mask = 0; mask < 8; mask++) add(T.eggsHave({ gull: mask & 1, solv: mask & 2, bronse: mask & 4 }));
   for (const a of ANIMALS) {
@@ -110,6 +116,7 @@ export function allPhrases(samples) {
   for (const w of ALL_SPELL_WORDS) { out.add(`Stav ordet ${w}.`); add(T.word(w)); }
   for (const L of ALPHABET) add(T.letter(L));
   add(T.spellStart()); add(T.mathStart());
+  for (const g of Object.keys(GROUP_NAMES)) for (let n = 0; n <= 2; n++) add(T.diplomaGroup(g, n));
   for (const s of skillsOf('matte')) for (let i = 0; i < (samples ?? 4000); i++) out.add(makeMathPuzzle(s.id).speak);
   for (const id of Object.keys(GAME_NAMES)) {
     add(T.gameName(id)); add(T.comingSoon(id));

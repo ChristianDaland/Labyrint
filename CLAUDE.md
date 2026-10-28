@@ -43,8 +43,8 @@ skal stemme med `public/kjerne/` og `public/spill/`.
 
 ## Rommet (`public/index.html`, startskjerm)
 - **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
-- **Rommet:** figur, ⭐ stjerner, egg-teller (leser opp antall per type), diplomer på klossvegg (tomme «?»-rammer), gull-, sølv- og bronseegg på hyller (antall per hylle etter skjermbredde), krukker for matte/norsk (fremgang) og spillkort. Alt leses opp ved trykk. Spillkort: ett trykk sier navnet, to trykk starter.
-- **Feiring:** nye egg og diplomer siden sist feires (fanfare, diplom vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
+- **Rommet:** figur, ⭐ stjerner, egg-teller (leser opp antall per type), diplomer på klossvegg i fire rammer (`DIPLOMA_GROUPS`: matte, norsk, stave, ekstra; med antall, trykk åpner `#dipList` med alle i gruppa), hylle med 👑/💎 (`treasure(n)`: 10 egg = 1 diamant, 10 diamanter = 1 krone) og en hylle med de løse eggene (0–9) og tomme plasser opp til 10, krukker for matte/norsk (fremgang) og spillkort. Alt leses opp ved trykk. Spillkort (tre kolonner): ett trykk sier navnet, to trykk starter.
+- **Feiring:** nye egg og diplomer siden sist feires (fanfare; ny diamant/krone og nye diplomer vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
 - **Voksenmeny:** ⚙️, holdes inne i 3 s: bytt/ny/slett figur, fag (begge/matte/norsk), lyd av/på, sikkerhetskopi lagre/hent, Hjem-skjerm-hint, lenke til veiledningen.
 - **Bare høykant på telefon og pad:** Safari kan ikke låse retningen, så `#rotate` («Snu skjermen», leses opp) dekker alt ved `(orientation: landscape) and (pointer: coarse)`, og spillene står stille. PC kan bruke begge retninger.
 - **Lave skjermer:** skjermene kan rulles og har kompakt utgave (`max-height: 520px`).
