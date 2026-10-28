@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 import { SKILLS, SKILL_BY_ID, skillsOf, makeTask } from '../public/kjerne/oppgaver.js';
 import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, today, WINDOW } from '../public/kjerne/laering.js';
-import { starsFor, finishRound, awardSkills, newRewards } from '../public/kjerne/belonning.js';
+import { starsFor, finishRound, awardSkills, newRewards, eggKind, countEggs } from '../public/kjerne/belonning.js';
 import { createStore, newProfile, profileName, KEY, VERSION } from '../public/kjerne/lagring.js';
 import * as lyd from '../public/kjerne/lyd.js';
 import { T, allPhrases, spoken } from '../public/kjerne/tale.js';
@@ -160,7 +160,7 @@ test('stjerner av 10: 0–5 → 1, 6–8 → 2, 9–10 → 3', () => {
   assert.equal(starsFor(0, 0), 1);
 });
 
-test('runde gir gullegg, stjerner og milepæl-diplomer én gang', () => {
+test('runde gir egg, stjerner og milepæl-diplomer én gang', () => {
   const p = profile(), d = new Date('2026-10-28T10:00:00Z');
   let r = finishRound(p, { game: 'flakse', right: 10, total: 10 }, d);
   assert.equal(r.stars, 3);
@@ -173,6 +173,19 @@ test('runde gir gullegg, stjerner og milepæl-diplomer én gang', () => {
   assert.deepEqual(r.diplomas.map(x => x.id).sort(), ['egg5', 'rev5']);
   p.stats.right.matte = 50;
   assert.deepEqual(finishRound(p, { game: 'flakse', right: 5, total: 10 }, d).diplomas.map(x => x.id), ['matte50']);
+});
+
+test('stjernene avgjør egget: 3 gull, 2 sølv, 1 bronse', () => {
+  const p = profile(), d = new Date('2026-10-28T10:00:00Z');
+  assert.equal(eggKind(finishRound(p, { game: 'flakse', right: 9, total: 10 }, d).egg), 'gull');
+  assert.equal(eggKind(finishRound(p, { game: 'flakse', right: 7, total: 10 }, d).egg), 'solv');
+  assert.equal(eggKind(finishRound(p, { game: 'labyrint', right: 2, total: 10 }, d).egg), 'bronse');
+  finishRound(p, { game: 'flakse', right: 8, total: 10 }, d);
+  assert.deepEqual(countEggs(p.rewards.eggs), { gull: 1, solv: 2, bronse: 1 });
+  for (let i = 0; i < 4; i++) finishRound(p, { game: 'flakse', right: 10, total: 10 }, d);
+  assert.ok(p.rewards.diplomas.some(x => x.id === 'gull5'));
+  assert.deepEqual(T.eggsHave({ gull: 2, solv: 0, bronse: 1 }), ['Du har', '2', 'gullegg', 'og', '1', 'bronseegg.']);
+  assert.deepEqual(T.newEggs([{ stars: 2 }]), ['Du fikk et nytt sølvegg!']);
 });
 
 test('diplom for mestret ferdighet, bare én gang', () => {
@@ -261,7 +274,8 @@ test('alt spillet kan si, er med i listen over setninger (og dermed som lydfil)'
   }
   const p = { animal: ANIMALS[3].id, color: COLORS[5].id };
   check(T.welcome(p)); check(T.figure(p)); check(T.hello(p)); check(T.starsHave(1)); check(T.starsHave(57));
-  check(T.newEggs(1)); check(T.newEggs(3)); check(T.egg({ game: 'flakse', stars: 2 })); check(T.subject('norsk', 99));
+  check(T.newEggs([{ stars: 1 }])); check(T.newEggs([{ stars: 3 }, { stars: 2 }, { stars: 1 }])); check(T.egg({ game: 'flakse', stars: 2 }));
+  check(T.egg({ game: 'labyrint', stars: 1 })); check(T.eggsHave({ gull: 12, solv: 3, bronse: 1 })); check(T.foundEgg('bronse')); check(T.subject('norsk', 99));
   check(T.roundDone(3)); check(T.newDiploma(SKILL_BY_ID.rim.diploma));
   assert.deepEqual([...missing], []);
   assert.equal(spoken('KATT'), 'katt'); assert.equal(spoken('S'), 'S'); assert.equal(spoken('12'), '12');

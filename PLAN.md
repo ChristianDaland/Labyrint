@@ -48,7 +48,7 @@ Alt kan brukes uten å lese. Store bilder, få knapper, og alt som betyr noe, le
 ## 4. Rommet
 
 - **Tegnes i 2D** (HTML, SVG og CSS) med varm, kloss-aktig stil. Det skal være inspirert av Minecraft uten å kopiere.
-- **Hylla:** ett gullegg per fullført runde, med flere hyller etter hvert.
+- **Hylla:** ett egg per fullført runde (gull, sølv eller bronse etter stjernene), med flere hyller etter hvert.
 - **Diplomer på veggen.** Barnet trykker på et diplom, og det leses opp hva det klarte.
 - **Stjerner i rommet:** antall stjerner synes, som en teller eller en krukke som fylles.
 - **Spillknappene:** store kort med bilde, ikke tekst. Trykk én gang for å høre navnet og to ganger for å starte. Det hindrer at spill startes ved et uhell.

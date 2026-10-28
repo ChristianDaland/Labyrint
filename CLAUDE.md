@@ -30,7 +30,7 @@ skal stemme med `public/kjerne/` og `public/spill/`.
 ## Kjernen (`public/kjerne/`, felles for alle spillene)
 - `oppgaver.js` – oppgaver per ferdighet (`SKILLS`, i læringsrekkefølge per fag, hver med diplomtekst). Oppgave: `{skill, q, pic, options[3], answer, speak}`. `LETTER_ORDER` = rekkefølgen bokstavene innføres i. Oppgaver med bilde sier alltid hva bildet er (f.eks. «Finn ordet tre»).
 - `laering.js` – læringsmotoren: nivå per fag, siste 10 svar per ferdighet, opp ved 8/10 og ned ved under 5/10 (med blanke ark), valg ca. 70 % nå / 20 % repetisjon (vektet mot det spilleren bommer på) / 10 % smakebit. `recordAnswer` fører også statistikk per fag og dag.
-- `belonning.js` – stjerner (1–3: av 10 riktige på første forsøk gir 0–5 → 1, 6–8 → 2, 9–10 → 3), gullegg per runde, milepæl-diplomer og diplomer for mestrede ferdigheter.
+- `belonning.js` – stjerner (1–3: av 10 riktige på første forsøk gir 0–5 → 1, 6–8 → 2, 9–10 → 3), ett egg per runde der stjernene avgjør typen (`EGG_KINDS`: 3 gull, 2 sølv, 1 bronse; `eggKind(e)` regner det ut fra `e.stars`), milepæl-diplomer og diplomer for mestrede ferdigheter.
 - `lagring.js` – profiler (dyr + farge, aldri navn), alt i `localStorage` under nøkkelen `gullegget` med versjonsnummer; tåler ødelagte data, sikkerhetskopi (eksport/import), `requestPersist()`.
 - `lyd.js` – Web Audio-effekter (pling, oops, fanfare, flap, bump, creak, bark, growl med `set/stop`) som også kan tas opp offline. `say(...biter)` spiller ferdiglagde setninger (`lyd/tale/manifest.json` → mp3) etter hverandre via Web Audio; mangler en bit, leses alt av enhetens stemme. `prefetch()` henter på forhånd. Setter `navigator.audioSession.type = 'playback'` (iOS 16.4+), så lyd høres selv om lydløs-bryteren er på. Lyd låses opp på `pointerdown`, `touchend` og `click`. Plass til innspilte bokstavlyder (`LETTER_FILES`).
 - `tale.js` – **alt spillet sier**, som funksjoner som gir biter (`T.welcome(p)`, `T.starsHave(n)`, `T.tryAgain()` …). `allPhrases()` lister alle bitene, inkludert alle oppgavesetningene (funnet ved mange trekk) og tall 0–300. **Ny tekst som skal sies, legges inn her**, og så kjøres `verktoy/lag-tale.py`.
@@ -43,7 +43,7 @@ skal stemme med `public/kjerne/` og `public/spill/`.
 
 ## Rommet (`public/index.html`, startskjerm)
 - **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
-- **Rommet:** figur, ⭐ stjerner, gullegg-teller, diplomer på klossvegg (tomme «?»-rammer), gullegg på hyller (antall per hylle etter skjermbredde), krukker for matte/norsk (fremgang) og spillkort. Alt leses opp ved trykk. Spillkort: ett trykk sier navnet, to trykk starter.
+- **Rommet:** figur, ⭐ stjerner, egg-teller (leser opp antall per type), diplomer på klossvegg (tomme «?»-rammer), gull-, sølv- og bronseegg på hyller (antall per hylle etter skjermbredde), krukker for matte/norsk (fremgang) og spillkort. Alt leses opp ved trykk. Spillkort: ett trykk sier navnet, to trykk starter.
 - **Feiring:** nye egg og diplomer siden sist feires (fanfare, diplom vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
 - **Voksenmeny:** ⚙️, holdes inne i 3 s: bytt/ny/slett figur, fag (begge/matte/norsk), lyd av/på, sikkerhetskopi lagre/hent, Hjem-skjerm-hint, lenke til veiledningen.
 - **Bare høykant på telefon og pad:** Safari kan ikke låse retningen, så `#rotate` («Snu skjermen», leses opp) dekker alt ved `(orientation: landscape) and (pointer: coarse)`, og spillene står stille. PC kan bruke begge retninger.
@@ -52,15 +52,15 @@ skal stemme med `public/kjerne/` og `public/spill/`.
 - **Spillene lastes inn som moduler** i samme side (ikke egne sider), så lyden forblir låst opp. `GAMES` i index.html.
 
 ## Spillene (`public/spill/`)
-Felles grensesnitt: `export default start({ root, profile, store, onExit })`. `onExit({ game, right, total, foxEscapes? })` gir gullegg og stjerner i rommet; `onExit(null)` = avbrutt (svarene teller likevel i læringen). Felles regler: spørsmålet leses alltid opp (🔊 igjen), **feil svar gir «Ikke helt. Prøv igjen!»** til riktig er valgt, og **bare første forsøk teller** i læringsmotoren og for stjernene. Ingen kan tape. ✕ holdes inne 1 s for å avslutte.
+Felles grensesnitt: `export default start({ root, profile, store, onExit })`. `onExit({ game, right, total, foxEscapes? })` gir egg og stjerner i rommet; `onExit(null)` = avbrutt (svarene teller likevel i læringen). Felles regler: spørsmålet leses alltid opp (🔊 igjen), **feil svar gir «Ikke helt. Prøv igjen!»** til riktig er valgt, og **bare første forsøk teller** i læringsmotoren og for stjernene. Ingen kan tape. ✕ holdes inne 1 s for å avslutte.
 
 - **Flakse-fuglen** (`flakse.js`, Canvas 2D): trykk eller mellomrom flakser. Tre åpninger i en klossvegg med svar på skilt. Innenfor 1,8 veggbredder før veggen glir fuglen inn i nærmeste åpne åpning (`ASSIST`), så den aldri treffer murstein. Feil åpning: samme spørsmål på en ny vegg der den feile åpningen er murt igjen (riktig svar avsløres ikke). 10 spørsmål per runde. Veggen bruker 10 s til fuglen, ned til 75 % ved mange riktige på rad. Fuglen har spillerens farge. Test: `#test=riktig|slurv|feil` (autopilot, `window.__flakse`).
 - **Labyrinten** (`labyrint.js` + `labyrint-kart.js`, Three.js): førsteperson i en 7×7-labyrint, ◀ ▶ snur, ▲ ▼ går (piltaster/WASD på PC), 🗺️ Kart (eller M) viser kart ovenfra med egget, reven og lukkede dører.
   - `labyrint-kart.js` (uten grafikk, testes i Node): perfekt labyrint, egget langt unna, `pathDoors` (6) dører jevnt fordelt på den eneste veien til egget, sløyfer bare der de ikke går rundt en dør, noen få sidedører (ikke rett ved start). Reven: vandrer, jager når den ser spilleren langs en rett gang (opptil 7 ruter), og `releaseFox` sender den til et mål ca. 10 ruter unna der hele veien går bort fra spilleren.
-  - Dør: står man vendt mot en lukket dør (< 0,95), åpnes en oppgave. Riktig: knirk, døra glir opp. «Gå bort fra døra» er mulig; samme ubesvarte oppgave kommer igjen.
+  - Dør: står man vendt mot en lukket dør (< 0,95), åpnes en oppgave. Riktig: oppgaven lukkes etter 0,7 s, og døra svinger opp på hengsler bort fra spilleren i takt med knirken (1,9 s). «Gå bort fra døra» er mulig; samme ubesvarte oppgave kommer igjen.
   - Rev: fanger når den er nær (0,5) og spilleren ikke er trygg → revespørsmål (oransje/rødt, «Reven har fanget deg!», kan ikke gå bort). Riktig: «Du er fri. Løp!», reven løper unna, trygg i 5 s. Spilleren er også trygg mens en oppgave er åpen. Reven kan ikke vinne.
   - Lyd: knurring fra reven (sterkere jo nærmere, panorert mot revens side, stille mens oppgave er åpen), bjeff når den jager og fanger, knirk når døra åpnes. Oransje kant når en jagende rev er nær.
-  - Egget (< 0,55) avslutter runden: «Du fant gull-egget!», stjerner, tilbake til rommet. Stjerner etter riktige på første forsøk av alle oppgaver (dører og rev).
+  - Egget starter som gull og skifter farge (3D, kart og merke øverst) etter stjernene for svarene så langt. Egget (< 0,55) avslutter runden: «Du fant gull-egget!» / sølvegget / bronse-egget, stjerner, tilbake til rommet. Stjerner etter riktige på første forsøk av alle oppgaver (dører og rev).
   - Test: `#test=riktig|feil` (autopilot som går korteste vei til egget og svarer, `window.__labyrint`).
 
 ## Koordinater (labyrinten)

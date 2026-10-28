@@ -1,10 +1,11 @@
 // Labyrinten: gå rundt i 3D og finn gull-egget. Dørene på veien åpnes med oppgaver fra læringsmotoren.
 // En rev leter også: fanger den barnet, må det svare riktig på et revespørsmål for å komme fri, og så løper
 // reven unna. Ingen kan tape: reven tar verken liv eller poeng, og feil svar gir bare «prøv igjen».
-// Lastes inn i rommet (index.html), som deler ut gullegget når egget er funnet.
+// Egget starter som gull og blir sølv eller bronse hvis andelen riktige på første forsøk synker (som stjernene).
+// Lastes inn i rommet (index.html), som deler ut egget når det er funnet.
 
 import { nextTask, recordAnswer } from '../kjerne/laering.js';
-import { awardSkills, starsFor } from '../kjerne/belonning.js';
+import { awardSkills, starsFor, EGG_KINDS } from '../kjerne/belonning.js';
 import { profileColor } from '../kjerne/lagring.js';
 import { holdButton, keepAwake } from '../kjerne/ui.js';
 import { T } from '../kjerne/tale.js';
@@ -37,7 +38,14 @@ const CSS = `
   .lb-mapbtn { font: 800 17px 'Nunito', sans-serif; color: #fff4dc; background: rgba(0,0,0,.45); border: 2px solid rgba(255,244,220,.35);
     border-radius: 99px; padding: 10px 16px; min-height: 48px; }
   .lb-mapbtn[aria-pressed="true"] { background: #f2c14e; color: #3b2805; border-color: #f2c14e; }
-  .lb-doors { font: 400 22px 'Lilita One', sans-serif; background: rgba(0,0,0,.45); padding: 6px 12px; border-radius: 99px; }
+  .lb-doors { font: 400 22px 'Lilita One', sans-serif; background: rgba(0,0,0,.45); padding: 6px 12px; border-radius: 99px;
+    display: flex; align-items: center; gap: 10px; }
+  .lb-egg { display: inline-block; width: 20px; height: 26px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; transition: background .6s; }
+  .lb-egg.gull { background: radial-gradient(circle at 35% 30%, #fff6c9 0 8%, #f7d46a 22%, #d99a1e 70%, #9a6510 100%); }
+  .lb-egg.solv { background: radial-gradient(circle at 35% 30%, #ffffff 0 8%, #e4e9ef 22%, #a7b0bb 70%, #66707c 100%); }
+  .lb-egg.bronse { background: radial-gradient(circle at 35% 30%, #ffe2c4 0 8%, #e2a46a 22%, #b06a32 70%, #6e3a14 100%); }
+  .lb-egg.change { animation: lb-pop .6s; }
+  @keyframes lb-pop { 40% { transform: scale(1.6); } }
   .lb-danger { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; z-index: 2;
     box-shadow: inset 0 0 60px 20px rgba(226,102,42,.75); }
   .lb-flash { position: absolute; inset: 0; background: rgba(200,20,20,.55); opacity: 0; pointer-events: none; z-index: 2; }
@@ -100,7 +108,7 @@ export default async function start({ root, profile, store, onExit }) {
       <div class="lb-hud">
         <button class="lb-btn hold" data-exit aria-label="Tilbake til rommet (hold inne)">✕</button>
         <button class="lb-mapbtn" data-map aria-pressed="false">🗺️ Kart</button>
-        <span class="lb-doors" aria-label="Dører åpnet"></span>
+        <span class="lb-doors"><span class="lb-egg gull" aria-label="Egget i labyrinten"></span><span class="lb-dn" aria-label="Dører åpnet"></span></span>
       </div>
       <div class="lb-msg">Laster …</div>
       <div class="lb-task hidden"><div class="card">
@@ -200,14 +208,19 @@ export default async function start({ root, profile, store, onExit }) {
   // Dører på tvers av gangene (gangen går langs x når x er partall)
   const doorMat = new THREE.MeshLambertMaterial({ map: doorTex });
   const geoX = new THREE.BoxGeometry(0.14, WALL_H, 1), geoZ = new THREE.BoxGeometry(1, WALL_H, 0.14);
+  // Hver dør henger i et hengsel ved den ene veggen, så den kan svinge opp
   const doors = lvl.doors.map(d => {
-    const mesh = new THREE.Mesh(d.x % 2 === 0 ? geoX : geoZ, doorMat);
-    mesh.position.set(d.x + 0.5, WALL_H / 2, d.z + 0.5); scene.add(mesh);
-    return { ...d, open: false, lifting: false, mesh };
+    const alongX = d.x % 2 === 0, side = Math.random() < 0.5 ? -1 : 1;
+    const hinge = new THREE.Group();
+    hinge.position.set(d.x + 0.5 + (alongX ? 0 : side * 0.5), WALL_H / 2, d.z + 0.5 + (alongX ? side * 0.5 : 0));
+    const mesh = new THREE.Mesh(alongX ? geoX : geoZ, doorMat);
+    mesh.position.set(alongX ? 0 : -side * 0.5, 0, alongX ? -side * 0.5 : 0);
+    hinge.add(mesh); scene.add(hinge);
+    return { ...d, open: false, swing: null, hinge, mesh };
   });
   const doorAt = new Map(doors.map(d => [d.x + ',' + d.z, d]));
 
-  // Gull-egget
+  // Egget (gull, sølv eller bronse, se renderEgg)
   const eggGroup = new THREE.Group();
   const eggMesh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 24, 16),
     new THREE.MeshStandardMaterial({ color: 0xffc83a, metalness: 0.45, roughness: 0.25, emissive: 0x8a5a00, emissiveIntensity: 0.7 }));
@@ -298,7 +311,25 @@ export default async function start({ root, profile, store, onExit }) {
     return null;
   }
 
-  function renderDoors() { $('.lb-doors').textContent = `🚪 ${st.opened}`; }
+  function renderDoors() { $('.lb-dn').textContent = `🚪 ${st.opened}`; }
+
+  // Egget har fargen spilleren får nå: gull før noe er svart, deretter etter stjernene for svarene så langt
+  const EGG_LOOK = {
+    gull: { color: 0xffc83a, emissive: 0x8a5a00, light: 0xffc040, css: '242,193,78', fill: '#ffd24a' },
+    solv: { color: 0xe6ebf1, emissive: 0x4c5664, light: 0xdde8ff, css: '220,230,245', fill: '#e4e9ef' },
+    bronse: { color: 0xc9773a, emissive: 0x5a2a08, light: 0xff9a50, css: '214,140,80', fill: '#d48a4c' },
+  };
+  const eggNow = () => st.total ? EGG_KINDS[starsFor(st.right, st.total)] : 'gull';
+  let eggShown = 'gull';
+  function renderEgg() {
+    const kind = eggNow();
+    if (kind === eggShown) return;
+    eggShown = kind;
+    const look = EGG_LOOK[kind];
+    eggMesh.material.color.setHex(look.color); eggMesh.material.emissive.setHex(look.emissive); glow.color.setHex(look.light);
+    const chip = $('.lb-egg');
+    chip.className = 'lb-egg ' + kind; void chip.offsetWidth; chip.classList.add('change');
+  }
 
   // ─── Oppgaver: ved dørene og når reven har fanget barnet ────────────
   // Bare første forsøk teller. Feil svar: det svaret blir grått, og barnet prøver igjen.
@@ -341,6 +372,7 @@ export default async function start({ root, profile, store, onExit }) {
     if (e.first) {
       e.first = false; st.total++;
       if (correct) st.right++;
+      renderEgg();
       awardSkills(profile, recordAnswer(profile, t.skill, correct));
       store.save();
     }
@@ -353,8 +385,9 @@ export default async function start({ root, profile, store, onExit }) {
         $('.lb-feedback').textContent = 'Riktig! Døra åpnes 🎉';
         lyd.say(T.right());
         pending.delete(task.door.id);
-        task.door.open = true; task.door.lifting = true; st.opened++; renderDoors();
-        lyd.creak();
+        task.door.open = true; st.opened++; renderDoors();
+        // Oppgaven lukkes litt før, så barnet ser døra svinge opp mens den knirker
+        setTimeout(() => { if (st.task === task) closeTask(); openDoor(task.door); }, 700);
       } else {
         $('.lb-feedback').textContent = 'Riktig! Du er fri. Løp! 🏃';
         lyd.say(T.foxFree());
@@ -370,6 +403,19 @@ export default async function start({ root, profile, store, onExit }) {
       lyd.oops(); lyd.say(T.tryAgain());
     }
   }
+
+  // Døra svinger bort fra spilleren i takt med knirken: lite rykk, langt sig, stopp, siste stykke
+  const SWING_MS = 1900;
+  function openDoor(d) {
+    const ex = d.mesh.position.x, ez = d.mesh.position.z; // fra hengselet til midten av døra
+    const awayX = d.x + 0.5 - pos.x, awayZ = d.z + 0.5 - pos.z;
+    // rotation.y = θ flytter (x, z) til (x cos θ + z sin θ, −x sin θ + z cos θ); ved ±90° blir det (±z, ∓x)
+    const sign = (ez * awayX - ex * awayZ) >= 0 ? 1 : -1;
+    d.swing = { t0: performance.now(), sign };
+    lyd.creak();
+  }
+  const swingShape = p => p < 0.15 ? p / 0.15 * 0.06 : p < 0.45 ? 0.06 + (p - 0.15) / 0.3 * 0.4
+    : p < 0.75 ? 0.46 + (p - 0.45) / 0.3 * 0.14 : 0.6 + (1 - Math.pow(1 - (p - 0.75) / 0.25, 2)) * 0.4;
 
   function closeTask() {
     st.task = null;
@@ -395,11 +441,11 @@ export default async function start({ root, profile, store, onExit }) {
   function foundEgg() {
     st.done = true;
     closeTask(); releaseKeys();
-    const n = starsFor(st.right, Math.max(st.total, 1));
-    msg.innerHTML = `Du fant gull-egget!<div class="stars">${'⭐'.repeat(n)}</div>`;
+    const n = starsFor(st.right, Math.max(st.total, 1)), found = T.foundEgg(EGG_KINDS[n]);
+    msg.innerHTML = `${found[0]}<div class="stars">${'⭐'.repeat(n)}</div>`;
     msg.classList.remove('hidden');
     lyd.fanfare();
-    lyd.say([...T.foundEgg(), ...T.roundDone(n)]);
+    lyd.say([...found, ...T.roundDone(n)]);
     setTimeout(() => close({ game: 'labyrint', right: st.right, total: Math.max(st.total, 1), foxEscapes: st.foxEscapes }), 4500);
   }
 
@@ -436,9 +482,10 @@ export default async function start({ root, profile, store, onExit }) {
     }
     const [ex, ez] = P(lvl.egg.x, lvl.egg.z), r = cell * (1.2 + Math.sin(t / 300) * 0.15);
     const gr = mctx.createRadialGradient(ex, ez, 0, ex, ez, r);
-    gr.addColorStop(0, 'rgba(242,193,78,.7)'); gr.addColorStop(1, 'rgba(242,193,78,0)');
+    const look = EGG_LOOK[eggShown];
+    gr.addColorStop(0, `rgba(${look.css},.7)`); gr.addColorStop(1, `rgba(${look.css},0)`);
     mctx.fillStyle = gr; mctx.beginPath(); mctx.arc(ex, ez, r, 0, 7); mctx.fill();
-    mctx.fillStyle = '#ffd24a'; mctx.beginPath(); mctx.ellipse(ex, ez, cell * .22, cell * .3, 0, 0, 7); mctx.fill();
+    mctx.fillStyle = look.fill; mctx.beginPath(); mctx.ellipse(ex, ez, cell * .22, cell * .3, 0, 0, 7); mctx.fill();
     const [fx, fz] = P(foxView.x, foxView.z);
     if (fox.chasing) {
       mctx.strokeStyle = 'rgba(255,70,40,.9)'; mctx.lineWidth = Math.max(2, cell * .1);
@@ -492,9 +539,10 @@ export default async function start({ root, profile, store, onExit }) {
       const d = facingDoor();
       if (d && d !== dismissed && now - lastAsk > 800) { lastAsk = now; openTask('door', d); }
     }
-    for (const d of doors) if (d.lifting) {
-      d.mesh.position.y += dt * 1.6;
-      if (d.mesh.position.y > WALL_H * 1.5) { d.lifting = false; d.mesh.visible = false; }
+    for (const d of doors) if (d.swing) {
+      const p = Math.min(1, (now - d.swing.t0) / SWING_MS);
+      d.hinge.rotation.y = d.swing.sign * Math.PI / 2 * swingShape(p);
+      if (p >= 1) d.swing = null;
     }
     // Reven jager bare når barnet ikke er trygt (oppgave åpen eller nettopp sluppet fri)
     const safe = !!st.task || st.done || now < safeUntil;

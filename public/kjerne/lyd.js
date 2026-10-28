@@ -101,25 +101,34 @@ export function bump(ctx = ctxForFx(), out = ctx?.destination) { // dunk mot en 
 // Knirk fra et gammelt dørhengsel: sagtann som glir i tonehøyde, hakket opp av en rask av/på-puls
 export function creak(ctx = ctxForFx(), out = ctx?.destination) {
   if (!ctx) return;
-  const t = ctx.currentTime + 0.02, dur = 1.1, k = 0.85 + Math.random() * 0.3;
-  const osc = ctx.createOscillator(); osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(170 * k, t);
-  osc.frequency.linearRampToValueAtTime(430 * k, t + 0.35);
-  osc.frequency.linearRampToValueAtTime(250 * k, t + 0.7);
-  osc.frequency.linearRampToValueAtTime(390 * k, t + dur);
-  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1300; bp.Q.value = 5;
-  const chop = ctx.createGain(); chop.gain.value = 0.5;
-  const lfo = ctx.createOscillator(); lfo.type = 'square';
-  lfo.frequency.setValueAtTime(26, t); lfo.frequency.linearRampToValueAtTime(58, t + dur);
-  const lfoAmt = ctx.createGain(); lfoAmt.gain.value = 0.5;
-  lfo.connect(lfoAmt).connect(chop.gain);
-  const env = ctx.createGain();
-  env.gain.setValueAtTime(0, t);
-  env.gain.linearRampToValueAtTime(1.4, t + 0.06);
-  env.gain.setValueAtTime(1.4, t + dur - 0.25);
-  env.gain.linearRampToValueAtTime(0, t + dur);
-  osc.connect(bp).connect(chop).connect(env).connect(out);
-  for (const s of [osc, lfo]) { s.start(t); s.stop(t + dur + 0.05); }
+  // Nifs, langsom dørknirk: små hakk i treverket (stick-slip) som kommer tettere og glisnere,
+  // klinger i treet (båndpassfiltre) og får et hult ekko
+  const t = ctx.currentTime + 0.02, dur = 1.9, sr = ctx.sampleRate, k = 0.9 + Math.random() * 0.2;
+  const buf = ctx.createBuffer(1, Math.ceil(sr * dur), sr), d = buf.getChannelData(0);
+  // hakk per sekund over tid: sakte klikk, stønn opp, synker, og et høyt hvin til slutt
+  const rate = x => k * (x < 0.15 ? 14 + x / 0.15 * 40 : x < 0.45 ? 54 + Math.sin((x - 0.15) / 0.3 * Math.PI) * 30
+    : x < 0.75 ? 54 - (x - 0.45) / 0.3 * 16 : 38 + (x - 0.75) / 0.25 * 85);
+  for (let s = 0; s < d.length;) {
+    const x = s / d.length, amp = Math.min(1, x * 12, (1 - x) * 8) * (0.6 + Math.random() * 0.4);
+    const len = Math.floor(sr * 0.004);
+    for (let i = 0; i < len && s + i < d.length; i++) d[s + i] += amp * Math.exp(-i / (sr * 0.0007)) * (Math.random() * 0.6 + 0.7);
+    s += Math.max(1, Math.round(sr / (rate(x) * (1 + (Math.random() - 0.5) * 0.12))));
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const mix = ctx.createGain(); mix.gain.value = 2.2;
+  for (const [f, q, v] of [[380, 9, 1.4], [820, 10, 1.1], [1650, 12, 0.7], [2900, 14, 0.35]]) {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * k; bp.Q.value = q;
+    const g = ctx.createGain(); g.gain.value = v;
+    src.connect(bp).connect(g).connect(mix);
+  }
+  // hult ekko, som i et gammelt hus
+  const delay = ctx.createDelay(1); delay.delayTime.value = 0.21;
+  const fb = ctx.createGain(); fb.gain.value = 0.38;
+  const dark = ctx.createBiquadFilter(); dark.type = 'lowpass'; dark.frequency.value = 1400;
+  mix.connect(out);
+  mix.connect(delay).connect(dark).connect(fb).connect(delay);
+  fb.connect(out);
+  src.start(t);
 }
 
 // To korte bjeff
