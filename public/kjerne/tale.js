@@ -48,6 +48,12 @@ export const T = {
   flapStart: () => ['Trykk for å flakse.', 'Fly gjennom riktig svar!'],
   roundDone: n => ['Bra jobba!', 'Du fikk', String(n), stars(n)],
 
+  // Labyrinten
+  mazeStart: () => ['Finn gull-egget!', 'Trykk på pilene for å gå.'],
+  foxCaught: () => ['Reven har fanget deg!', 'Svar riktig for å komme fri.'],
+  foxFree: () => ['Riktig!', 'Du er fri. Løp!'],
+  foundEgg: () => ['Du fant gull-egget!'],
+
   // Telefon/pad holdt på tvers
   rotate: () => ['Snu skjermen, så den står på høykant.'],
 };
@@ -68,7 +74,7 @@ export function taskPhrases(samples = 4000) {
 export function allPhrases(samples) {
   const out = new Set(taskPhrases(samples));
   const add = parts => parts.forEach(p => out.add(p));
-  for (const f of [T.whoAreYou, T.pickAnimalFirst, T.pickAnimalNew, T.emptyFrame, T.emptyEgg, T.flapStart, T.rotate]) add(f());
+  for (const f of [T.whoAreYou, T.pickAnimalFirst, T.pickAnimalNew, T.emptyFrame, T.emptyEgg, T.flapStart, T.rotate, T.mazeStart, T.foxCaught, T.foxFree, T.foundEgg]) add(f());
   for (const a of ANIMALS) {
     add(T.animalPicked(a));
     for (const c of COLORS) { const p = { animal: a.id, color: c.id }; add(T.figure(p)); add(T.welcome(p)); }

@@ -160,12 +160,14 @@ export function makeGrowl(ctx = ctxForFx(), out = ctx?.destination) {
   osc.connect(lp); n.connect(nAmt).connect(lp);
   lp.connect(rumble).connect(gain);
   if (pan) gain.connect(pan).connect(out); else gain.connect(out);
-  for (const s of [osc, wob, n, lfo]) s.start();
+  const sources = [osc, wob, n, lfo];
+  for (const s of sources) s.start();
   return {
     set(vol, p = 0) {
       gain.gain.setTargetAtTime(muted ? 0 : vol * 0.5, ctx.currentTime, 0.15);
       pan?.pan.setTargetAtTime(p, ctx.currentTime, 0.1);
     },
+    stop() { for (const s of sources) try { s.stop(); } catch {} gain.disconnect(); },
   };
 }
 

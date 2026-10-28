@@ -5,7 +5,8 @@ Status (28.10.2026): planen er godkjent.
 - **Steg 2 (rommet) er ferdig:** `public/rom.html`, testet i nettleser som iPhone (høykant) og iPad (liggende).
 - **Steg 3 (Flakse-fuglen og ferdiglaget tale) er bygget:** `public/spill/flakse.js`, `public/kjerne/tale.js`, `verktoy/lag-tale.py` og lydfilene i `public/lyd/tale/`.
 - **Steg 5 (hjem-skjerm-app, publisering, ny veiledning) er gjort før steg 4:** rommet ligger på `index.html` (fast adresse for ikonet), det gamle storskjerm-spillet på `storskjerm.html`, og GitHub Actions publiserer bare `public/`. Lyden følger ikke lenger lydløs-bryteren på iOS 16.4+.
-- **Neste:** test med barn, deretter steg 4 (labyrinten).
+- **Steg 4 (Labyrinten som enspiller) er ferdig:** `public/spill/labyrint.js` og `labyrint-kart.js`. Det gamle flerspillerspillet (server, Socket.io, storskjerm) er fjernet; Render-tjenesten kan slettes.
+- **Neste:** test med barn, deretter steg 6 (innspilte bokstavlyder) og flere spill.
 
 ## 1. Mål og rammer
 

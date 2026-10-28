@@ -274,3 +274,60 @@ test('lydfilene finnes for alle setningene', { skip: !existsSync(MANIFEST) && 'l
   for (const f of new Set(Object.values(manifest)).values())
     assert.ok(existsSync(new URL('../public/lyd/tale/' + f, import.meta.url)), f);
 });
+
+// ─── Labyrinten ─────────────────────────────────────────────────────────
+import { makeLevel, bfs, newFox, updateFox, releaseFox, CONFIG as MAZE } from '../public/spill/labyrint-kart.js';
+
+const reachable = (grid, blocked, sx, sz) => {
+  const seen = new Set([sx + ',' + sz]), q = [[sx, sz]];
+  while (q.length) {
+    const [x, z] = q.pop();
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const k = (x + dx) + ',' + (z + dz);
+      if (grid[z + dz]?.[x + dx] !== 0 || seen.has(k) || blocked.has(k)) continue;
+      seen.add(k); q.push([x + dx, z + dz]);
+    }
+  }
+  return seen;
+};
+
+test('labyrinten: egget kan aldri nås uten dører, og de fleste dørene ligger på veien', () => {
+  let req = 0, all = 0;
+  for (let r = 0; r < 60; r++) {
+    const l = makeLevel(), egg = Math.floor(l.egg.x) + ',' + Math.floor(l.egg.z), keys = l.doors.map(d => d.x + ',' + d.z);
+    assert.ok(!reachable(l.grid, new Set(keys), 1, 1).has(egg), 'egget kan nås uten dører');
+    req += keys.filter(k => !reachable(l.grid, new Set([k]), 1, 1).has(egg)).length; all += keys.length;
+    assert.ok(l.doors.every(d => !(d.x <= 2 && d.z <= 2)), 'dør rett ved start');
+    assert.equal(l.grid[Math.floor(l.fox.z)][Math.floor(l.fox.x)], 0);
+    assert.equal(l.grid.length, MAZE.size * 2 + 1);
+  }
+  assert.ok(req / all > 0.6, `bare ${Math.round(100 * req / all)} % av dørene må passeres`);
+  assert.ok(req / 60 >= 4, `i snitt ${req / 60} dører på veien`);
+});
+
+test('reven jager når den ser spilleren, og løper unna etter frislipp', () => {
+  let fled = 0, deadEnds = 0;
+  for (let r = 0; r < 40; r++) {
+    const l = makeLevel(), g = l.grid, f = newFox(l.fox);
+    // spilleren rett ved reven: reven skal fange (komme nær) innen kort tid
+    const open = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dz]) => g[f.cz + dz][f.cx + dx] === 0 && g[f.cz + 2 * dz][f.cx + 2 * dx] === 0);
+    if (!open) continue;
+    const player = { x: f.cx + 2 * open[0] + 0.5, z: f.cz + 2 * open[1] + 0.5 };
+    let t = 0;
+    for (; t < 5000 && Math.hypot(f.x - player.x, f.z - player.z) > 0.5; t += 50)
+      updateFox(g, f, 0.05, { cx: Math.floor(player.x), cz: Math.floor(player.z) }, t);
+    assert.ok(t < 5000, 'reven fanget ikke spilleren den så');
+    // Frislipp: reven skal løpe minst foxRetreat ruter unna, eller så langt det går uten å passere spilleren
+    f.holding = true;
+    const fromP = bfs(g, Math.floor(player.x), Math.floor(player.z)), fromF = bfs(g, f.cx, f.cz), df = fromP[f.cz][f.cx];
+    let possible = 0;
+    for (let z = 1; z < g.length - 1; z++) for (let x = 1; x < g.length - 1; x++)
+      if (g[z][x] === 0 && fromF[z][x] === fromP[z][x] - df) possible = Math.max(possible, fromP[z][x]);
+    releaseFox(g, f, player, t);
+    for (let i = 0; i < 200 && f.flee; i++) updateFox(g, f, 0.05, null, t + i * 50);
+    const d = fromP[f.cz][f.cx];
+    assert.ok(d >= Math.min(MAZE.foxRetreat, possible), `reven stoppet ${d} ruter unna, kunne nådd ${possible}`);
+    if (d >= MAZE.foxRetreat) fled++; else deadEnds++;
+  }
+  assert.ok(fled + deadEnds > 20, 'for få tilfeller testet');
+});
