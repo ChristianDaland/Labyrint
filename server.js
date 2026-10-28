@@ -19,8 +19,10 @@ const CONFIG = {
   pointsForEgg: 25,       // ekstra poeng til den som finner egget
   foxTaskPoints: 5,       // poeng for å svare riktig og komme fri fra reven (mindre enn en dør)
   foxHitDist: 0.5,        // hvor nær en rev må være for å ta deg
-  invulnMs: 2500,         // trygg-tid etter at man har kommet fri fra reven
-  foxPauseMs: 2000,       // reven står stille så lenge etter at man har kommet fri, så man rekker å løpe
+  invulnMs: 5000,         // trygg-tid etter at man har kommet fri fra reven
+  foxRetreatCells: 10,    // reven løper så mange ruter unna (langs gangene) når man har kommet fri
+  foxFleeSpeed: 2.6,      // revens fart når den løper unna (litt raskere enn spilleren)
+  foxFleeMaxMs: 6000,     // ... men aldri lenger enn dette
   foxes: 1,               // antall rever
   pathDoors: { liten: 6, middels: 9, stor: 12 }, // dører jevnt fordelt på veien fra start til egget
   sideDoorShare: 0.04,    // andel av de andre gangene som også får en dør
@@ -260,7 +262,7 @@ function startGame() {
   game.start = { x: 1.5, z: 1.5, a: grid[1][2] === 0 ? 0 : Math.PI / 2 };
   game.egg = { x: eggCell.x + 0.5, z: eggCell.z + 0.5, cx: eggCell.x, cz: eggCell.z };
   game.foxes = chosen.map(c => ({ x: c.x + 0.5, z: c.z + 0.5, a: 0, cx: c.x, cz: c.z, tx: c.x, tz: c.z,
-    px: -1, pz: -1, chasing: false, pauseUntil: 0 }));
+    px: -1, pz: -1, chasing: false, flee: null }));
   game.phase = 'playing';
   game.result = null;
   game.round++;
@@ -305,6 +307,15 @@ function lookAlong(f, dx, dz, maxCells, targets) {
 function chooseNext(f, now) {
   const g = game.grid;
   const open = DIRS.filter(([dx, dz]) => g[f.cz + dz][f.cx + dx] === 0);
+  if (f.flee) { // løper mot fluktmålet (se releasePlayer), ett steg nærmere hver gang
+    const here = f.flee.to[f.cz][f.cx];
+    const next = open.find(([dx, dz]) => f.flee.to[f.cz + dz][f.cx + dx] === here - 1);
+    if (here > 0 && next && now < f.flee.until) {
+      f.tx = f.cx + next[0]; f.tz = f.cz + next[1];
+      return;
+    }
+    f.flee = null;
+  }
   const prey = [...players.values()]
     .filter(p => p.connected && now >= p.invulnUntil && !isSafe(p))
     .map(p => ({ cx: Math.floor(p.x), cz: Math.floor(p.z) }));
@@ -330,8 +341,8 @@ function chooseNext(f, now) {
 }
 
 function updateFox(f, dt, now) {
-  if (f.holding || now < f.pauseUntil) return; // holder noen fast, eller har nettopp sluppet noen
-  let step = (f.chasing ? CONFIG.foxChaseSpeed : CONFIG.foxWanderSpeed) * dt;
+  if (f.holding) return; // holder noen fast
+  let step = (f.flee ? CONFIG.foxFleeSpeed : f.chasing ? CONFIG.foxChaseSpeed : CONFIG.foxWanderSpeed) * dt;
   for (let guard = 0; guard < 4 && step > 0; guard++) {
     const tx = f.tx + 0.5, tz = f.tz + 0.5;
     const dx = tx - f.x, dz = tz - f.z, d = Math.hypot(dx, dz);
@@ -361,12 +372,27 @@ function catchPlayer(p, f) {
   addEvent(`🦊 Reven fanget ${p.name}`);
 }
 
-// Fri igjen: spilleren er trygg en stund, og reven står stille litt så man rekker å løpe
+// Fri igjen: spilleren er trygg en stund, og reven løper et godt stykke unna før den leter videre
 function releasePlayer(p, now) {
   const f = p.caughtBy;
   p.caughtBy = null; p.task = null;
   p.invulnUntil = now + CONFIG.invulnMs;
-  if (f) { f.holding = null; f.pauseUntil = now + CONFIG.foxPauseMs; }
+  if (!f) return;
+  f.holding = null; f.chasing = false;
+  // Fluktmål ca. foxRetreatCells ruter unna langs gangene. Bare mål der reven ligger på korteste vei
+  // fra spilleren dit, så hele flukten går bort fra spilleren (aldri forbi). Finnes ingen så langt unna
+  // (reven står i en sidegang), løper den så langt den kommer.
+  const g = game.grid, fromP = bfs(g, Math.floor(p.x), Math.floor(p.z)), fromF = bfs(g, f.cx, f.cz);
+  const df = fromP[f.cz][f.cx], R = CONFIG.foxRetreatCells, near = [];
+  let deepest = null;
+  for (let z = 1; z < g.length - 1; z++) for (let x = 1; x < g[0].length - 1; x++) {
+    if (g[z][x] !== 0 || fromF[z][x] !== fromP[z][x] - df) continue;
+    if (fromP[z][x] >= R && fromP[z][x] <= R + 4) near.push({ x, z });
+    if (!deepest || fromP[z][x] > fromP[deepest.z][deepest.x]) deepest = { x, z };
+  }
+  const goal = near.length ? pick(near) : deepest;
+  f.flee = { to: bfs(g, goal.x, goal.z), until: now + CONFIG.foxFleeMaxMs };
+  if (f.flee.to[f.tz][f.tx] >= f.flee.to[f.cz][f.cx]) { f.tx = f.cx; f.tz = f.cz; } // ikke fortsett mot spilleren
 }
 
 let lastTick = Date.now();
@@ -385,7 +411,7 @@ function tick() {
       return endGame({ type: 'player', id: p.pid, name: p.name, color: p.color });
     }
     if (now < p.invulnUntil || isSafe(p)) continue;
-    const f = game.foxes.find(f => !f.holding && now >= f.pauseUntil && Math.hypot(p.x - f.x, p.z - f.z) < CONFIG.foxHitDist);
+    const f = game.foxes.find(f => !f.holding && !f.flee && Math.hypot(p.x - f.x, p.z - f.z) < CONFIG.foxHitDist);
     if (f) catchPlayer(p, f);
   }
   if (CONFIG.foxCanWin && now - game.startedAt > CONFIG.foxEggDelaySec * 1000 && game.foxes.some(f => f.cx === game.egg.cx && f.cz === game.egg.cz))

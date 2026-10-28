@@ -32,7 +32,7 @@ Tall i veiledningen (poeng, antall dører, ventetider, revens pause, maks oppgav
 - Egne oppgaver: lærere/foreldre lager sett på storskjermen (spørsmål, valgfri emoji, riktig svar, 1–2 feil svar; skjema eller «lim inn mange» med `spørsmål | riktig | feil | feil`). Settene lagres i nettleserens localStorage (`gullegg-sets`) og kan lastes ned/hentes som JSON-fil (`{name, tasks: [{q, pic, right, wrong[]}]}`). Ved start sendes valgt sett til serveren. Med standardoppgaver også valgt blandes de 50/50. Hver spiller trekker egne oppgaver fra en stokket bunke, så alle kommer før noen gjentas. Maks 300 per sett.
 - Alle starter i (1,1). Egget plasseres langt unna start (≥60 % av maks BFS-avstand). Reven plasseres langt fra både start og egg.
 - Poeng: 1 per ny rute man går på (`visited`, ikke for å gå fram og tilbake), 10 per løst dør, 5 for å komme fri fra reven (`foxTaskPoints`), 25 ekstra for å finne egget. Ingen liv, ingen blir ute, poeng trekkes aldri.
-- Rev: når den tar deg, holder den deg fast (`p.caughtBy`, `f.holding`) og du får et revespørsmål (samme oppgavepool som dørene). Du kan ikke gå eller gå bort fra spørsmålet. Feil svar: riktig svar vises, og serveren sender selv et nytt revespørsmål etter 3 s. Riktig svar: fri, trygg i 2,5 s, og reven står stille i 2 s så man rekker å løpe. Kobler man fra mens man er fanget, slippes man fri.
+- Rev: når den tar deg, holder den deg fast (`p.caughtBy`, `f.holding`) og du får et revespørsmål (samme oppgavepool som dørene). Du kan ikke gå eller gå bort fra spørsmålet. Feil svar: riktig svar vises, og serveren sender selv et nytt revespørsmål etter 3 s. Riktig svar: fri og trygg i 5 s (`invulnMs`), og reven flykter (`f.flee`): den velger et mål ca. 10–14 ruter unna langs gangene (`foxRetreatCells`) der hele veien går bort fra spilleren (reven ligger på korteste vei fra spilleren til målet), og løper dit med fart 2,6 uten å fange noen (maks 6 s). Står reven i en sidegang uten så lang vei bort, løper den så langt det går. Kobler man fra mens man er fanget, slippes man fri.
 - Vinner: første spiller innen 0,55 enheter fra egget. Reven vinner hvis den når egget (først etter 60 s). Vinnerskjermen viser poengtavle (poeng og dører).
 - Dørene er personlige: en dør er bare åpen for den som har løst oppgaven. Reven går gjennom dører.
 - Oppgave: står man vendt mot en lukket dør, får man en flervalgsoppgave. Riktig svar åpner døra. Feil svar viser riktig svar, så får man en ny oppgave etter 3 s. Samme ubesvarte oppgave sendes igjen (man kan ikke bytte til en lettere). Mens man løser en oppgave kan reven ikke ta en.
@@ -78,10 +78,11 @@ Server → klient:
 - Oppgavevindu med bilde, stor tekst, 🔊-knapp (Web Speech, nb-NO, leses også opp automatisk) og tre store svarknapper. Dører er treplanker med «?» og glir opp i taket når de åpnes.
 - Andre spillere og rever interpoleres jevnt mot siste mottatte posisjon.
 - Grafikk: InstancedMesh-vegger med prosedyrisk murstein (NearestFilter), tåke, lykt som følger kameraet, glødende gull-egg, lavpolygon-rev med lysende øyne, avatarer i spillerens farge med navneskilt.
+- Lyd (Web Audio, lages i koden, ingen lydfiler; startes/gjenopptas ved hvert trykk, pauses når fanen skjules): knirk når en dør åpnes (sagtann med glidende tonehøyde, hakket opp 26–58 ganger/s, gjennom båndpass), knurring fra nærmeste rev innen 7 ruter (sterkere jo nærmere, ×0,4 når den ikke jager, panorert mot revens side), bjeff av og til når den jager og når den fanger deg. Revelyden er stille mens et oppgavevindu er oppe, så opplesningen høres.
 - Effekter: rød blink og vibrasjon når reven fanger deg, oransje kant når en jagende rev er nær, Wake Lock for å holde skjermen på.
 
 ## Status
-Ferdig og testet med simulerte socket-klienter: lobby, start, vinn ved egg, poeng (nye ruter, oppgaver, egg), revespørsmål (fanget står stille, kan ikke gå bort, nytt spørsmål etter feil svar, fri etter riktig, ingen poeng trekkes, trygg-tid), labyrintstruktur (egget kan aldri nås uten dører, over 75 labyrinter).
+Ferdig og testet med simulerte socket-klienter: lobby, start, vinn ved egg, poeng (nye ruter, oppgaver, egg), revespørsmål (fanget står stille, kan ikke gå bort, nytt spørsmål etter feil svar, fri etter riktig, ingen poeng trekkes, trygg-tid, reven flykter minst 10 ruter eller til enden av en sidegang, 25 runder), labyrintstruktur (egget kan aldri nås uten dører, over 75 labyrinter).
 Også testet: egne oppgaver (validering, ingen fasit ut, bunke uten gjentakelse), skjermbilder i Chromium av redigering, lobby, mobil 3D og kart (med rev og egg), vinnerskjermer med poengtavle, dørspørsmål og revespørsmål, dører og oppgaver (ingen fasit til klienten, kan ikke gå gjennom lukket dør, ventetid etter feil), vertsnøkkel, tidtaker ved gjenoppkobling, retur til lobby når alle har koblet fra.
 Ikke testet visuelt på ekte mobil ennå.
 
@@ -89,5 +90,5 @@ Ikke testet visuelt på ekte mobil ennå.
 1. Test på iPhone og Android; juster lys, tåke, fart og knappestørrelser.
 2. Lagre egne oppgavesett på serveren (krever database og innlogging) når hjemmesiden får brukerkontoer.
 3. Romkoder, så flere spill kan kjøre samtidig (i dag finnes ett globalt spill).
-4. Lyd: fottrinn, rev som knurrer når den jager, fanfare ved seier.
+4. Mer lyd: fottrinn, fanfare ved seier, eventuelt en av/på-knapp for lydeffekter.
 5. Enkel animasjon av spilleravatarene (gange).

@@ -219,6 +219,7 @@ function join() {
   store.set('gullegg-name', n);
   nameInput.blur();
   if (canSpeak) speechSynthesis.speak(new SpeechSynthesisUtterance('')); // iOS: tale må låses opp i et trykk
+  audio(); // lås opp lyd i dette trykket
   socket.emit('join', { key, name: n });
   keepAwake();
 }
@@ -327,7 +328,7 @@ function flashHit() {
 
 socket.on('task', t => {
   const fox = t.kind === 'fox', justCaught = fox && taskKind !== 'fox';
-  if (justCaught) flashHit();
+  if (justCaught) { flashHit(); if (actx) bark(actx, 1); }
   taskKind = fox ? 'fox' : 'door'; taskDoor = fox ? null : t.door;
   speakText = (justCaught ? 'Reven har fanget deg! Svar riktig for å komme fri. ' : '') + t.speak;
   $('#task').classList.toggle('fox', fox);
@@ -379,6 +380,118 @@ function facingDoor() {
     if (dist < 0.95 && (dx * Math.cos(pos.a) + dz * Math.sin(pos.a)) / dist > 0.5) return d;
   }
   return null;
+}
+
+// ─── Lyd (lages i nettleseren med Web Audio, ingen lydfiler) ──────────
+// Mobiler tillater lyd først etter et trykk, så lydmotoren startes/gjenopptas ved hvert trykk.
+let actx = null, noiseBuf = null, growl = null, nextBark = 0;
+const FOX_HEAR = 7; // hvor langt unna (ruter) man hører reven
+
+function audio() {
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    actx = new AC();
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+addEventListener('pointerdown', audio, { passive: true });
+addEventListener('keydown', audio);
+document.addEventListener('visibilitychange', () => { // ikke knurr fra en skjult fane
+  if (!actx) return;
+  if (document.visibilityState === 'hidden') actx.suspend(); else actx.resume();
+});
+
+function noise(ctx) {
+  if (!noiseBuf) {
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+  return src;
+}
+const panner = (ctx, v) => { if (!ctx.createStereoPanner) return null; const p = ctx.createStereoPanner(); p.pan.value = v; return p; };
+
+// Knirk fra et gammelt dørhengsel: sagtann som glir i tonehøyde, hakket opp av en rask av/på-puls
+function playCreak(ctx, out = ctx.destination) {
+  const t = ctx.currentTime + 0.02, dur = 1.1, k = 0.85 + Math.random() * 0.3;
+  const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(170 * k, t);
+  osc.frequency.linearRampToValueAtTime(430 * k, t + 0.35);
+  osc.frequency.linearRampToValueAtTime(250 * k, t + 0.7);
+  osc.frequency.linearRampToValueAtTime(390 * k, t + dur);
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1300; bp.Q.value = 5;
+  const chop = ctx.createGain(); chop.gain.value = 0.5;
+  const lfo = ctx.createOscillator(); lfo.type = 'square';
+  lfo.frequency.setValueAtTime(26, t); lfo.frequency.linearRampToValueAtTime(58, t + dur);
+  const lfoAmt = ctx.createGain(); lfoAmt.gain.value = 0.5;
+  lfo.connect(lfoAmt).connect(chop.gain);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0, t);
+  env.gain.linearRampToValueAtTime(1.4, t + 0.06);
+  env.gain.setValueAtTime(1.4, t + dur - 0.25);
+  env.gain.linearRampToValueAtTime(0, t + dur);
+  osc.connect(bp).connect(chop).connect(env).connect(out);
+  for (const s of [osc, lfo]) { s.start(t); s.stop(t + dur + 0.05); }
+}
+
+// Lav knurring som går hele tiden, men med volum 0 til reven er nær
+function makeGrowl(ctx, out = ctx.destination) {
+  const gain = ctx.createGain(); gain.gain.value = 0;
+  const pan = panner(ctx, 0);
+  const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 78;
+  const wob = ctx.createOscillator(); wob.frequency.value = 0.7; // tonehøyden svinger litt
+  const wobAmt = ctx.createGain(); wobAmt.gain.value = 10;
+  wob.connect(wobAmt).connect(osc.frequency);
+  const n = noise(ctx), nAmt = ctx.createGain(); nAmt.gain.value = 0.6;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380; lp.Q.value = 4;
+  const rumble = ctx.createGain(); rumble.gain.value = 0.6; // «rr-rr-rr»
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 9;
+  const lfoAmt = ctx.createGain(); lfoAmt.gain.value = 0.4;
+  lfo.connect(lfoAmt).connect(rumble.gain);
+  osc.connect(lp); n.connect(nAmt).connect(lp);
+  lp.connect(rumble).connect(gain);
+  if (pan) gain.connect(pan).connect(out); else gain.connect(out);
+  for (const s of [osc, wob, n, lfo]) s.start();
+  return { gain, pan };
+}
+
+// To korte bjeff
+function bark(ctx, vol, pan = 0, out = ctx.destination) {
+  const t = ctx.currentTime + 0.02;
+  for (const [delay, f0] of [[0, 900], [0.2, 800]]) {
+    const o = ctx.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(f0 * 0.7, t + delay);
+    o.frequency.exponentialRampToValueAtTime(f0 * 1.25, t + delay + 0.04);
+    o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t + delay + 0.14);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t + delay);
+    g.gain.exponentialRampToValueAtTime(0.05 + 0.35 * vol, t + delay + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + delay + 0.15);
+    const p = panner(ctx, pan);
+    o.connect(g);
+    if (p) g.connect(p).connect(out); else g.connect(out);
+    o.start(t + delay); o.stop(t + delay + 0.17);
+  }
+}
+
+// Kalles hver ramme med nærmeste rev: sterkere jo nærmere, sterkest når den jager,
+// og fra den siden reven er på. Stille mens et oppgavevindu er oppe (opplesningen skal høres).
+function updateFoxSound(near, t) {
+  const ctx = actx;
+  if (!ctx || ctx.state !== 'running') return;
+  let vol = 0, pan = 0;
+  if (near && phase === 'playing' && taskKind === null && near.d < FOX_HEAR) {
+    vol = (1 - near.d / FOX_HEAR) ** 1.5 * (near.f.c ? 1 : 0.4);
+    pan = Math.sin(Math.atan2(near.f.z - pos.z, near.f.x - pos.x) - pos.a) * 0.8; // økende a = høyre
+  }
+  if (!growl && vol > 0) growl = makeGrowl(ctx);
+  if (!growl) return;
+  growl.gain.gain.setTargetAtTime(vol * 0.5, ctx.currentTime, 0.15);
+  growl.pan?.pan.setTargetAtTime(pan, ctx.currentTime, 0.1);
+  if (near?.f.c && vol > 0.15 && t > nextBark) { bark(ctx, vol, pan); nextBark = t + 1800 + Math.random() * 1800; }
 }
 
 // ─── Styring ────────────────────────────────────────────────────────────
@@ -582,7 +695,8 @@ function openDoor(id, instant) {
   const d = doors[id];
   if (!d || d.open) return;
   d.open = true;
-  if (instant) d.mesh.visible = false; else d.lifting = true;
+  if (instant) d.mesh.visible = false;
+  else { d.lifting = true; if (actx) playCreak(actx); }
 }
 
 // Serveren sender eggets posisjon først når spilleren kan se det
@@ -727,7 +841,7 @@ function loop(t) {
     o.group.position.set(o.x, 0, o.z); o.group.rotation.y = -o.a;
     o.group.visible = !o.inv || Math.floor(t / 120) % 2 === 0;
   }
-  let danger = 0;
+  let danger = 0, near = null;
   for (const f of foxes) {
     if (f.tx === undefined) continue;
     const moved = Math.hypot(f.tx - f.x, f.tz - f.z);
@@ -737,8 +851,10 @@ function loop(t) {
     f.group.userData.legs.forEach((l, i) => l.rotation.z = run * 0.6 * (i % 2 ? 1 : -1));
     const d = Math.hypot(f.x - pos.x, f.z - pos.z);
     if (f.c && d < 5) danger = Math.max(danger, 1 - d / 5);
+    if (!near || d < near.d) near = { d, f };
   }
   $('#danger').style.opacity = danger.toFixed(2);
+  updateFoxSound(near, t);
 
   if (eggGroup) {
     const egg = eggGroup.getObjectByName('egg');
