@@ -21,6 +21,7 @@ Ny kjerne i `public/kjerne/` (ES-moduler uten byggesteg, felles for alle spillen
 
 Rommet `public/rom.html` (startskjerm; blir `index.html` i steg 4):
 - **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
+- **Lave skjermer:** skjermene kan rulles og har kompakt utgave (`max-height: 520px`), så alt får plass på iPhone på tvers.
 - **Rommet:** figur, ⭐ stjerner, gullegg-teller, diplomer på klossvegg (tomme «?»-rammer viser at det finnes flere), gullegg på hyller (antall per hylle etter skjermbredde), krukker for matte/norsk (fremgang i ferdighetene) og spillkort.
 - **Opplesning:** alt leses opp ved trykk.
 - **Spillkort:** ett trykk sier navnet, to trykk starter.
@@ -37,12 +38,15 @@ Stemme og lydfiler:
 Spill (`public/spill/*.js`, lastes inn i rommet med `import()`; `export default start({ root, profile, store, onExit })`; `onExit({ game, right, total })` gir egg i rommet, `onExit(null)` = avbrutt):
 - **Flakse-fuglen** (`flakse.js`, Canvas 2D):
   - **Styring:** trykk eller mellomrom flakser.
-  - **Spillet:** tre åpninger i en klossvegg med svar på skilt. Fuglen dør aldri: treffer den veggen, spretter veggen unna. Bakken spretter også.
-  - **Runde:** 10 oppgaver fra læringsmotoren. Riktig gir pling, ros og stjerner. Feil gir «Ikke helt. Riktig svar er …», og neste spørsmål kommer etter 3,2 s.
+  - **Spillet:** tre åpninger i en klossvegg med svar på skilt.
+  - **Ingen kollisjon:** innenfor 1,8 veggbredder før veggen glir fuglen inn i nærmeste åpne åpning (`ASSIST`). Den treffer aldri murstein, så et barn som sikter litt skjevt, tror ikke at svaret var feil. Bakken spretter.
+  - **Feil svar:** «Ikke helt. Prøv igjen!», og samme spørsmål kommer på en ny vegg der den feile åpningen er murt igjen, helt til riktig åpning. Etter to feil er bare riktig åpen. Riktig svar avsløres ikke ved feil.
+  - **Bare første forsøk teller** i læringsmotoren og for stjernene.
+  - **Runde:** 10 spørsmål fra læringsmotoren. Riktig gir pling, ros og stjerner.
   - **Tempo:** veggen bruker 6,5 s til fuglen, ned til 70 % ved mange riktige på rad.
   - **Fuglen** har spillerens farge.
   - **Avslutte:** ✕ holdes inne 1 s.
-  - **Test:** `#test=riktig|feil` i adressen slår på autopilot og eksponerer `window.__flakse` (brukes av automatiske tester).
+  - **Test:** `#test=riktig|slurv|feil` i adressen slår på autopilot («slurv» sikter mot kanten av riktig åpning) og eksponerer `window.__flakse` (brukes av automatiske tester).
 
 ## Spillveiledning – hold den oppdatert
 `public/veiledning.html` (rute `/veiledning`, lenket fra lobbyen og fra «Egne oppgaver») er veiledningen for lærere og foreldre.

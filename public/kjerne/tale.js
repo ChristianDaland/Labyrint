@@ -42,6 +42,7 @@ export const T = {
   task: t => [t.speak],
   right: () => [RIGHT[Math.floor(Math.random() * RIGHT.length)]],
   wrong: t => ['Ikke helt.', 'Riktig svar er', spoken(t.options[t.answer]) + '.'],
+  tryAgain: () => ['Ikke helt.', 'Prøv igjen!'],
 
   // Flakse-fuglen
   flapStart: () => ['Trykk for å flakse.', 'Fly gjennom riktig svar!'],
@@ -78,6 +79,6 @@ export function allPhrases(samples) {
   }
   for (const subject of ['matte', 'norsk']) for (let l = 0; l <= skillsOf(subject).length; l++) add(T.subject(subject, l));
   RIGHT.forEach(r => out.add(r));
-  add(['Ikke helt.', 'Riktig svar er']);
+  add(['Ikke helt.', 'Riktig svar er']); add(T.tryAgain());
   return out;
 }

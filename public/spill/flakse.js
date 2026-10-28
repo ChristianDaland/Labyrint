@@ -1,5 +1,6 @@
-// Flakse-fuglen: trykk for å flakse, og fly gjennom åpningen med riktig svar. Fuglen dør aldri:
-// treffer den en vegg, spretter veggen litt unna så man kan prøve igjen. En runde er 10 oppgaver.
+// Flakse-fuglen: trykk for å flakse, og fly gjennom åpningen med riktig svar. Fuglen kan ikke krasje:
+// nær veggen glir den inn i åpningen den er nærmest. Feil svar gir samme spørsmål på en ny vegg der
+// den feile åpningen er murt igjen, helt til han flyr gjennom riktig. En runde er 10 oppgaver.
 // Lastes inn i rommet (rom.html), som deler ut gullegget når runden er ferdig.
 
 import { nextTask, recordAnswer } from '../kjerne/laering.js';
@@ -18,6 +19,7 @@ const GRAVITY = 1.5;     // feltets høyde per s²
 const FLAP = -0.55;      // fart oppover etter et trykk
 const MAX_FALL = 0.65;
 const GAP = 0.24;        // hver åpning er 24 % av feltets høyde
+const ASSIST = 1.8;      // så mange veggbredder før veggen begynner fuglen å gli mot nærmeste åpning
 
 const CSS = `
   .fl { position: fixed; inset: 0; z-index: 5; background: #8fd3ff; overflow: hidden; touch-action: none;
@@ -66,12 +68,12 @@ export default function start({ root, profile, store, onExit }) {
   const $ = s => root.querySelector(s);
   const canvas = $('canvas'), ctx = canvas.getContext('2d');
   const color = profileColor(profile);
-  const test = /(?:^|[#&])test(?:=(\w+))?/.exec(location.hash); // autopilot for automatiske tester: #test=riktig|feil
+  const test = /(?:^|[#&])test(?:=(\w+))?/.exec(location.hash); // autopilot for automatiske tester: #test=riktig|slurv|feil
 
   const st = {
     W: 0, H: 0, top: 0, ground: 0, B: 0, r: 0, wallW: 0, birdX: 0,
     y: 0, vy: 0, flapT: 0, started: false, done: false, t: 0, scroll: 0,
-    walls: [], nextSpawn: null, slowUntil: 0, lastBump: 0,
+    walls: [], nextSpawn: null, retry: null,
     answered: 0, right: 0, streak: 0, task: null, particles: [], results: [],
     auto: test ? test[1] || 'riktig' : null,
   };
@@ -100,11 +102,9 @@ export default function start({ root, profile, store, onExit }) {
     const g = st.B * GAP, s = (st.B - 3 * g) / 4, y0 = st.top + s * (i + 1) + g * i;
     return { y0, y1: y0 + g, cy: y0 + g / 2 };
   }
-  const speed = () => {
-    const factor = Math.max(FASTEST, 1 - 0.05 * st.streak);
-    const v = (st.W - st.birdX + st.wallW) / (TRAVEL * factor);
-    return st.t < st.slowUntil ? v * 0.3 : v;
-  };
+  const speed = () => (st.W - st.birdX + st.wallW) / (TRAVEL * Math.max(FASTEST, 1 - 0.05 * st.streak));
+  // Nærmeste åpne åpning til en høyde
+  const nearestOpen = (w, y) => [0, 1, 2].filter(i => w.open[i]).reduce((a, b) => Math.abs(gap(a).cy - y) <= Math.abs(gap(b).cy - y) ? a : b);
 
   // ─── Oppgaver ───────────────────────────────────────────────────────
   function showTask(t) {
@@ -117,7 +117,7 @@ export default function start({ root, profile, store, onExit }) {
     renderProgress();
     layout(); // spørsmålet kan endre høyden på toppfeltet
     lyd.say(T.task(t));
-    lyd.prefetch(T.wrong(t), T.right());
+    lyd.prefetch(T.tryAgain(), T.right());
   }
 
   function renderProgress() {
@@ -126,32 +126,39 @@ export default function start({ root, profile, store, onExit }) {
     });
   }
 
+  // Ny vegg: et nytt spørsmål, eller samme spørsmål igjen (med de feile åpningene murt igjen) etter feil svar
   function spawn() {
-    st.task = nextTask(profile);
-    st.walls.push({ x: st.W + st.wallW, task: st.task, chosen: -1 });
+    const r = st.retry;
+    st.task = r ? r.task : nextTask(profile);
+    st.walls.push({ x: st.W + st.wallW, task: st.task, chosen: -1, open: r ? r.open : [true, true, true], attempt: r ? r.attempt : 0 });
+    st.retry = null;
     st.nextSpawn = null;
     showTask(st.task);
   }
 
+  // Bare første forsøk teller i læringsmotoren og for stjernene
   function answer(w, i) {
-    const correct = i === w.task.answer;
+    const correct = i === w.task.answer, first = w.attempt === 0;
     w.chosen = i;
-    st.results.push(correct);
-    st.answered++;
-    const events = recordAnswer(profile, w.task.skill, correct);
-    awardSkills(profile, events);
-    store.save();
+    if (first) {
+      awardSkills(profile, recordAnswer(profile, w.task.skill, correct));
+      store.save();
+    }
     if (correct) {
-      st.right++; st.streak++;
+      if (first) { st.right++; st.streak++; }
+      st.results.push(first);
+      st.answered++;
       lyd.pling(); lyd.say(T.right());
       burst();
+      renderProgress();
+      if (st.answered >= ROUND) setTimeout(finish, 1500);
+      else st.nextSpawn = st.t + 1.4;
     } else {
       st.streak = 0;
-      lyd.oops(); lyd.say(T.wrong(w.task));
+      lyd.oops(); lyd.say(T.tryAgain());
+      st.retry = { task: w.task, open: w.open.map((o, j) => o && j !== i), attempt: w.attempt + 1 };
+      st.nextSpawn = st.t + 2.4; // tid til å høre «Ikke helt. Prøv igjen!»
     }
-    renderProgress();
-    if (st.answered >= ROUND) setTimeout(finish, 1500);
-    else st.nextSpawn = st.t + (correct ? 1.4 : 3.2); // tid til å høre riktig svar før neste spørsmål
   }
 
   function finish() {
@@ -206,18 +213,18 @@ export default function start({ root, profile, store, onExit }) {
 
     const w = st.walls.find(w => w.chosen < 0);
     if (w) {
-      const inGap = [0, 1, 2].find(i => { const g = gap(i); return st.y - st.r * 0.7 >= g.y0 && st.y + st.r * 0.7 <= g.y1; });
-      const overlaps = st.birdX + st.r * 0.75 > w.x && st.birdX - st.r * 0.75 < w.x + st.wallW;
-      if (overlaps && inGap === undefined && st.t - st.lastBump > 0.4) { // treffer veggen: den spretter unna
-        st.lastBump = st.t;
-        w.x = st.birdX + st.r + st.W * 0.12;
-        st.slowUntil = st.t + 0.6;
-        lyd.bump();
-      } else if (st.birdX > w.x + st.wallW / 2 && inGap !== undefined) {
-        answer(w, inGap);
+      // Nær veggen glir fuglen inn i nærmeste åpne åpning, så den aldri treffer murstein
+      const dist = w.x - st.birdX;
+      if (dist < st.wallW * ASSIST && dist > -st.wallW) {
+        const k = Math.min(1, dt * 7), cy = gap(nearestOpen(w, st.y)).cy;
+        st.y += (cy - st.y) * k;
+        st.vy *= 1 - k;
       }
-      if (st.auto) { // autopilot for tester: styr mot riktig (eller feil) åpning
-        const target = gap(st.auto === 'feil' ? (w.task.answer + 1) % 3 : w.task.answer).cy;
+      if (st.birdX > w.x + st.wallW / 2) answer(w, nearestOpen(w, st.y));
+      if (st.auto) { // autopilot for tester: styr mot riktig (eller feil, så lenge det finnes en) åpning
+        const wrong = [0, 1, 2].find(i => w.open[i] && i !== w.task.answer);
+        const edge = st.auto === 'slurv' ? st.B * GAP * 0.48 : 0; // «slurv»: sikter mot kanten, nesten i mursteinen
+        const target = gap(st.auto === 'feil' && wrong !== undefined ? wrong : w.task.answer).cy + edge;
         if (st.y > target + st.B * 0.02 && st.vy > -st.B * 0.1) flap();
       }
     } else if (st.auto && st.y > st.top + st.B * 0.55 && st.vy > 0) flap();
@@ -291,12 +298,14 @@ export default function start({ root, profile, store, onExit }) {
     bricks(w.x, g[0].y1, st.wallW, g[1].y0 - g[0].y1);
     bricks(w.x, g[1].y1, st.wallW, g[2].y0 - g[1].y1);
     bricks(w.x, g[2].y1, st.wallW, st.ground - g[2].y1);
+    g.forEach((gg, i) => { if (!w.open[i]) bricks(w.x, gg.y0, st.wallW, gg.y1 - gg.y0); }); // murt igjen etter feil svar
     w.task.options.forEach((label, i) => {
+      if (!w.open[i]) return;
       const { y0, y1, cy } = g[i];
-      const answered = w.chosen >= 0, isRight = i === w.task.answer;
-      // Åpningen markeres med en ramme, og svaret står på et skilt midt i
-      if (answered && (isRight || i === w.chosen)) {
-        ctx.fillStyle = isRight ? 'rgba(60,179,113,.35)' : 'rgba(217,83,79,.3)';
+      // Den valgte åpningen blir grønn (riktig) eller rød (feil). Riktig svar avsløres ikke ved feil, for han skal prøve igjen.
+      const picked = i === w.chosen, ok = picked && i === w.task.answer;
+      if (picked) {
+        ctx.fillStyle = ok ? 'rgba(60,179,113,.35)' : 'rgba(217,83,79,.3)';
         ctx.fillRect(w.x - 6, y0, st.wallW + 12, y1 - y0);
       }
       let size = Math.min((y1 - y0) * 0.42, 54);
@@ -307,10 +316,10 @@ export default function start({ root, profile, store, onExit }) {
       const sw = Math.max(st.wallW * 1.2, tw + 26), sh = size * 1.35;
       const sx = w.x + st.wallW / 2 - sw / 2, sy = cy - sh / 2;
       ctx.fillStyle = 'rgba(0,0,0,.18)'; roundRect(sx, sy + 4, sw, sh, 12); ctx.fill();
-      ctx.fillStyle = answered ? (isRight ? '#4cc46a' : i === w.chosen ? '#e0533d' : '#fff4dc') : '#fff4dc';
+      ctx.fillStyle = picked ? (ok ? '#4cc46a' : '#e0533d') : '#fff4dc';
       roundRect(sx, sy, sw, sh, 12); ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = '#7a4b2a'; ctx.stroke();
-      ctx.fillStyle = answered && (isRight || i === w.chosen) ? '#fff' : '#2a2418';
+      ctx.fillStyle = picked ? '#fff' : '#2a2418';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(label, w.x + st.wallW / 2, cy + size * 0.05);
     });
