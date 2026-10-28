@@ -3,10 +3,10 @@
 // alle bitene som trengs. Nye setninger legges inn her, så de kommer med neste gang lydfilene lages.
 
 import { ANIMALS, COLORS, profileName } from './lagring.js';
-import { SKILLS, skillsOf, skillLabel, makeTask } from './oppgaver.js';
+import { SKILLS, SPELL_SKILLS, ALL_SPELL_WORDS, ALPHABET, skillsOf, skillLabel, makeTask } from './oppgaver.js';
 import { MILESTONES, EGG_KINDS, EGG_NAMES, eggKind } from './belonning.js';
 
-export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen' };
+export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen', ordbygger: 'Ordbyggeren' };
 const MAX_NUMBER = 300; // tall som finnes som lydfil (større tall leses av enhetens stemme)
 const stars = n => (n === 1 ? 'stjerne.' : 'stjerner.');
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -63,6 +63,11 @@ export const T = {
   snakeStart: () => ['Trykk der slangen skal gå.', 'Spis riktig svar!'],
   roundDone: n => ['Bra jobba!', 'Du fikk', String(n), stars(n)],
 
+  // Ordbyggeren
+  spellStart: () => ['Bygg ordet med bokstavene.', 'Dra dem på plass, eller trykk på dem.'],
+  letter: L => [L + '.'],            // bokstavnavnet, til bokstavlydene er spilt inn (lyd.LETTER_FILES)
+  word: w => [w.toLowerCase() + '.'], // ordet leses når det er ferdig bygget
+
   // Labyrinten
   mazeStart: () => ['Finn gull-egget!', 'Trykk på pilene for å gå.'],
   foxCaught: () => ['Reven har fanget deg!', 'Svar riktig for å komme fri.'],
@@ -98,7 +103,10 @@ export function allPhrases(samples) {
   }
   for (let n = 0; n <= MAX_NUMBER; n++) { add(T.starsHave(n)); add(T.newEggs(Array(n).fill({ stars: 3 }))); add(T.roundDone(n)); }
   for (const m of MILESTONES) add(T.newDiploma(m.text));
-  for (const s of SKILLS) add(T.newDiploma(s.diploma));
+  for (const s of [...SKILLS, ...SPELL_SKILLS]) add(T.newDiploma(s.diploma));
+  for (const w of ALL_SPELL_WORDS) { out.add(`Stav ordet ${w}.`); add(T.word(w)); }
+  for (const L of ALPHABET) add(T.letter(L));
+  add(T.spellStart());
   for (const id of Object.keys(GAME_NAMES)) {
     add(T.gameName(id)); add(T.comingSoon(id));
     for (let n = 1; n <= 3; n++) add(T.egg({ game: id, stars: n }));

@@ -335,6 +335,7 @@ const GAMES = [
   { id: 'flakse', emoji: '🐦', name: 'Flakse-fuglen', module: './spill/flakse.js', ready: true },
   { id: 'labyrint', emoji: '🧱', name: 'Labyrinten', module: './spill/labyrint.js', ready: true },
   { id: 'slange', emoji: '🐍', name: 'Slangen', module: './spill/slange.js', ready: true },
+  { id: 'ordbygger', emoji: '🧩', name: 'Ordbyggeren', module: './spill/ordbygger.js', ready: true },
 ];
 
 function show(id) {
@@ -423,7 +424,7 @@ const perShelf = () => Math.max(4, Math.min(10, Math.floor(($('#shelves').client
 
 // Ikonet på diplomet (HTML). Gullegg tegnes selv: 🥚-emojien er et brunt hverdagsegg.
 function diplomaIcon(d) {
-  if (d.id.startsWith('kan-')) return SKILL_BY_ID[d.id.slice(4)]?.subject === 'norsk' ? '📖' : '➕';
+  if (d.id.startsWith('kan-')) return { norsk: '📖', stave: '🧩' }[SKILL_BY_ID[d.id.slice(4)]?.subject] || '➕';
   if (d.id.startsWith('egg') || d.id.startsWith('gull')) return '<span class="egg" style="font-size:.75em"></span>';
   if (d.id.startsWith('matte')) return '🔢';
   if (d.id.startsWith('norsk')) return '🔤';

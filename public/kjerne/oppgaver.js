@@ -95,7 +95,7 @@ const RHYMES = [['sol', 'stol', 'fiol'], ['bil', 'pil', 'smil'], ['hus', 'mus', 
 // Rekkefølgen bokstavene innføres i. Vanlig i leseopplæring: lyder som kan dras ut (S, O, L, I, M) først.
 // Bytt ut med rekkefølgen i ABC-boka som brukes, hvis den er en annen.
 export const LETTER_ORDER = 'SOLIMAERNTUKFBDGHPJVØÅÆYCWXZQ';
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ';
+export const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ';
 const FIRST_LETTERS = 'ABDEFGHIKLMNOPRSTU'; // feilsvar for «hvilken bokstav begynner …»
 const VOWELS = 'AEIOUYÆØÅ';
 const up = s => s.toUpperCase();
@@ -142,6 +142,30 @@ function syllables(skill) {
   return task(skill, `Hvor mange stavelser har ${up(w)}?`, s, nearby(s, 1, 4), { pic, speak: `Hvor mange stavelser har ${w}? Klapp og tell!` });
 }
 
+// ─── Staving (eget fag med eget spill, Ordbyggeren) ────────────────────
+// Lydrette ord: skrives slik de høres, uten stumme bokstaver (ikke «hund», «tog»). [ord, bilde]
+const SPELL_WORDS = {
+  kort: [['is', '🍦'], ['ku', '🐮'], ['sol', '☀️'], ['bil', '🚗'], ['mus', '🐭'], ['hus', '🏠'], ['bok', '📖'], ['båt', '⛵'],
+    ['fly', '✈️'], ['rev', '🦊'], ['tre', '🌳'], ['sko', '👟'], ['ape', '🐒'], ['ost', '🧀'], ['ris', '🍚'], ['øre', '👂'],
+    ['bie', '🐝'], ['sau', '🐑'], ['snø', '❄️'], ['sel', '🦭']],
+  fire: [['ugle', '🦉'], ['måne', '🌙'], ['eple', '🍎'], ['kake', '🎂'], ['gave', '🎁'], ['pære', '🍐'], ['løve', '🦁'],
+    ['gris', '🐷'], ['fisk', '🐟'], ['hest', '🐴'], ['melk', '🥛'], ['nese', '👃'], ['rose', '🌹'], ['mais', '🌽'], ['lama', '🦙']],
+  dobbel: [['katt', '🐱'], ['hatt', '🎩'], ['ball', '⚽'], ['buss', '🚌'], ['sopp', '🍄'], ['egg', '🥚'], ['nøtt', '🌰'],
+    ['vott', '🧤'], ['rakett', '🚀'], ['nøkkel', '🔑']],
+  lang: [['sebra', '🦓'], ['banan', '🍌'], ['tomat', '🍅'], ['kanin', '🐰'], ['frosk', '🐸'], ['tiger', '🐯'], ['ananas', '🍍'],
+    ['elefant', '🐘'], ['gulrot', '🥕'], ['potet', '🥔'], ['sitron', '🍋'], ['robot', '🤖'], ['kamel', '🐫'], ['delfin', '🐬']],
+};
+export const ALL_SPELL_WORDS = Object.values(SPELL_WORDS).flat().map(([w]) => w);
+const EXTRA_LETTERS = 'AEIOUSLMNRTKBDGPFH';
+
+// Staveoppgave: { skill, kind: 'stave', q, word, pic, tiles, ghost, speak }. `tiles` er bokstavene i ordet pluss
+// `extra` bokstaver som ikke er i ordet, stokket. `ghost`: bokstavene vises svakt i rutene (å kopiere).
+function spell(skill, list, { ghost = false, extra = 0 } = {}) {
+  const [w, pic] = pick(SPELL_WORDS[list]), W = up(w);
+  const tiles = shuffle([...W, ...shuffle([...EXTRA_LETTERS].filter(c => !W.includes(c))).slice(0, extra)]);
+  return { skill, kind: 'stave', q: 'Stav ordet', word: W, pic, tiles, ghost, speak: `Stav ordet ${w}.` };
+}
+
 // ─── Ferdighetene, i læringsrekkefølge per fag ─────────────────────────
 // `diploma` er teksten på diplomet når ferdigheten er mestret (leses opp).
 export const SKILLS = [
@@ -171,8 +195,17 @@ export const SKILLS = [
   { id: 'stavelser', subject: 'norsk', diploma: 'Du kan dele ord i stavelser!', make: s => syllables(s) },
   { id: 'ordlang', subject: 'norsk', diploma: 'Du kan lese lange ord!', make: s => wordForPicture(s, false) },
 ];
-export const SKILL_BY_ID = Object.fromEntries(SKILLS.map(s => [s.id, s]));
-export const skillsOf = subject => SKILLS.filter(s => s.subject === subject);
+// Staving: brukes bare i Ordbyggeren (oppgavene er ikke flervalg), så de står utenfor SKILLS
+export const SPELL_SKILLS = [
+  { id: 'stavkopi', subject: 'stave', diploma: 'Du kan bygge ord!', make: s => spell(s, 'kort', { ghost: true }) },
+  { id: 'stavkort', subject: 'stave', diploma: 'Du kan stave korte ord!', make: s => spell(s, 'kort') },
+  { id: 'stavvelg', subject: 'stave', diploma: 'Du finner de riktige bokstavene!', make: s => spell(s, 'kort', { extra: 2 }) },
+  { id: 'stavfire', subject: 'stave', diploma: 'Du kan stave ord med fire bokstaver!', make: s => spell(s, 'fire', { extra: 2 }) },
+  { id: 'stavdobbel', subject: 'stave', diploma: 'Du kan stave ord med dobbel bokstav!', make: s => spell(s, 'dobbel', { extra: 2 }) },
+  { id: 'stavlang', subject: 'stave', diploma: 'Du kan stave lange ord!', make: s => spell(s, 'lang', { extra: 2 }) },
+];
+export const SKILL_BY_ID = Object.fromEntries([...SKILLS, ...SPELL_SKILLS].map(s => [s.id, s]));
+export const skillsOf = subject => [...SKILLS, ...SPELL_SKILLS].filter(s => s.subject === subject);
 
 export const makeTask = skillId => SKILL_BY_ID[skillId].make(skillId);
 

@@ -7,7 +7,8 @@ Status (28.10.2026): planen er godkjent.
 - **Steg 5 (hjem-skjerm-app, publisering, ny veiledning) er gjort før steg 4:** rommet ligger på `index.html` (fast adresse for ikonet), det gamle storskjerm-spillet på `storskjerm.html`, og GitHub Actions publiserer bare `public/`. Lyden følger ikke lenger lydløs-bryteren på iOS 16.4+.
 - **Steg 4 (Labyrinten som enspiller) er ferdig:** `public/spill/labyrint.js` og `labyrint-kart.js`. Det gamle flerspillerspillet (server, Socket.io, storskjerm) er fjernet; Render-tjenesten kan slettes.
 - **Slangen er lagt til** som tredje spill: `public/spill/slange.js`. Spis skiltet med riktig svar; kan ikke krasje.
-- **Neste:** test med barn, deretter steg 6 (innspilte bokstavlyder) og flere spill.
+- **Ordbyggeren er lagt til:** `public/spill/ordbygger.js`. Staving med bokstavbrikker, eget fag `stave` med seks nivåer.
+- **Neste:** test med barn, deretter steg 6 (innspilte bokstavlyder, som også gir lyd på brikkene i Ordbyggeren) og flere spill.
 
 ## 1. Mål og rammer
 
@@ -31,6 +32,7 @@ Bestemt så langt:
 | Flakse-fuglen | Server, kontoer, synkronisering mellom enheter |
 | Labyrinten, som enspiller | Foreldreoversikt |
 | Slangen | |
+| Ordbyggeren (staving) | |
 | Felles læringsmotor som tilpasser seg | Redigering av egne oppgaver (finnes i dag, kommer tilbake senere) |
 | Profiler (velg figur) på samme enhet | Innspilte bokstavlyder (planlagt rett etter) |
 | Lagring på enheten, med sikkerhetskopi | Å forme bokstaver med fingeren |
