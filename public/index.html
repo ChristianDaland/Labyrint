@@ -76,7 +76,35 @@
   #denied h2 { font-size: 44px; color: var(--gold); margin-bottom: 12px; }
   #denied p { font-size: 19px; color: var(--muted); max-width: 40ch; line-height: 1.5; }
 
+  .linkbtn { background: none; border: 0; padding: 4px 0; font: 800 16px 'Nunito', sans-serif; color: var(--gold);
+    text-decoration: underline; cursor: pointer; box-shadow: none; }
+
+  /* Egne oppgaver */
+  #editor { max-width: 1200px; margin: 0 auto; padding: clamp(20px, 4vw, 48px); }
+  .ed-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .ed-head h2 { font-size: 44px; color: var(--gold); }
+  .ed-intro { color: var(--muted); font-size: 17px; line-height: 1.5; max-width: 70ch; margin: 0 0 24px; }
+  .ed-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  .panel { background: var(--moss); border: 3px solid var(--moss-2); border-radius: 22px; padding: 22px; display: grid; gap: 14px; }
+  .panel h3 { font-size: 26px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .small { font-size: 17px; padding: 10px 16px; }
+  input, textarea { font: 700 17px 'Nunito', sans-serif; padding: 10px 14px; border-radius: 12px; background: var(--night);
+    color: var(--cream); border: 2px solid var(--moss-2); width: 100%; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--gold); }
+  .ed-list { display: grid; gap: 8px; max-height: 46vh; overflow: auto; }
+  .ed-item { display: flex; gap: 10px; align-items: center; background: var(--night); border-radius: 12px; padding: 10px 12px; }
+  .ed-item .txt { flex: 1; min-width: 0; }
+  .ed-item .q { font-weight: 800; overflow-wrap: anywhere; }
+  .ed-item .a { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+  .ed-item .a b { color: #7fd88f; }
+  .ed-item button { font: 800 14px 'Nunito', sans-serif; padding: 6px 10px; border-radius: 8px; background: var(--moss-2); color: var(--cream); }
+  .hint { color: var(--muted); font-size: 14px; line-height: 1.45; margin: 0; }
+  details summary { cursor: pointer; font-weight: 800; color: var(--gold); }
+  .err { color: #ff8a73; font-weight: 800; min-height: 1.2em; }
+
   @media (max-width: 860px) {
+    .ed-grid { grid-template-columns: 1fr; }
     #lobby { grid-template-columns: 1fr; }
     #play { grid-template-columns: 1fr; grid-template-rows: 60vh auto; }
   }
@@ -90,23 +118,83 @@
     <p class="lead">Et gull-egg er gjemt et sted i en helt ny labyrint. Førstemann som finner det, vinner.</p>
     <div class="rules">
       <div><span>📱</span><span>Skann koden og styr med pilene på mobilen.</span></div>
-      <div><span>🦊</span><span>Revene leter også. Krasjer du med en rev, mister du et liv.</span></div>
-      <div><span>❤️</span><span>Alle har tre liv. Ser du en rev, snu og løp!</span></div>
+      <div><span>🚪</span><span>Dørene er låst. Løs en oppgave for å åpne dem.</span></div>
+      <div><span>🦊</span><span>En rev leter også. Krasjer du med den, mister du et liv.</span></div>
+      <div><span>❤️</span><span>Alle har tre liv. Ser du reven, snu og løp!</span></div>
     </div>
     <div class="settings">
       <label>Labyrint
         <select id="size"><option value="liten">Liten</option><option value="middels">Middels</option><option value="stor">Stor</option></select>
       </label>
-      <label>Rever
-        <select id="foxes"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+      <label>Trinn
+        <select id="grade"><option value="1">1. trinn</option><option value="2">2. trinn</option></select>
+      </label>
+      <label>Standardoppgaver
+        <select id="subject"><option value="begge">Matte og norsk</option><option value="matte">Matte</option><option value="norsk">Norsk</option><option value="ingen">Ingen</option></select>
+      </label>
+      <label>Egne oppgaver
+        <select id="customSel"></select>
       </label>
       <button id="startBtn" class="gold" disabled>Start runden</button>
     </div>
+    <button class="linkbtn" id="editBtn">✏️ Lag egne oppgaver</button>
+    <p class="hint" id="customInfo"></p>
   </div>
   <div class="joinbox">
     <img class="qr" src="/qr.png" alt="QR-kode for å bli med">
     <div class="url">eller gå til <b id="joinUrl"></b></div>
     <div class="chips" id="chips"></div>
+  </div>
+</section>
+
+<section id="editor" class="hidden">
+  <div class="ed-head">
+    <h2>Egne oppgaver</h2>
+    <button class="ghost" id="edBack">Tilbake til lobbyen</button>
+  </div>
+  <p class="ed-intro">Lag oppgaver barnet skal løse ved dørene. Spørsmålet leses opp på mobilen, og barnet velger mellom
+    riktig svar og ett eller to feil svar. Settene lagres i denne nettleseren. Last ned et sett som fil for å dele det
+    eller ta det med til en annen maskin.</p>
+  <div class="ed-grid">
+    <div class="panel">
+      <div class="row">
+        <label style="flex:1">Oppgavesett <select id="edSet"></select></label>
+      </div>
+      <div class="row">
+        <button class="ghost small" id="edNew">+ Nytt sett</button>
+        <button class="ghost small" id="edDelete">Slett settet</button>
+      </div>
+      <label>Navn på settet <input id="edName" maxlength="40"></label>
+      <div class="ed-list" id="edList"></div>
+      <div class="row">
+        <button class="ghost small" id="edExport">⬇ Last ned som fil</button>
+        <button class="ghost small" id="edImportBtn">⬆ Hent fra fil</button>
+        <input type="file" id="edImport" accept=".json,application/json" hidden>
+      </div>
+      <div class="err" id="edFileErr"></div>
+    </div>
+    <div class="panel">
+      <h3 id="fTitle">Ny oppgave</h3>
+      <form id="edForm" style="display:grid;gap:12px">
+        <label>Spørsmål (leses opp for barnet) <input id="fQ" maxlength="200" required placeholder="Hva er 5 + 3?"></label>
+        <label>Emoji som bilde (valgfritt) <input id="fPic" maxlength="24" placeholder="🐱"></label>
+        <label>Riktig svar <input id="fRight" maxlength="40" required placeholder="8"></label>
+        <label>Feil svar <input id="fW1" maxlength="40" required placeholder="7"></label>
+        <label>Feil svar 2 (valgfritt) <input id="fW2" maxlength="40" placeholder="9"></label>
+        <div class="err" id="fErr"></div>
+        <div class="row">
+          <button class="gold small" type="submit" id="fSave">Legg til oppgave</button>
+          <button class="ghost small hidden" type="button" id="fCancel">Avbryt endring</button>
+        </div>
+      </form>
+      <details>
+        <summary>Lim inn mange oppgaver på en gang</summary>
+        <p class="hint" style="margin:10px 0">Én oppgave per linje: <b>spørsmål | riktig svar | feil svar | feil svar</b>.
+          Emoji kan stå først i spørsmålet.</p>
+        <textarea id="bulk" rows="6" placeholder="Hva rimer på hus? | mus | bil | sol&#10;Hvor mange bein har en edderkopp? | 8 | 6 | 4"></textarea>
+        <div class="row" style="margin-top:10px"><button class="ghost small" id="bulkAdd">Legg til</button><span class="hint" id="bulkInfo"></span></div>
+      </details>
+    </div>
   </div>
 </section>
 
@@ -143,7 +231,7 @@
 const $ = s => document.querySelector(s);
 const socket = io();
 const hostKey = new URLSearchParams(location.search).get('key') || '';
-socket.on('connect', () => socket.emit('host', { key: hostKey }));
+socket.on('connect', () => { socket.emit('host', { key: hostKey }); sendCustom(); });
 socket.on('hostDenied', () => $('#denied').classList.remove('hidden'));
 $('#joinUrl').textContent = location.host + '/play';
 
@@ -151,14 +239,13 @@ let lobby = { players: [] }, game = null, state = { players: [], foxes: [] }, st
 const log = [];
 
 function view(id) {
-  $('#lobby').classList.toggle('hidden', id !== 'lobby');
-  $('#play').classList.toggle('hidden', id !== 'play');
-  if (id !== 'end-keep') $('#end').classList.add('hidden');
+  for (const s of ['lobby', 'editor', 'play']) $('#' + s).classList.toggle('hidden', id !== s);
+  $('#end').classList.add('hidden');
 }
 
 socket.on('lobby', d => {
   lobby = d;
-  $('#size').value = d.settings.size; $('#foxes').value = String(d.settings.foxes);
+  $('#size').value = d.settings.size; $('#grade').value = String(d.settings.grade); $('#subject').value = d.settings.subject;
   const chips = $('#chips');
   chips.innerHTML = d.players.length ? '' : '<span class="empty">Ingen har blitt med ennå</span>';
   for (const p of d.players) {
@@ -167,7 +254,10 @@ socket.on('lobby', d => {
     c.append(p.name); chips.append(c);
   }
   $('#startBtn').disabled = !d.players.length;
-  if (d.phase === 'lobby') { game = null; view('lobby'); }
+  const { customName: n, customCount: c, subject } = d.settings;
+  $('#customInfo').textContent = c ? `Runden bruker «${n}» (${c} oppgaver)${subject === 'ingen' ? '' : ' blandet med standardoppgavene'}.`
+    : subject === 'ingen' ? 'Ingen egne oppgaver er valgt, så standardoppgavene brukes.' : '';
+  if (d.phase === 'lobby') { game = null; if ($('#editor').classList.contains('hidden')) view('lobby'); }
 });
 socket.on('game', d => {
   game = d; startedAt = Date.now() - d.elapsed;
@@ -182,23 +272,182 @@ socket.on('end', showEnd);
 function showEnd(r) {
   const win = r.type === 'player';
   $('#endIcon').textContent = win ? '🥚' : '🦊';
-  $('#endTitle').textContent = win ? `${r.name} fant gull-egget!` : r.type === 'fox' ? 'En rev tok gull-egget!' : 'Revene tok alle!';
+  $('#endTitle').textContent = win ? `${r.name} fant gull-egget!` : r.type === 'fox' ? 'Reven tok gull-egget!' : 'Reven tok alle!';
   if (win) $('#endTitle').style.color = r.color; else $('#endTitle').style.color = '';
   $('#end').classList.remove('hidden');
 }
 
-const sendSettings = () => socket.emit('settings', { size: $('#size').value, foxes: $('#foxes').value });
-$('#size').onchange = sendSettings; $('#foxes').onchange = sendSettings;
-$('#startBtn').onclick = () => socket.emit('start');
-$('#againBtn').onclick = () => socket.emit('start');
+const sendSettings = () => socket.emit('settings', { size: $('#size').value, grade: $('#grade').value, subject: $('#subject').value });
+$('#size').onchange = sendSettings; $('#grade').onchange = sendSettings; $('#subject').onchange = sendSettings;
+const start = () => { sendCustom(); socket.emit('start'); }; // send siste versjon av settet før start
+$('#startBtn').onclick = start;
+$('#againBtn').onclick = start;
 $('#lobbyBtn').onclick = () => socket.emit('toLobby');
 $('#stopBtn').onclick = () => { if (confirm('Avslutte runden og gå tilbake til lobbyen?')) socket.emit('toLobby'); };
+
+// ─── Egne oppgaver (lagres i nettleseren) ──────────────────────────────
+// Sett: { id, name, tasks: [{ q, pic, right, wrong: [..] }] }
+const store = {
+  get: (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let sets = store.get('gullegg-sets', []);
+let chosenId = store.get('gullegg-chosen', '');
+let edId = null, editIdx = -1;
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const cur = () => sets.find(s => s.id === edId);
+
+function saveSets() { store.set('gullegg-sets', sets); renderCustomSel(); }
+
+function sendCustom() {
+  const s = sets.find(x => x.id === chosenId);
+  socket.emit('customTasks', s ? { name: s.name, tasks: s.tasks } : { tasks: [] });
+}
+
+function renderCustomSel() {
+  const sel = $('#customSel'); sel.innerHTML = '';
+  sel.append(new Option('Ingen', ''));
+  for (const s of sets) sel.append(new Option(`${s.name} (${s.tasks.length})`, s.id));
+  if (!sets.some(s => s.id === chosenId)) chosenId = '';
+  sel.value = chosenId;
+}
+$('#customSel').onchange = e => { chosenId = e.target.value; store.set('gullegg-chosen', chosenId); sendCustom(); };
+
+function openEditor() {
+  if (!sets.length) addSet('Mine oppgaver');
+  if (!cur()) edId = (sets.find(s => s.id === chosenId) || sets[0]).id;
+  resetForm(); renderEditor(); view('editor');
+}
+$('#editBtn').onclick = openEditor;
+$('#edBack').onclick = () => { sendCustom(); view(game ? 'play' : 'lobby'); };
+
+function addSet(name, tasks = []) {
+  const s = { id: newId(), name, tasks };
+  sets.push(s); edId = s.id; saveSets();
+  return s;
+}
+
+function renderEditor() {
+  const s = cur(), sel = $('#edSet');
+  sel.innerHTML = '';
+  for (const x of sets) sel.append(new Option(`${x.name} (${x.tasks.length})`, x.id));
+  sel.value = s.id;
+  $('#edName').value = s.name;
+  const list = $('#edList'); list.innerHTML = '';
+  if (!s.tasks.length) list.innerHTML = '<p class="hint">Ingen oppgaver ennå. Legg til den første til høyre.</p>';
+  s.tasks.forEach((t, i) => {
+    const row = document.createElement('div'); row.className = 'ed-item';
+    row.innerHTML = '<div class="txt"><div class="q"></div><div class="a">Riktig: <b></b> · Feil: <span></span></div></div>' +
+      '<button data-act="edit">Endre</button><button data-act="del">Slett</button>';
+    row.querySelector('.q').textContent = (t.pic ? t.pic + ' ' : '') + t.q;
+    row.querySelector('.a b').textContent = t.right;
+    row.querySelector('.a span').textContent = t.wrong.join(', ');
+    row.querySelector('[data-act=edit]').onclick = () => editTask(i);
+    row.querySelector('[data-act=del]').onclick = () => {
+      if (!confirm('Slette denne oppgaven?')) return;
+      s.tasks.splice(i, 1); if (editIdx === i) resetForm(); saveSets(); renderEditor();
+    };
+    list.append(row);
+  });
+}
+
+$('#edSet').onchange = e => { edId = e.target.value; resetForm(); renderEditor(); };
+$('#edName').oninput = e => { cur().name = e.target.value.trim() || 'Uten navn'; saveSets(); };
+$('#edName').onchange = renderEditor;
+$('#edNew').onclick = () => { addSet('Nytt sett'); resetForm(); renderEditor(); $('#edName').select(); };
+$('#edDelete').onclick = () => {
+  const s = cur();
+  if (!confirm(`Slette settet «${s.name}» med ${s.tasks.length} oppgaver?`)) return;
+  sets = sets.filter(x => x !== s);
+  if (!sets.length) addSet('Mine oppgaver');
+  edId = sets[0].id; saveSets(); resetForm(); renderEditor();
+};
+
+function resetForm() {
+  editIdx = -1; $('#edForm').reset(); $('#fErr').textContent = '';
+  $('#fTitle').textContent = 'Ny oppgave'; $('#fSave').textContent = 'Legg til oppgave';
+  $('#fCancel').classList.add('hidden');
+}
+function editTask(i) {
+  const t = cur().tasks[i];
+  editIdx = i;
+  $('#fQ').value = t.q; $('#fPic').value = t.pic || ''; $('#fRight').value = t.right;
+  $('#fW1').value = t.wrong[0] || ''; $('#fW2').value = t.wrong[1] || '';
+  $('#fTitle').textContent = 'Endre oppgave'; $('#fSave').textContent = 'Lagre endring';
+  $('#fCancel').classList.remove('hidden'); $('#fErr').textContent = '';
+  $('#fQ').focus();
+}
+$('#fCancel').onclick = resetForm;
+
+// Samme regler som serveren: spørsmål, riktig svar og minst ett feil svar som er forskjellig fra det riktige
+function makeTask(q, pic, right, wrong) {
+  q = q.trim(); right = right.trim();
+  wrong = [...new Set(wrong.map(w => w.trim()))].filter(w => w && w !== right).slice(0, 2);
+  if (!q || !right) return null;
+  if (!wrong.length) return null;
+  return { q, pic: pic.trim(), right, wrong };
+}
+
+$('#edForm').onsubmit = e => {
+  e.preventDefault();
+  const t = makeTask($('#fQ').value, $('#fPic').value, $('#fRight').value, [$('#fW1').value, $('#fW2').value]);
+  if (!t) { $('#fErr').textContent = 'Feil svar må være forskjellig fra det riktige svaret.'; return; }
+  const s = cur();
+  if (s.tasks.length >= 300 && editIdx < 0) { $('#fErr').textContent = 'Et sett kan ha høyst 300 oppgaver.'; return; }
+  if (editIdx >= 0) s.tasks[editIdx] = t; else s.tasks.push(t);
+  saveSets(); resetForm(); renderEditor(); $('#fQ').focus();
+};
+
+// «Hva rimer på hus? | mus | bil | sol». Emoji først i spørsmålet blir bildet.
+const LEADING_EMOJI = /^((?:\p{Extended_Pictographic}|\p{Regional_Indicator}|‍|️)+)\s*/u;
+$('#bulkAdd').onclick = () => {
+  const s = cur(); let added = 0, skipped = 0;
+  for (const line of $('#bulk').value.split('\n')) {
+    if (!line.trim()) continue;
+    const [q = '', right = '', ...wrong] = line.split('|');
+    const m = q.trim().match(LEADING_EMOJI);
+    const t = makeTask(m ? q.trim().slice(m[0].length) : q, m ? m[1] : '', right, wrong);
+    if (t && s.tasks.length < 300) { s.tasks.push(t); added++; } else skipped++;
+  }
+  $('#bulkInfo').textContent = `${added} lagt til` + (skipped ? `, ${skipped} ${skipped === 1 ? 'linje' : 'linjer'} hoppet over (mangler svar?)` : '');
+  if (added) { $('#bulk').value = ''; saveSets(); renderEditor(); }
+};
+
+$('#edExport').onclick = () => {
+  const s = cur();
+  const blob = new Blob([JSON.stringify({ name: s.name, tasks: s.tasks }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (s.name.replace(/[^\p{L}\p{N} _-]/gu, '').trim() || 'oppgaver') + '.json';
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('#edImportBtn').onclick = () => $('#edImport').click();
+$('#edImport').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  $('#edFileErr').textContent = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    let n = 0;
+    for (const x of Array.isArray(data) ? data : [data]) {
+      const tasks = (Array.isArray(x?.tasks) ? x.tasks : [])
+        .map(t => makeTask(String(t?.q ?? ''), String(t?.pic ?? ''), String(t?.right ?? ''), (Array.isArray(t?.wrong) ? t.wrong : []).map(String)))
+        .filter(Boolean).slice(0, 300);
+      if (tasks.length) { addSet(String(x.name || file.name.replace(/\.json$/i, '')).slice(0, 40), tasks); n++; }
+    }
+    if (!n) throw new Error();
+    resetForm(); renderEditor();
+  } catch { $('#edFileErr').textContent = 'Fant ingen oppgaver i fila. Er det en fil lastet ned herfra?'; }
+};
+
+renderCustomSel();
 
 function renderPlayers() {
   const el = $('#plist'); el.innerHTML = '';
   for (const p of state.players) {
     const r = document.createElement('div'); r.className = 'prow' + (p.out ? ' out' : '');
-    r.innerHTML = `<span class="dot" style="background:${p.color}"></span><span class="n"></span><span>${p.out ? 'Ute' : '❤️'.repeat(p.lives)}</span>`;
+    r.innerHTML = `<span class="dot" style="background:${p.color}"></span><span class="n"></span>` +
+      `<span title="Dører åpnet">${p.task ? '✏️ ' : ''}🚪${p.doors}</span><span>${p.out ? 'Ute' : '❤️'.repeat(p.lives)}</span>`;
     r.querySelector('.n').textContent = p.name; el.append(r);
   }
 }
@@ -231,6 +480,15 @@ function draw(t) {
   ctx.fillStyle = '#2a3a2e'; ctx.fillRect(ox, oy, cell * W, cell * H);
   ctx.fillStyle = '#5a3d2c';
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (g[z][x]) ctx.fillRect(ox + x * cell, oy + z * cell, cell, cell);
+
+  // Dører: en planke på tvers av gangen
+  ctx.fillStyle = '#c08a4a';
+  const th = Math.max(2, cell * 0.2);
+  for (const d of game.doors || []) {
+    const [x, z] = P(d.x, d.z);
+    if (d.x % 2 === 0) ctx.fillRect(x + (cell - th) / 2, z, th, cell); // gangen går langs x
+    else ctx.fillRect(x, z + (cell - th) / 2, cell, th);
+  }
 
   // Egget
   const [ex, ez] = P(game.egg.x, game.egg.z);

@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
+const { makeTask, GRADES, SUBJECTS } = require('./tasks');
 
 const PORT = process.env.PORT || 3000;
 const HOST_KEY = process.env.HOST_KEY || ''; // hvis satt må storskjermen åpnes med /?key=<HOST_KEY>
@@ -17,6 +18,11 @@ const CONFIG = {
   foxHitDist: 0.5,        // hvor nær en rev må være for å ta deg
   invulnMs: 2500,         // usårbar-tid etter å ha mistet et liv
   respawnAtStart: true,   // true: tilbake til start når reven tar deg
+  foxes: 1,               // antall rever
+  doorShare: 0.15,        // andel av gangene mellom rutene som får en dør
+  doorReach: 1.4,         // hvor nær døra man må være for å få en oppgave
+  wrongWaitMs: 3000,      // ventetid etter feil svar før man får en ny oppgave
+  safeWhileSolving: true, // true: reven kan ikke ta deg mens du løser en oppgave
   foxWanderSpeed: 1.3,    // revens fart når den leter
   foxChaseSpeed: 2.0,     // revens fart når den jager (litt tregere enn spilleren)
   foxSightCells: 7,       // hvor langt en rev ser langs en korridor
@@ -26,8 +32,10 @@ const CONFIG = {
   eggRevealDist: 3,       // egget sendes til mobilen når man er så nær (gløden synes rundt hjørner)
   eggSightDist: 9,        // ... eller har fri sikt til det innenfor denne avstanden (tåka slutter ved 8,5)
   emptyLobbyMs: 60000,    // tilbake til lobbyen hvis ingen spillere er tilkoblet så lenge
+  maxCustomTasks: 300,    // maks antall egne oppgaver i et sett
   tickHz: 20,
 };
+const STANDARD = [...SUBJECTS, 'ingen']; // 'ingen' = bare egne oppgaver
 const SIZES = { liten: 8, middels: 12, stor: 16 };
 const COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#911eb4', '#42d4f4', '#f032e6',
   '#bfef45', '#fabed4', '#469990', '#dcbeff', '#ffe119', '#aaffc3', '#ffffff', '#a9a9ff'];
@@ -52,8 +60,9 @@ app.get('/qr.png', async (req, res) => {
 const players = new Map(); // nøkkel -> spiller
 const game = {
   phase: 'lobby', // lobby | playing | ended
-  settings: { size: 'middels', foxes: 2 },
-  grid: null, start: null, egg: null, foxes: [], result: null,
+  settings: { size: 'middels', grade: 1, subject: 'begge', customName: '', customCount: 0 },
+  customTasks: [], // egne oppgaver fra storskjermen; sendes aldri ut med fasit
+  grid: null, start: null, egg: null, foxes: [], doors: [], doorAt: new Map(), result: null,
   round: 0, startedAt: 0, endedAt: 0, emptySince: 0,
 };
 
@@ -110,6 +119,27 @@ function isWallAt(x, z) {
   return !row || row[Math.floor(x)] !== 0;
 }
 
+// Dørene er personlige: en dør er bare åpen for den som har løst oppgaven
+function closedDoorAt(p, x, z) {
+  const id = game.doorAt.get(Math.floor(x) + ',' + Math.floor(z));
+  return id !== undefined && !p.opened.has(id);
+}
+const blockedFor = (p, x, z) => isWallAt(x, z) || closedDoorAt(p, x, z);
+const isSafe = p => CONFIG.safeWhileSolving && !!p.task;
+
+// Neste oppgave til en spiller: egne oppgaver (halvparten av gangene hvis standard også er valgt)
+// trekkes fra en stokket bunke per spiller, så alle oppgavene kommer før noen gjentas.
+function nextTask(p) {
+  const custom = game.customTasks, std = game.settings.subject;
+  if (custom.length && (std === 'ingen' || Math.random() < 0.5)) {
+    if (!p.bag || !p.bag.length) p.bag = custom.map((_, i) => i).sort(() => Math.random() - 0.5);
+    const t = custom[p.bag.pop()];
+    const options = [t.right, ...t.wrong].sort(() => Math.random() - 0.5);
+    return { q: t.q, pic: t.pic || null, options, answer: options.indexOf(t.right), speak: t.q };
+  }
+  return makeTask(game.settings.grade, std === 'ingen' ? 'begge' : std);
+}
+
 function nextColor() {
   const used = new Set([...players.values()].map(p => p.color));
   return COLORS.find(c => !used.has(c)) || COLORS[rand(COLORS.length)];
@@ -117,7 +147,7 @@ function nextColor() {
 
 function publicPlayer(p) {
   return { id: p.pid, name: p.name, color: p.color, x: r3(p.x), z: r3(p.z), a: r3(p.a),
-    lives: p.lives, out: p.out, inv: Date.now() < p.invulnUntil };
+    lives: p.lives, out: p.out, inv: Date.now() < p.invulnUntil, doors: p.solved, task: !!p.task };
 }
 
 function lobbyPayload() {
@@ -130,6 +160,7 @@ const addEvent = text => io.to('hosts').emit('event', { text, t: Date.now() });
 function baseGame() {
   return { phase: game.phase, grid: game.grid, start: game.start,
     egg: game.egg && { x: game.egg.x, z: game.egg.z }, result: game.result, lives: CONFIG.lives,
+    doors: game.doors,
     round: game.round, elapsed: (game.endedAt || Date.now()) - game.startedAt };
 }
 
@@ -138,20 +169,21 @@ function sendGameTo(p) {
   const g = baseGame();
   if (!p.eggSeen) g.egg = null; // egget sendes først når spilleren ser det (hindrer juks)
   io.to(p.socketId).emit('game', { ...g,
-    you: { x: p.x, z: p.z, a: p.a, s: p.spawnId, lives: p.lives, out: p.out } });
+    you: { x: p.x, z: p.z, a: p.a, s: p.spawnId, lives: p.lives, out: p.out, opened: [...p.opened] } });
 }
 
 function canSeeEgg(p) {
   const dx = game.egg.x - p.x, dz = game.egg.z - p.z, d = Math.hypot(dx, dz);
   if (d < CONFIG.eggRevealDist) return true;
   if (d > CONFIG.eggSightDist) return false;
-  for (let t = 0.1; t < d; t += 0.1) if (isWallAt(p.x + dx / d * t, p.z + dz / d * t)) return false;
+  for (let t = 0.1; t < d; t += 0.1) if (blockedFor(p, p.x + dx / d * t, p.z + dz / d * t)) return false;
   return true;
 }
 
 function resetPlayer(p) {
   p.x = game.start.x; p.z = game.start.z; p.a = game.start.a;
   p.lives = CONFIG.lives; p.out = false; p.spawnId++; p.eggSeen = false;
+  p.opened = new Set(); p.solved = 0; p.task = null; p.cooldownUntil = 0; p.bag = null;
   p.invulnUntil = Date.now() + 1500; p.lastPosT = Date.now();
 }
 
@@ -172,10 +204,19 @@ function startGame() {
     .sort(() => Math.random() - 0.5);
   const chosen = [];
   for (const c of foxCells) {
-    if (chosen.length >= game.settings.foxes) break;
+    if (chosen.length >= CONFIG.foxes) break;
     if (chosen.every(o => Math.abs(o.x - c.x) + Math.abs(o.z - c.z) > 6)) chosen.push(c);
   }
-  for (const c of foxCells) { if (chosen.length >= game.settings.foxes) break; if (!chosen.includes(c)) chosen.push(c); }
+  for (const c of foxCells) { if (chosen.length >= CONFIG.foxes) break; if (!chosen.includes(c)) chosen.push(c); }
+
+  // Dører i gangene mellom to ruter (der x og z har ulik paritet)
+  const passages = [];
+  for (let z = 1; z < grid.length - 1; z++)
+    for (let x = 1; x < grid[0].length - 1; x++)
+      if (grid[z][x] === 0 && (x % 2) !== (z % 2)) passages.push({ x, z });
+  passages.sort(() => Math.random() - 0.5);
+  game.doors = passages.slice(0, Math.round(passages.length * CONFIG.doorShare)).map((c, id) => ({ id, x: c.x, z: c.z }));
+  game.doorAt = new Map(game.doors.map(d => [d.x + ',' + d.z, d.id]));
 
   game.grid = grid;
   game.start = { x: 1.5, z: 1.5, a: grid[1][2] === 0 ? 0 : Math.PI / 2 };
@@ -207,7 +248,7 @@ function endGame(result) {
 
 function toLobby() {
   game.phase = 'lobby';
-  game.grid = null; game.egg = null; game.foxes = []; game.result = null;
+  game.grid = null; game.egg = null; game.foxes = []; game.doors = []; game.doorAt = new Map(); game.result = null;
   for (const [key, p] of players) if (!p.connected) players.delete(key);
   broadcastLobby();
 }
@@ -227,7 +268,7 @@ function chooseNext(f, now) {
   const g = game.grid;
   const open = DIRS.filter(([dx, dz]) => g[f.cz + dz][f.cx + dx] === 0);
   const prey = [...players.values()]
-    .filter(p => p.connected && !p.out && now >= p.invulnUntil)
+    .filter(p => p.connected && !p.out && now >= p.invulnUntil && !isSafe(p))
     .map(p => ({ cx: Math.floor(p.x), cz: Math.floor(p.z) }));
 
   let dir = null, best = Infinity;
@@ -270,6 +311,7 @@ function updateFox(f, dt, now) {
 function hitPlayer(p, now) {
   p.lives--;
   p.invulnUntil = now + CONFIG.invulnMs;
+  p.task = null;
   if (p.lives <= 0) {
     p.out = true;
     io.to(p.socketId).emit('hit', { lives: 0, out: true });
@@ -303,7 +345,7 @@ function tick() {
       p.eggSeen = true;
       io.to(p.socketId).emit('egg', { x: game.egg.x, z: game.egg.z });
     }
-    if (now < p.invulnUntil) continue;
+    if (now < p.invulnUntil || isSafe(p)) continue;
     if (game.foxes.some(f => Math.hypot(p.x - f.x, p.z - f.z) < CONFIG.foxHitDist)) hitPlayer(p, now);
   }
   if (CONFIG.foxCanWin && now - game.startedAt > CONFIG.foxEggDelaySec * 1000 && game.foxes.some(f => f.cx === game.egg.cx && f.cz === game.egg.cz))
@@ -343,7 +385,8 @@ io.on('connection', socket => {
     let p = players.get(key);
     if (!p) {
       p = { key, pid: crypto.randomBytes(4).toString('hex'), name, color: nextColor(),
-        x: 0, z: 0, a: 0, lives: CONFIG.lives, out: false, spawnId: 0, invulnUntil: 0, lastPosT: 0 };
+        x: 0, z: 0, a: 0, lives: CONFIG.lives, out: false, spawnId: 0, invulnUntil: 0, lastPosT: 0,
+        opened: new Set(), solved: 0, task: null, cooldownUntil: 0 };
       players.set(key, p);
       if (game.grid) { resetPlayer(p); if (game.phase === 'playing') addEvent(`${name} ble med`); }
     } else {
@@ -363,15 +406,65 @@ io.on('connection', socket => {
     if (![x, z, a].every(Number.isFinite) || isWallAt(x, z)) return;
     const now = Date.now();
     const maxD = CONFIG.playerSpeed * Math.max((now - me.lastPosT) / 1000, 0.05) * 1.6 + 0.3;
-    if (Math.hypot(x - me.x, z - me.z) > maxD) return; // for raskt: ignoreres
+    const dist = Math.hypot(x - me.x, z - me.z);
+    if (dist > maxD) return; // for raskt: ignoreres
+    for (let t = 0.2; t < dist; t += 0.2) // ikke gjennom lukkede dører
+      if (closedDoorAt(me, me.x + (x - me.x) * t / dist, me.z + (z - me.z) * t / dist)) return;
+    if (closedDoorAt(me, x, z)) return;
     me.x = x; me.z = z; me.a = a; me.lastPosT = now;
   });
+
+  // Spilleren står ved en lukket dør og ber om en oppgave
+  socket.on('door', id => {
+    const door = Number.isInteger(id) && game.doors[id];
+    if (!me || game.phase !== 'playing' || me.out || !door || me.opened.has(id)) return;
+    if (Math.hypot(me.x - door.x - 0.5, me.z - door.z - 0.5) > CONFIG.doorReach) return;
+    if (Date.now() < me.cooldownUntil) return;
+    // Samme oppgave igjen hvis den ikke er besvart, så man ikke kan bytte til en lettere
+    if (!me.task || me.task.door !== id || me.task.answer === undefined)
+      me.task = { door: id, ...nextTask(me) };
+    const { answer, ...t } = me.task;
+    socket.emit('task', t);
+  });
+
+  socket.on('answer', i => {
+    const t = me && me.task;
+    if (!t || t.answer === undefined || game.phase !== 'playing') return;
+    if (i === t.answer) {
+      me.task = null;
+      me.opened.add(t.door); me.solved++;
+      socket.emit('answerResult', { ok: true, correct: t.answer, door: t.door });
+      addEvent(`🚪 ${me.name} åpnet en dør`);
+    } else {
+      me.task = { door: t.door }; // fortsatt trygg mens man venter på neste oppgave
+      me.cooldownUntil = Date.now() + CONFIG.wrongWaitMs;
+      socket.emit('answerResult', { ok: false, correct: t.answer, door: t.door, wait: CONFIG.wrongWaitMs });
+    }
+  });
+
+  socket.on('cancelTask', () => { if (me) me.task = null; });
 
   socket.on('settings', (s = {}) => {
     if (!isHost() || game.phase === 'playing') return;
     if (SIZES[s.size]) game.settings.size = s.size;
-    const f = parseInt(s.foxes, 10);
-    if (f >= 0 && f <= 6) game.settings.foxes = f;
+    const g = parseInt(s.grade, 10);
+    if (GRADES.includes(g)) game.settings.grade = g;
+    if (STANDARD.includes(s.subject)) game.settings.subject = s.subject;
+    broadcastLobby();
+  });
+
+  // Egne oppgaver fra storskjermen: { name, tasks: [{ q, pic, right, wrong: [..] }] }
+  socket.on('customTasks', d => {
+    if (!isHost() || game.phase === 'playing') return;
+    const str = (v, n) => String(v ?? '').trim().slice(0, n);
+    game.customTasks = (Array.isArray(d?.tasks) ? d.tasks : []).slice(0, CONFIG.maxCustomTasks).map(t => {
+      const right = str(t?.right, 40);
+      const wrong = [...new Set((Array.isArray(t?.wrong) ? t.wrong : []).map(w => str(w, 40)))]
+        .filter(w => w && w !== right).slice(0, 2);
+      return { q: str(t?.q, 200), pic: str(t?.pic, 24), right, wrong };
+    }).filter(t => t.q && t.right && t.wrong.length);
+    game.settings.customName = game.customTasks.length ? str(d?.name, 40) || 'Egne oppgaver' : '';
+    game.settings.customCount = game.customTasks.length;
     broadcastLobby();
   });
 

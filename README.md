@@ -21,6 +21,13 @@ Vil du hindre at andre styrer spillet: sett miljøvariabelen `HOST_KEY` (Render 
 og åpne storskjermen med `https://…onrender.com/?key=<nøkkelen>`. Uten `HOST_KEY` er storskjermen åpen.
 
 ## Justering
-Øverst i `server.js` (CONFIG): antall liv, revenes fart og syn, om revene kan vinne,
-hvor lenge før revene begynner å lete etter egget, og om man sendes til start når man blir tatt.
+Øverst i `server.js` (CONFIG): antall liv, revens fart og syn, om reven kan vinne,
+hvor lenge før reven begynner å lete etter egget, om man sendes til start når man blir tatt,
+hvor mange dører det er, ventetid etter feil svar og om man er trygg mens man løser en oppgave.
+Oppgavene lages i `tasks.js` (ordbank, rim og oppgavetyper per trinn).
+
+## Egne oppgaver
+Trykk «Lag egne oppgaver» på storskjermen. Oppgavesettene lagres i nettleseren på den maskinen.
+Bruk «Last ned som fil» for å ta vare på et sett eller dele det, og «Hent fra fil» for å bruke det et annet sted.
+Velg settet under «Egne oppgaver» før du starter runden. Velg «Ingen» standardoppgaver for å bruke bare egne.
 Spillerfarten står både i `server.js` og øverst i scriptet i `public/play.html`.

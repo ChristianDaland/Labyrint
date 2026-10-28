@@ -45,6 +45,10 @@
     align-items: center; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top));
     pointer-events: none; text-shadow: 0 1px 3px #000; }
   #hearts { font-size: 22px; letter-spacing: 2px; }
+  #mapBtn { pointer-events: auto; font: 800 16px 'Nunito', sans-serif; color: var(--cream); background: rgba(0,0,0,.45);
+    border: 2px solid rgba(243,234,210,.35); border-radius: 99px; padding: 8px 14px; min-height: 44px; touch-action: manipulation; }
+  #mapBtn[aria-pressed="true"] { background: var(--gold); color: #3b2805; border-color: var(--gold); text-shadow: none; }
+  #map2d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: var(--night); }
   #tag { display: flex; align-items: center; gap: 8px; font-weight: 800; background: rgba(0,0,0,.35);
     padding: 4px 10px 4px 6px; border-radius: 99px; }
   #flash { position: absolute; inset: 0; background: rgba(200,20,20,.55); opacity: 0; pointer-events: none;
@@ -73,6 +77,26 @@
     padding: 24px; z-index: 5; }
   #overlay h2 { font-size: 34px; color: var(--gold); line-height: 1.1; }
   #ovIcon { font-size: 64px; margin-bottom: 10px; }
+
+  /* Oppgave ved døra */
+  #task { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; padding: 20px;
+    padding-top: calc(20px + env(safe-area-inset-top)); background: rgba(16,26,20,.95); }
+  #task .card { width: min(440px, 100%); }
+  #tPic { font-size: 60px; line-height: 1.15; white-space: pre-line; margin-bottom: 8px; }
+  #tPic.letter { font: 400 96px 'Lilita One', sans-serif; color: var(--gold); }
+  #tQ { font-size: 26px; font-weight: 800; line-height: 1.3; white-space: pre-line; }
+  #tSpeak { margin: 12px auto 18px; display: block; font-size: 30px; width: 64px; height: 64px; border-radius: 50%;
+    border: 0; background: var(--moss-2); box-shadow: 0 4px 0 #0d1611; }
+  #tOpts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  #tOpts.words { grid-template-columns: 1fr; }
+  #tOpts button { font: 400 34px 'Lilita One', sans-serif; min-height: 76px; padding: 8px; border: 0; border-radius: 18px;
+    background: var(--cream); color: #2a2418; box-shadow: 0 6px 0 #b3a98e; overflow-wrap: anywhere; }
+  #tOpts button:active { transform: translateY(3px); box-shadow: 0 3px 0 #b3a98e; }
+  #tOpts button.right { background: #4cc46a; color: #fff; box-shadow: 0 6px 0 #2d7f42; }
+  #tOpts button.wrong { background: #e0533d; color: #fff; box-shadow: 0 6px 0 #8f2a1c; }
+  #tFeedback { min-height: 34px; margin-top: 16px; font-size: 22px; font-weight: 800; }
+  #tClose { margin-top: 10px; background: none; border: 0; color: var(--muted); font: 800 16px 'Nunito', sans-serif;
+    text-decoration: underline; padding: 10px; }
 </style>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 </head>
@@ -82,7 +106,7 @@
   <div class="card">
     <div class="egg"></div>
     <h1>Gull-egget</h1>
-    <p>Finn gull-egget i labyrinten før de andre. Ser du en rev, snu og løp!</p>
+    <p>Finn gull-egget i labyrinten før de andre. Dørene åpnes når du løser en oppgave. Ser du reven, snu og løp!</p>
     <input id="name" maxlength="14" placeholder="Navnet ditt" autocomplete="off" enterkeyhint="go">
     <button id="joinBtn" class="cta">Bli med</button>
   </div>
@@ -98,9 +122,10 @@
 
 <div id="game" class="hidden">
   <div id="view">
+    <canvas id="map2d" class="hidden"></canvas>
     <div id="danger"></div>
     <div id="flash"></div>
-    <div id="hud"><div id="hearts"></div><div id="tag"><span class="dot"></span><span class="meName"></span></div></div>
+    <div id="hud"><div id="hearts"></div><button id="mapBtn" aria-pressed="false">🗺️ Kart</button><div id="tag"><span class="dot"></span><span class="meName"></span></div></div>
     <div id="msg"></div>
   </div>
   <div id="pad">
@@ -117,6 +142,17 @@
         <button class="btn" data-k="down" aria-label="Gå bak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg></button>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="task" class="hidden">
+  <div class="card">
+    <div id="tPic"></div>
+    <div id="tQ"></div>
+    <button id="tSpeak" aria-label="Les opp oppgaven">🔊</button>
+    <div id="tOpts"></div>
+    <div id="tFeedback"></div>
+    <button id="tClose">Gå bort fra døra</button>
   </div>
 </div>
 
@@ -157,6 +193,7 @@ function join() {
   joinedName = n;
   store.set('gullegg-name', n);
   nameInput.blur();
+  if (canSpeak) speechSynthesis.speak(new SpeechSynthesisUtterance('')); // iOS: tale må låses opp i et trykk
   socket.emit('join', { key, name: n });
   keepAwake();
 }
@@ -171,12 +208,14 @@ socket.on('joined', d => {
   if (phase === 'lobby') show('wait');
 });
 socket.on('lobby', d => {
-  if (d.phase === 'lobby' && phase !== 'lobby') { phase = 'lobby'; $('#overlay').classList.add('hidden'); }
+  if (d.phase === 'lobby' && phase !== 'lobby') { phase = 'lobby'; $('#overlay').classList.add('hidden'); closeTask(); }
   if (d.phase === 'lobby' && me) show('wait');
 });
 socket.on('game', d => {
   phase = d.phase; maxLives = d.lives;
-  if (JSON.stringify(d.grid) !== JSON.stringify(grid)) buildLevel(d.grid);
+  if (JSON.stringify(d.grid) !== JSON.stringify(grid)) { buildLevel(d.grid, d.doors); setMap(false); }
+  for (const id of d.you.opened) openDoor(id, true);
+  closeTask(); // ved gjenoppkobling sender serveren samme oppgave igjen når man står ved døra
   placeEgg(d.egg);
   pos.x = d.you.x; pos.z = d.you.z; pos.a = d.you.a;
   spawnId = d.you.s; lives = d.you.lives; out = d.you.out;
@@ -188,7 +227,7 @@ socket.on('game', d => {
 socket.on('state', applyState);
 socket.on('egg', placeEgg);
 socket.on('hit', d => {
-  lives = d.lives; renderHearts();
+  lives = d.lives; renderHearts(); closeTask();
   $('#flash').style.transition = 'none'; $('#flash').style.opacity = 1;
   requestAnimationFrame(() => { $('#flash').style.transition = 'opacity .8s'; $('#flash').style.opacity = 0; });
   if (navigator.vibrate) navigator.vibrate(300);
@@ -200,6 +239,7 @@ socket.on('end', showEnd);
 
 function showEnd(r) {
   phase = 'ended';
+  closeTask();
   let icon = '🦊', title = 'Revene vant!', text = 'Vent på neste runde.';
   if (r.type === 'player') {
     icon = '🥚';
@@ -222,6 +262,75 @@ function message(text, ms) {
 async function keepAwake() { try { await navigator.wakeLock?.request('screen'); } catch {} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && joinedName) keepAwake(); });
 
+// ─── Oppgaver ved dørene ────────────────────────────────────────────────
+let taskDoor = null, dismissed = null, lastAsk = 0, speakText = '';
+const canSpeak = 'speechSynthesis' in window;
+if (!canSpeak) $('#tSpeak').classList.add('hidden');
+
+// Leser opp med nettleserens norske stemme (mange på 1.–2. trinn kan ikke lese ennå)
+function speak(text) {
+  if (!canSpeak || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'nb-NO'; u.rate = 0.9;
+  const v = speechSynthesis.getVoices().find(v => /^(nb|no|nn)\b/i.test(v.lang));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+$('#tSpeak').onclick = () => speak(speakText);
+
+function closeTask() {
+  taskDoor = null;
+  $('#task').classList.add('hidden');
+  if (canSpeak) speechSynthesis.cancel();
+}
+$('#tClose').onclick = () => { socket.emit('cancelTask'); dismissed = doors[taskDoor]; closeTask(); };
+
+socket.on('task', t => {
+  taskDoor = t.door; speakText = t.speak;
+  $('#tPic').textContent = t.pic || '';
+  $('#tPic').classList.toggle('letter', /^[A-ZÆØÅ]$/.test(t.pic || ''));
+  $('#tQ').textContent = t.q;
+  $('#tFeedback').textContent = '';
+  const opts = $('#tOpts'); opts.innerHTML = '';
+  opts.classList.toggle('words', t.options.some(o => o.length > 3));
+  t.options.forEach((o, i) => {
+    const b = document.createElement('button'); b.textContent = o;
+    b.onclick = () => { for (const x of opts.children) x.disabled = true; b.classList.add('picked'); socket.emit('answer', i); };
+    opts.append(b);
+  });
+  for (const k in input) input[k] = false; // slipp pilene mens oppgaven er oppe
+  document.querySelectorAll('.btn.on').forEach(b => b.classList.remove('on'));
+  $('#task').classList.remove('hidden');
+  speak(t.speak);
+});
+
+socket.on('answerResult', r => {
+  const btns = [...$('#tOpts').children], right = btns[r.correct];
+  right?.classList.add('right');
+  if (r.ok) {
+    $('#tFeedback').textContent = 'Riktig! Døra åpnes 🎉';
+    speak('Riktig!');
+    openDoor(r.door);
+    setTimeout(() => { if (taskDoor === r.door) closeTask(); }, 1100);
+  } else {
+    btns.find(b => b.classList.contains('picked'))?.classList.add('wrong');
+    $('#tFeedback').textContent = `Ikke helt. Riktig svar er ${right?.textContent}. Du får en ny oppgave …`;
+    speak(`Ikke helt. Riktig svar er ${right?.textContent}.`);
+    setTimeout(() => { if (taskDoor === r.door) socket.emit('door', r.door); }, r.wait);
+  }
+});
+
+// Lukket dør rett foran spilleren (nær nok og omtrent i synsretningen)
+function facingDoor() {
+  for (const d of doors) {
+    if (d.open) continue;
+    const dx = d.x + 0.5 - pos.x, dz = d.z + 0.5 - pos.z, dist = Math.hypot(dx, dz);
+    if (dist < 0.95 && (dx * Math.cos(pos.a) + dz * Math.sin(pos.a)) / dist > 0.5) return d;
+  }
+  return null;
+}
+
 // ─── Styring ────────────────────────────────────────────────────────────
 document.querySelectorAll('.btn').forEach(b => {
   const k = b.dataset.k;
@@ -232,7 +341,11 @@ document.querySelectorAll('.btn').forEach(b => {
 });
 document.addEventListener('contextmenu', e => e.preventDefault());
 const KEYS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
-addEventListener('keydown', e => { if (KEYS[e.code] && document.activeElement !== nameInput) { input[KEYS[e.code]] = true; e.preventDefault(); } });
+addEventListener('keydown', e => {
+  if (document.activeElement === nameInput) return;
+  if (KEYS[e.code]) { input[KEYS[e.code]] = true; e.preventDefault(); }
+  if (e.code === 'KeyM' && !e.repeat) setMap(!showMap);
+});
 addEventListener('keyup', e => { if (KEYS[e.code]) input[KEYS[e.code]] = false; });
 
 // ─── 3D-scene ───────────────────────────────────────────────────────────
@@ -254,8 +367,63 @@ function resize() {
   if (!w || !h) return;
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  mapCv.width = w * dpr; mapCv.height = h * dpr;
 }
 new ResizeObserver(resize).observe($('#view'));
+
+// ─── Kart ovenfra (kartknappen bytter mellom kart og 3D) ───────────────
+const mapCv = $('#map2d'), mctx = mapCv.getContext('2d');
+let showMap = false;
+function setMap(on) {
+  showMap = on;
+  mapCv.classList.toggle('hidden', !on);
+  $('#mapBtn').textContent = on ? '🧊 3D' : '🗺️ Kart';
+  $('#mapBtn').setAttribute('aria-pressed', on);
+}
+$('#mapBtn').onclick = () => setMap(!showMap);
+
+function drawMap(t) {
+  const W = grid[0].length, H = grid.length, dpr = mapCv.width / Math.max($('#view').clientWidth, 1);
+  const top = 56 * dpr, side = 10 * dpr; // plass til statuslinja øverst
+  const cell = Math.min((mapCv.width - 2 * side) / W, (mapCv.height - top - side) / H);
+  const ox = (mapCv.width - cell * W) / 2, oy = top + (mapCv.height - top - side - cell * H) / 2;
+  const P = (x, z) => [ox + x * cell, oy + z * cell];
+  mctx.fillStyle = '#101a14'; mctx.fillRect(0, 0, mapCv.width, mapCv.height);
+  mctx.fillStyle = '#2a3a2e'; mctx.fillRect(ox, oy, cell * W, cell * H);
+  mctx.fillStyle = '#5a3d2c';
+  for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (grid[z][x]) mctx.fillRect(ox + x * cell - 0.5, oy + z * cell - 0.5, cell + 1, cell + 1);
+
+  // Lukkede dører (bare dine egne; åpne dører vises ikke)
+  mctx.fillStyle = '#c08a4a';
+  const th = Math.max(2, cell * 0.25);
+  for (const d of doors) {
+    if (d.open && !d.lifting) continue;
+    const [x, z] = P(d.x, d.z);
+    if (d.x % 2 === 0) mctx.fillRect(x + (cell - th) / 2, z, th, cell); else mctx.fillRect(x, z + (cell - th) / 2, cell, th);
+  }
+  // Egget, bare hvis du har sett det
+  if (eggGroup) {
+    const [x, z] = P(eggGroup.position.x, eggGroup.position.z), r = cell * (1.2 + Math.sin(t / 300) * 0.15);
+    const g = mctx.createRadialGradient(x, z, 0, x, z, r);
+    g.addColorStop(0, 'rgba(242,193,78,.7)'); g.addColorStop(1, 'rgba(242,193,78,0)');
+    mctx.fillStyle = g; mctx.beginPath(); mctx.arc(x, z, r, 0, 7); mctx.fill();
+    mctx.fillStyle = '#ffd24a'; mctx.beginPath(); mctx.ellipse(x, z, cell * .22, cell * .3, 0, 0, 7); mctx.fill();
+  }
+  // Andre spillere
+  for (const o of others.values()) {
+    if (o.out) continue;
+    const [x, z] = P(o.x, o.z);
+    mctx.fillStyle = o.color; mctx.beginPath(); mctx.arc(x, z, cell * .22, 0, 7); mctx.fill();
+  }
+  // Deg selv: prikk med pil i synsretningen
+  const [x, z] = P(pos.x, pos.z);
+  mctx.save(); mctx.translate(x, z); mctx.rotate(pos.a);
+  mctx.fillStyle = me?.color || '#fff'; mctx.strokeStyle = '#fff'; mctx.lineWidth = Math.max(1.5, cell * .08);
+  mctx.beginPath(); mctx.moveTo(cell * .5, 0); mctx.lineTo(-cell * .3, cell * .3); mctx.lineTo(-cell * .15, 0);
+  mctx.lineTo(-cell * .3, -cell * .3); mctx.closePath(); mctx.fill(); mctx.stroke();
+  mctx.restore();
+}
 
 function canvasTex(size, draw, repeat) {
   const c = document.createElement('canvas'); c.width = c.height = size;
@@ -279,21 +447,30 @@ const brickTex = canvasTex(64, (g, s) => {
   for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(40,70,30,${Math.random() * 0.35})`; g.fillRect(Math.random() * s, Math.random() * s, 2, 2); }
 });
 
+const doorTex = canvasTex(64, (g, s) => {
+  for (let x = 0; x < s; x += 16) { g.fillStyle = `hsl(28, 45%, ${22 + Math.random() * 10}%)`; g.fillRect(x, 0, 16, s); g.fillStyle = '#2e1c0e'; g.fillRect(x, 0, 1, s); }
+  g.fillStyle = '#3a2412'; g.fillRect(0, 8, s, 5); g.fillRect(0, s - 13, s, 5); // tverrplanker
+  g.fillStyle = '#f2c14e'; g.font = 'bold 30px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('?', s / 2, s / 2 + 2);
+});
+
 let level = null;
 const others = new Map();
 let foxes = [];
 let eggGroup = null;
+let doors = [];
+const doorAt = new Map(); // "x,z" -> dør
 
-// Frigjør GPU-minne for et objekt som fjernes (murstein-teksturen deles og beholdes)
+// Frigjør GPU-minne for et objekt som fjernes (murstein- og dørteksturen deles og beholdes)
 function dispose(root) {
   scene.remove(root);
   root.traverse(o => {
     if (!o.isSprite) o.geometry?.dispose(); // alle sprites deler én geometri
-    for (const m of [].concat(o.material || [])) { if (m.map && m.map !== brickTex) m.map.dispose(); m.dispose(); }
+    for (const m of [].concat(o.material || [])) { if (m.map && m.map !== brickTex && m.map !== doorTex) m.map.dispose(); m.dispose(); }
   });
 }
 
-function buildLevel(g) {
+function buildLevel(g, doorList) {
   if (level) dispose(level);
   for (const o of others.values()) dispose(o.group);
   others.clear();
@@ -325,7 +502,27 @@ function buildLevel(g) {
   ceil.rotation.x = Math.PI / 2; ceil.position.set(W / 2, WALL_H, H / 2);
   level.add(ceil);
 
+  // Dører på tvers av gangene. Gangen går langs x når x er partall.
+  const doorMat = new THREE.MeshLambertMaterial({ map: doorTex });
+  const geoX = new THREE.BoxGeometry(0.14, WALL_H, 1), geoZ = new THREE.BoxGeometry(1, WALL_H, 0.14);
+  doors = doorList.map(d => {
+    const mesh = new THREE.Mesh(d.x % 2 === 0 ? geoX : geoZ, doorMat);
+    mesh.position.set(d.x + 0.5, WALL_H / 2, d.z + 0.5);
+    level.add(mesh);
+    return { ...d, open: false, lifting: false, mesh };
+  });
+  doorAt.clear();
+  for (const d of doors) doorAt.set(d.x + ',' + d.z, d);
+
   scene.add(level);
+}
+
+// Åpne døra: den glir opp i taket (instant ved gjenoppkobling)
+function openDoor(id, instant) {
+  const d = doors[id];
+  if (!d || d.open) return;
+  d.open = true;
+  if (instant) d.mesh.visible = false; else d.lifting = true;
 }
 
 // Serveren sender eggets posisjon først når spilleren kan se det
@@ -403,7 +600,7 @@ function makeAvatar(p) {
   g.add(body, head, cap);
   const label = nameSprite(p.name, p.color); label.position.y = 0.95; g.add(label);
   scene.add(g);
-  return { group: g, x: p.x, z: p.z, a: p.a, tx: p.x, tz: p.z, ta: p.a, inv: false };
+  return { group: g, color: p.color, x: p.x, z: p.z, a: p.a, tx: p.x, tz: p.z, ta: p.a, inv: false };
 }
 
 function applyState(d) {
@@ -422,7 +619,12 @@ function applyState(d) {
 }
 
 // ─── Bevegelse og kollisjon ─────────────────────────────────────────────
-const isWall = (x, z) => { const row = grid[Math.floor(z)]; return !row || row[Math.floor(x)] !== 0; };
+const isWall = (x, z) => {
+  const fx = Math.floor(x), fz = Math.floor(z), row = grid[fz];
+  if (!row || row[fx] !== 0) return true;
+  const d = doorAt.get(fx + ',' + fz);
+  return !!d && !d.open;
+};
 const blocked = (x, z) => isWall(x - RADIUS, z - RADIUS) || isWall(x + RADIUS, z - RADIUS) ||
   isWall(x - RADIUS, z + RADIUS) || isWall(x + RADIUS, z + RADIUS);
 
@@ -448,7 +650,16 @@ function loop(t) {
   requestAnimationFrame(loop);
   const dt = Math.min((t - last) / 1000, 0.1); last = t;
   if (!grid) return;
-  if (phase === 'playing' && !out) moveSelf(dt);
+  if (phase === 'playing' && !out && taskDoor === null) {
+    moveSelf(dt);
+    if (dismissed && Math.hypot(dismissed.x + 0.5 - pos.x, dismissed.z + 0.5 - pos.z) > 1.3) dismissed = null;
+    const d = facingDoor();
+    if (d && d !== dismissed && t - lastAsk > 1000) { lastAsk = t; socket.emit('door', d.id); }
+  }
+  for (const d of doors) if (d.lifting) {
+    d.mesh.position.y += dt * 1.6;
+    if (d.mesh.position.y > WALL_H * 1.5) { d.lifting = false; d.mesh.visible = false; }
+  }
   const k = 1 - Math.exp(-dt * 12);
 
   for (const o of others.values()) {
@@ -478,7 +689,7 @@ function loop(t) {
   camera.position.set(pos.x, EYE + (moving && !out ? Math.sin(walkPhase) * 0.025 : 0), pos.z);
   camera.rotation.y = -pos.a - Math.PI / 2;
   torch.position.copy(camera.position);
-  renderer.render(scene, camera);
+  if (showMap) drawMap(t); else renderer.render(scene, camera);
 }
 requestAnimationFrame(loop);
 </script>
