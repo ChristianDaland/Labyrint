@@ -1,7 +1,7 @@
 // Flakse-fuglen: trykk for å flakse, og fly gjennom åpningen med riktig svar. Fuglen kan ikke krasje:
 // nær veggen glir den inn i åpningen den er nærmest. Feil svar gir samme spørsmål på en ny vegg der
 // den feile åpningen er murt igjen, helt til fuglen flyr gjennom riktig. En runde er 10 oppgaver.
-// Lastes inn i rommet (index.html), som deler ut gullegget når runden er ferdig.
+// Lastes inn i rommet (index.html), som deler ut egget når runden er ferdig.
 
 import { nextTask, recordAnswer } from '../kjerne/laering.js';
 import { awardSkills, starsFor } from '../kjerne/belonning.js';

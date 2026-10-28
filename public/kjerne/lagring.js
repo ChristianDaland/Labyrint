@@ -6,7 +6,7 @@
 import { newLearning, newStats } from './laering.js';
 import { newRewards } from './belonning.js';
 
-export const KEY = 'gullegget';
+export const KEY = 'gullegget'; // fra det første navnet; beholdes så lagret fremgang ikke forsvinner
 export const VERSION = 1;
 
 // Alle dyrene er hankjønn/hunkjønn, så fargeordet bøyes likt («grønn frosk», «grønn ugle»)
@@ -130,7 +130,7 @@ export function downloadBackup(store, now = new Date()) {
   const blob = new Blob([store.exportBackup(now)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `gullegget-${now.toISOString().slice(0, 10)}.json`;
+  a.download = `spill-og-laer-${now.toISOString().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

@@ -1,4 +1,4 @@
-# Plan: Gull-egget som læringsspill – versjon 1
+# Plan: Spill og lær (først kalt Gull-egget) – versjon 1
 
 Status (28.10.2026): planen er godkjent.
 - **Steg 1 (grunnmur) er ferdig:** `public/kjerne/` med oppgaver, læringsmotor, belønninger, lagring og lyd, testet med `npm test` og i nettleser.

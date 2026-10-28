@@ -1,4 +1,4 @@
-# Gull-egget
+# Spill og lær
 
 Læringsspill i lesing, skriving og matte for 1.–4. trinn, også for barn som ikke kan lese ennå:
 alt leses opp, og oppgavene tilpasser seg barnet. Kjører i nettleseren, laget for iPhone og iPad.

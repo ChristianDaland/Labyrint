@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Gull-egget">
-<title>Gull-egget</title>
+<meta name="apple-mobile-web-app-title" content="Spill og lær">
+<title>Spill og lær</title>
 <meta name="author" content="Løland Gård Gaming">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
@@ -61,6 +61,13 @@
 
   /* Startskjerm */
   #start { background: radial-gradient(circle at 50% 40%, #6b4a30, #2b1a10 75%); }
+  /* Tittelen: stor på startskjermen, og midt i topplinjen i rommet når det er plass (ikke på mobil) */
+  .apptitle { position: absolute; left: 0; right: 0; top: max(9vh, env(safe-area-inset-top)); text-align: center; margin: 0;
+    font: 400 clamp(40px, 11vw, 76px) 'Lilita One', sans-serif; color: var(--gold); text-shadow: 0 4px 0 #6b4a1c, 0 0 30px rgba(242,193,78,.35);
+    pointer-events: none; }
+  .bartitle { flex: 1; min-width: 0; text-align: center; margin: 0; font: 400 34px 'Lilita One', sans-serif; color: var(--gold);
+    text-shadow: 0 3px 0 rgba(0,0,0,.35); white-space: nowrap; overflow: hidden; }
+  @media (max-width: 699px) { .bartitle { visibility: hidden; } }
   .maker { position: absolute; left: 0; right: 0; bottom: max(16px, env(safe-area-inset-bottom)); text-align: center;
     font: 700 14px 'Nunito', sans-serif; color: rgba(255,244,220,.5); pointer-events: none; }
   #playBtn { width: min(46vmin, 260px); aspect-ratio: 1; border-radius: 50%; background: var(--gold);
@@ -99,7 +106,7 @@
     color: var(--cream); font-size: 36px; }
 
   /* Rommet */
-  #room { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto auto; }
+  #room { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto auto; }
   .bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px;
     padding-top: max(10px, env(safe-area-inset-top)); padding-left: max(14px, env(safe-area-inset-left));
     padding-right: max(14px, env(safe-area-inset-right)); background: var(--wood-2); color: var(--cream);
@@ -233,6 +240,7 @@
 <div id="rotate" aria-live="polite"><div class="phone" aria-hidden="true"></div><h2>Snu skjermen</h2></div>
 
 <div id="start" class="screen">
+  <h1 class="apptitle">Spill og lær</h1>
   <button id="playBtn" aria-label="Start">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z" fill="#3b2805"/></svg>
   </button>
@@ -261,7 +269,7 @@
     <button id="me" aria-label="Figuren din"></button>
     <button id="stars" aria-label="Stjerner">⭐ <span id="starN">0</span></button>
     <button id="eggCount" aria-label="Egg"><span class="egg"></span> <span id="eggN">0</span></button>
-    <div class="spacer"></div>
+    <h1 class="bartitle">Spill og lær</h1>
     <button id="gear" class="hold" aria-label="For voksne (hold inne)">⚙️</button>
   </header>
   <section class="scene bricks">
@@ -343,7 +351,7 @@
     </div>
 
     <h3>Om spillet</h3>
-    <p>Gull-egget er utviklet av Løland Gård Gaming.<br>
+    <p>Spill og lær er utviklet av Løland Gård Gaming.<br>
       Kontakt: <a href="mailto:christian.daland@gmail.com">christian.daland@gmail.com</a></p>
 
     <div class="btnrow" style="margin-top:22px">

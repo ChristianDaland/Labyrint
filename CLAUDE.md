@@ -1,4 +1,6 @@
-# Gull-egget
+# Spill og lær
+
+(Het først «Gull-egget». Lagringsnøkkelen `gullegget` og adressen `/Labyrint/` er beholdt.)
 
 Læringsspill i lesing, skriving og matte for barn på 1.–4. trinns-nivå (startnivå velges i voksenmenyen), også barn som ikke kan lese ennå:
 alt leses opp, bilder brukes i stedet for tekst, og oppgavene tilpasser seg barnet. Én spiller, ingen innlogging,
@@ -42,6 +44,7 @@ skal stemme med `public/kjerne/` og `public/spill/`.
 - Ikonene tegnes med `uv run --with pillow python verktoy/lag-ikoner.py`.
 
 ## Rommet (`public/index.html`, startskjerm)
+- **Tittel:** «Spill og lær» stort på startskjermen (`.apptitle`) og midt i topplinjen i rommet når skjermen er minst 700 px bred (`.bartitle`, skjult på mobil). «© 2026 Løland Gård Gaming» nederst på startskjermen.
 - **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
 - **Rommet:** figur, ⭐ stjerner, egg-teller (leser opp antall per type), diplomer på klossvegg i fire rammer (`DIPLOMA_GROUPS`: matte, norsk, stave, ekstra; med antall, trykk åpner `#dipList` med alle i gruppa), hylle med 👑/💎 (`treasure(n)`: 10 egg = 1 diamant, 10 diamanter = 1 krone) og en hylle med de løse eggene (0–9) og tomme plasser opp til 10, krukker for matte/norsk (fremgang) og spillkort. Alt leses opp ved trykk. Spillkort (tre kolonner): ett trykk sier navnet, to trykk starter.
 - **Feiring:** nye egg og diplomer siden sist feires (fanfare; ny diamant/krone og nye diplomer vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
