@@ -162,7 +162,8 @@
     .scene { grid-column: 1; grid-row: 2 / 4; }
     .jars { grid-column: 2; grid-row: 3; flex-direction: column; align-items: stretch; }
     .jar { flex: none; }
-    .games { grid-column: 2; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; }
+    .games { grid-column: 2; grid-row: 2; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: safe center;
+      min-height: 0; overflow-y: auto; } /* lavt vindu: spillkortene kan rulles */
     .game { min-height: 130px; font-size: 76px; }
   }
   @media (max-width: 480px) { .frame { width: 78px; height: 88px; font-size: 38px; } .wall { gap: 12px; } }
