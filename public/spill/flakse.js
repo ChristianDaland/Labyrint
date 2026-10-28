@@ -13,8 +13,8 @@ import * as lyd from '../kjerne/lyd.js';
 export const ROUND = 10;
 
 // Alle mål er relative til spillfeltet, så spillet føles likt på iPhone, iPad og PC
-const TRAVEL = 6.5;      // sekunder fra en vegg dukker opp til den når fuglen (rolig start)
-const FASTEST = 0.7;     // ... ned til 70 % av tiden etter mange riktige på rad
+const TRAVEL = 10;       // sekunder fra en vegg dukker opp til den når fuglen: tid til å høre og forstå spørsmålet
+const FASTEST = 0.75;    // ... ned til 75 % av tiden etter mange riktige på rad
 const GRAVITY = 1.5;     // feltets høyde per s²
 const FLAP = -0.55;      // fart oppover etter et trykk
 const MAX_FALL = 0.65;
@@ -29,7 +29,8 @@ const CSS = `
     gap: 10px; padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
     padding-top: max(8px, env(safe-area-inset-top)); background: rgba(94,56,32,.88); color: #fff4dc; z-index: 2; }
   .fl-q { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 56px; text-align: center; }
-  .fl-pic { font-size: clamp(30px, 7vmin, 60px); line-height: 1.05; white-space: pre-line; }
+  .fl-pic { font-size: clamp(56px, 15vmin, 120px); line-height: 1.05; white-space: pre-line; } /* ett bilde: stort */
+  .fl-pic.rows { font-size: clamp(30px, 7vmin, 60px); }
   .fl-pic.small { font-size: clamp(20px, 4.2vmin, 34px); }
   .fl-pic.letter { font: 400 clamp(44px, 10vmin, 80px) 'Lilita One', sans-serif; color: #f2c14e; }
   .fl-text { font: 800 clamp(20px, 4.6vmin, 34px)/1.15 'Nunito', sans-serif; white-space: pre-line; }
@@ -111,7 +112,9 @@ export default function start({ root, profile, store, onExit }) {
     const pic = $('.fl-pic');
     pic.textContent = t.pic || '';
     pic.classList.toggle('letter', /^[A-ZÆØÅ]$/.test(t.pic || ''));
-    pic.classList.toggle('small', (t.pic || '').split('\n').length > 2);
+    const rows = (t.pic || '').split('\n').length, many = [...(t.pic || '')].length > 3; // telleoppgaver har mange bilder
+    pic.classList.toggle('rows', many);
+    pic.classList.toggle('small', rows > 2);
     pic.hidden = !t.pic;
     $('.fl-text').textContent = t.q;
     renderProgress();
@@ -344,10 +347,11 @@ export default function start({ root, profile, store, onExit }) {
 
   // ─── Løkke og avslutning ────────────────────────────────────────────
   let raf = 0, last = performance.now(), paused = false;
+  const sideways = matchMedia('(orientation: landscape) and (pointer: coarse)');
   function loop(now) {
     raf = requestAnimationFrame(loop);
     const dt = Math.min((now - last) / 1000, 0.05); last = now;
-    if (!paused) update(dt);
+    if (!paused && !sideways.matches) update(dt); // på tvers: rommet viser «snu skjermen», spillet står stille
     draw();
   }
   const onVis = () => { paused = document.visibilityState === 'hidden'; last = performance.now(); };

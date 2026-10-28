@@ -21,9 +21,10 @@ Ny kjerne i `public/kjerne/` (ES-moduler uten byggesteg, felles for alle spillen
 
 Rommet `public/rom.html` (startskjerm; blir `index.html` i steg 4):
 - **Start:** ▶-knapp (låser opp lyd på iOS) → ny figur (velg dyr + farge) / velg figur (hvis flere) / rommet.
-- **Lave skjermer:** skjermene kan rulles og har kompakt utgave (`max-height: 520px`), så alt får plass på iPhone på tvers.
+- **Bare høykant på telefon og pad:** Safari kan ikke låse retningen, så `#rotate` («Snu skjermen», leses opp) dekker alt ved `(orientation: landscape) and (pointer: coarse)`. PC kan bruke begge retninger.
+- **Lave skjermer:** skjermene kan rulles og har kompakt utgave (`max-height: 520px`).
 - **Rommet:** figur, ⭐ stjerner, gullegg-teller, diplomer på klossvegg (tomme «?»-rammer viser at det finnes flere), gullegg på hyller (antall per hylle etter skjermbredde), krukker for matte/norsk (fremgang i ferdighetene) og spillkort.
-- **Opplesning:** alt leses opp ved trykk.
+- **Opplesning:** alt leses opp ved trykk. Oppgaver med bilde sier alltid hva bildet er (f.eks. «Finn ordet tre»), siden et lite bilde er lett å misforstå.
 - **Spillkort:** ett trykk sier navnet, to trykk starter.
 - **Feiring:** nye egg og diplomer siden sist feires (fanfare, diplom vist stort og lest opp). Rommet teller med `rewards.seenEggs`/`seenDiplomas`.
 - **Voksenmeny:** ⚙️, holdes inne i 3 s. Inneholder bytt/ny/slett figur, fag (begge/matte/norsk), lyd av/på, sikkerhetskopi lagre/hent, og hint om Hjem-skjerm.
@@ -43,9 +44,11 @@ Spill (`public/spill/*.js`, lastes inn i rommet med `import()`; `export default 
   - **Feil svar:** «Ikke helt. Prøv igjen!», og samme spørsmål kommer på en ny vegg der den feile åpningen er murt igjen, helt til riktig åpning. Etter to feil er bare riktig åpen. Riktig svar avsløres ikke ved feil.
   - **Bare første forsøk teller** i læringsmotoren og for stjernene.
   - **Runde:** 10 spørsmål fra læringsmotoren. Riktig gir pling, ros og stjerner.
-  - **Tempo:** veggen bruker 6,5 s til fuglen, ned til 70 % ved mange riktige på rad.
+  - **Tempo:** veggen bruker 10 s til fuglen (tid til å høre og forstå spørsmålet), ned til 75 % ved mange riktige på rad.
+  - **Bilder:** et enkelt bilde vises stort (opptil 120 px), telleoppgaver mindre.
   - **Fuglen** har spillerens farge.
   - **Avslutte:** ✕ holdes inne 1 s.
+  - **På tvers:** spillet står stille når telefon eller pad holdes på tvers.
   - **Test:** `#test=riktig|slurv|feil` i adressen slår på autopilot («slurv» sikter mot kanten av riktig åpning) og eksponerer `window.__flakse` (brukes av automatiske tester).
 
 ## Spillveiledning – hold den oppdatert

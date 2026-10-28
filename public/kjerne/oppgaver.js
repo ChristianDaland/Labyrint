@@ -115,7 +115,8 @@ function firstLetter(skill) {
 function wordForPicture(skill, short) {
   const [w, pic] = pick(WORDS.filter(x => short ? x[0].length <= 4 : x[0].length >= 5));
   const wrong = shuffle(WORDS.filter(x => x[0] !== w && x[0][0] !== w[0] && (!short || x[0].length <= 5))).map(x => up(x[0]));
-  return task(skill, 'Hva er dette?', up(w), wrong, { pic, speak: 'Hva er dette? Finn ordet.' });
+  // Stemmen sier hva bildet er (et lite bilde er lett å misforstå); oppgaven er å finne det skrevne ordet
+  return task(skill, 'Finn ordet', up(w), wrong, { pic, speak: `Finn ordet ${w}.` });
 }
 
 function nextLetter(skill) {
