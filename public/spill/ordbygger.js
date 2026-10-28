@@ -80,7 +80,7 @@ export default function start({ root, profile, store, onExit }) {
   const $ = s => root.querySelector(s);
   const test = /(?:^|[#&])test(?:=(\w+))?/.exec(location.hash); // autopilot for automatiske tester: #test=riktig|feil
 
-  const st = { task: null, filled: [], mistakes: 0, slotMistakes: [], busy: false, done: false,
+  const st = { task: null, used: new Set(), filled: [], mistakes: 0, slotMistakes: [], busy: false, done: false,
     answered: 0, right: 0, results: [], auto: test ? test[1] || 'riktig' : null };
   if (test) window.__ordbygger = st;
 
@@ -99,8 +99,11 @@ export default function start({ root, profile, store, onExit }) {
   }
 
   // ─── Nytt ord ───────────────────────────────────────────────────────
+  // Samme ord kommer ikke to ganger i en runde (ordlistene har 10–20 ord per nivå, en runde 8)
   function next() {
-    const t = makeTask(chooseSkill(profile.learning, 'stave').id);
+    let t;
+    for (let i = 0; i < 50 && (!t || st.used.has(t.word)); i++) t = makeTask(chooseSkill(profile.learning, 'stave').id);
+    st.used.add(t.word);
     st.task = t; st.filled = Array(t.word.length).fill(null); st.mistakes = 0; st.slotMistakes = Array(t.word.length).fill(0); st.busy = false;
     root.classList.remove('ob-done');
     $('.ob-pic').textContent = t.pic;
