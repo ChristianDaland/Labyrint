@@ -6,6 +6,18 @@ Brukes i undervisning på 1.–2. trinn: mange elever kan ikke lese ennå, så o
 
 Språk i UI: norsk bokmål.
 
+## Ombygging pågår (se PLAN.md)
+Spillet bygges om fra flerspiller med storskjerm til en samling læringsspill for én spiller, som statisk side på GitHub Pages (ingen server). Plan og status står i `PLAN.md`. Til labyrinten er bygd om (steg 4), beskriver resten av denne fila det gamle flerspillerspillet, som fortsatt ligger i `server.js`, `tasks.js`, `public/index.html` og `public/play.html`.
+
+Ny kjerne i `public/kjerne/` (ES-moduler uten byggesteg, felles for alle spillene; `kjerne/package.json` gjør dem til moduler også i Node):
+- `oppgaver.js` – oppgaver per ferdighet (`SKILLS`, i læringsrekkefølge per fag, hver med diplomtekst). Oppgave: `{skill, q, pic, options[3], answer, speak}`. `LETTER_ORDER` = rekkefølgen bokstavene innføres i (bytt hvis en annen ABC-bok følges).
+- `laering.js` – læringsmotoren: nivå per fag, siste 10 svar per ferdighet, opp ved 8/10 og ned ved under 5/10 (med blanke ark), valg ca. 70 % nå / 20 % repetisjon (vektet mot det han bommer på) / 10 % smakebit. `recordAnswer` fører også statistikk per fag og dag.
+- `belonning.js` – stjerner (1–3), gullegg per runde, milepæl-diplomer og diplomer for mestrede ferdigheter.
+- `lagring.js` – profiler (dyr + farge, aldri navn), alt i `localStorage` under nøkkelen `gullegget` med versjonsnummer; tåler ødelagte data, sikkerhetskopi (eksport/import), `requestPersist()`.
+- `lyd.js` – Web Audio-effekter (pling, oops, fanfare, flap, bump, creak, bark, growl) som også kan tas opp offline, opplesning (nb-NO) og plass til innspilte bokstavlyder (`LETTER_FILES`).
+- Alle stier er relative (siden ligger under `/Labyrint/` på GitHub Pages).
+- Tester: `npm test` (Node, `test/kjerne.test.mjs`).
+
 ## Spillveiledning – hold den oppdatert
 `public/veiledning.html` (rute `/veiledning`, lenket fra lobbyen og fra «Egne oppgaver») er veiledningen for lærere og foreldre.
 **Når regler, poeng, oppgavetyper, innstillinger, knapper, tekster eller oppførsel i spillet endres, skal veiledningen oppdateres i samme endring.**

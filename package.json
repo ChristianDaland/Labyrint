@@ -4,7 +4,8 @@
   "description": "Flerspiller 3D-labyrint: finn gull-egget før revene tar deg",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/*.test.mjs"
   },
   "engines": {
     "node": ">=18"
