@@ -39,13 +39,13 @@ test('staveoppgavene: ordet, bokstavbrikkene og ekstra bokstaver', () => {
     assert.match(t.word, /^[A-ZÆØÅ]{2,}$/, s.id);
     const rest = [...t.tiles];
     for (const ch of t.word) rest.splice(rest.indexOf(ch), 1); // hver bokstav i ordet finnes som brikke
-    assert.equal(rest.length, { stavkopi: 0, stavkort: 0, stavsammen: 1 }[s.id] ?? 2, s.id);
+    assert.equal(rest.length, { stavkort: 0, stavsammen: 1 }[s.id] ?? 2, s.id);
     assert.ok(rest.every(ch => !t.word.includes(ch)), `${s.id}: ekstra bokstav finnes i ordet`);
-    assert.equal(t.ghost, s.id === 'stavkopi');
+    assert.ok(!('ghost' in t), `${s.id}: rutene skal være tomme`);
     assert.ok(t.pic && t.speak === `Stav ordet ${t.word.toLowerCase()}.`);
   }
   assert.deepEqual(skillsOf('stave').map(s => s.id), SPELL_SKILLS.map(s => s.id));
-  assert.equal(chooseSkill({ level: { matte: 0, norsk: 0, stave: 2 }, recent: {} }, 'stave', () => 0.5).id, 'stavvelg');
+  assert.equal(chooseSkill({ level: { matte: 0, norsk: 0, stave: 2 }, recent: {} }, 'stave', () => 0.5).id, 'stavfire');
 });
 
 test('Tallbyggeren: regnestykkene stemmer, og svarene finnes blant brikkene', () => {
@@ -213,7 +213,7 @@ test('svar på andre ferdigheter enn den spilleren øver på flytter ikke nivåe
 test('statistikk per fag og per dag', () => {
   const p = profile(), d = new Date(2026, 9, 28, 12);
   recordAnswer(p, 'pluss5', true, d); recordAnswer(p, 'rim', false, d); recordAnswer(p, 'rim', true, d);
-  recordAnswer(p, 'stavkopi', true, d);
+  recordAnswer(p, 'stavkort', true, d);
   assert.deepEqual(p.stats.right, { matte: 1, norsk: 1, stave: 1, setning: 0 });
   assert.deepEqual(p.stats.wrong, { matte: 0, norsk: 1, stave: 0, setning: 0 });
   assert.deepEqual(p.stats.days['2026-10-28'], { right: 3, wrong: 1 });

@@ -1,29 +1,24 @@
-# Plan: Spill og lær (først kalt Gull-egget) – versjon 1
+# Plan: Spill og lær (først kalt Gull-egget)
 
-Status (28.10.2026): planen er godkjent.
-- **Steg 1 (grunnmur) er ferdig:** `public/kjerne/` med oppgaver, læringsmotor, belønninger, lagring og lyd, testet med `npm test` og i nettleser.
-- **Steg 2 (rommet) er ferdig:** `public/rom.html`, testet i nettleser som iPhone (høykant) og iPad (liggende).
-- **Steg 3 (Flakse-fuglen og ferdiglaget tale) er bygget:** `public/spill/flakse.js`, `public/kjerne/tale.js`, `verktoy/lag-tale.py` og lydfilene i `public/lyd/tale/`.
-- **Steg 5 (hjem-skjerm-app, publisering, ny veiledning) er gjort før steg 4:** rommet ligger på `index.html` (fast adresse for ikonet), det gamle storskjerm-spillet på `storskjerm.html`, og GitHub Actions publiserer bare `public/`. Lyden følger ikke lenger lydløs-bryteren på iOS 16.4+.
-- **Steg 4 (Labyrinten som enspiller) er ferdig:** `public/spill/labyrint.js` og `labyrint-kart.js`. Det gamle flerspillerspillet (server, Socket.io, storskjerm) er fjernet; Render-tjenesten kan slettes.
-- **Slangen er lagt til** som tredje spill: `public/spill/slange.js`. Spis skiltet med riktig svar; kan ikke krasje.
-- **Ordbyggeren er lagt til:** `public/spill/ordbygger.js`. Staving med bokstavbrikker, eget fag `stave` med seks nivåer.
-- **Tallbyggeren er lagt til:** `public/spill/tallbygger.js`. Regnestykker der tall dras på plass, med matte-nivået. Felles motor med Ordbyggeren i `brikker.js`.
-- **Ordtoget er lagt til:** `public/spill/ordtog.js`. Lag enkle setninger med ordbrikker, eget fag `setning` med fire nivåer og tomme ruter.
-- **1.–4. trinn:** startnivå i voksenmenyen, og nye ferdigheter for 3.–4. trinn i matte (veksling, gange og dele, tall opp til 1000), staving (rettskriving) og norsk (leseforståelse).
-- **Neste:** test med barn, deretter steg 6 (innspilte bokstavlyder, som også gir lyd på brikkene i Ordbyggeren) og flere spill.
+Status (30.10.2026): versjon 1 er bygget og publisert på https://christiandaland.github.io/Labyrint/.
+Seks spill med felles læringsmotor for 1.–4. trinn. Tekniske detaljer står i `CLAUDE.md`.
+
+**Neste:**
+1. Test med barn på ekte iPhone og iPad, og juster etter det.
+2. Steg 6: innspilte bokstavlyder (/sss/, ikke «ess»). Da får også brikkene i Ordbyggeren lyder.
+3. Mer fra «Senere» (avsnitt 13).
 
 ## 1. Mål og rammer
 
-Et morsomt sted der barn på 1.–2. trinns-nivå lærer å lese, skrive og regne ved å spille, også barn som ikke kan lese
+Et morsomt sted der barn på 1.–4. trinns-nivå lærer å lese, skrive og regne ved å spille, også barn som ikke kan lese
 ennå. Laget først for bruk hjemme, på iPhone og iPad.
 
-Bestemt så langt:
+Bestemt:
 
 - **Læringen er selve spillet.** Barnet skal ikke løse oppgaver for å få lov til å spille.
-- **Én spiller per spill.** Flerspiller og storskjerm fjernes.
+- **Én spiller.** Det gamle flerspillerspillet med storskjerm er fjernet (finnes i git-historikken).
 - **Gratis å drifte:** statisk nettside på GitHub Pages, uten server og database.
-- **Ingen innlogging og ingen foreldreside.** Foreldrene følger med på samme enhet.
+- **Ingen innlogging og ingen foreldreside.** Foreldrene følger med på samme enhet, og har en voksenmeny.
 - **Ingen navn lagres.** Ingenting om barnet forlater enheten.
 - **Kan bygges ut senere** til familier og skoler med server og kontoer, uten å bygge om spillene.
 
@@ -31,206 +26,159 @@ Bestemt så langt:
 
 | Med | Ikke med ennå |
 |---|---|
-| Rommet (startskjerm) med egg og diplomer | Spiseren, Hopperen, Klossene |
-| Flakse-fuglen | Server, kontoer, synkronisering mellom enheter |
-| Labyrinten, som enspiller | Foreldreoversikt |
-| Slangen | |
-| Ordbyggeren (staving) | |
-| Tallbyggeren (regnestykker) | |
-| Ordtoget (setninger) | |
-| Felles læringsmotor som tilpasser seg | Redigering av egne oppgaver (finnes i dag, kommer tilbake senere) |
-| Profiler (velg figur) på samme enhet | Innspilte bokstavlyder (planlagt rett etter) |
-| Lagring på enheten, med sikkerhetskopi | Å forme bokstaver med fingeren |
-| Kan legges på hjem-skjermen (fullskjerm) | |
-| Publisering på GitHub Pages | |
+| Startskjerm og rommet med stjerner, egg, diamanter, kroner og diplomer | Innspilte bokstavlyder (steg 6) |
+| Seks spill: Flakse-fuglen, Labyrinten, Slangen, Ordbyggeren, Tallbyggeren, Ordtoget | Spiseren, Hopperen, Klossene |
+| Felles læringsmotor med fire fag og startnivå 1.–4. trinn | Å forme bokstaver med fingeren |
+| Profiler (dyr og farge) på samme enhet | Egne oppgaver, med redigering i voksenmenyen |
+| Lagring på enheten, med sikkerhetskopi | Server, kontoer, synkronisering mellom enheter |
+| Ferdiglaget norsk tale for alt som sies | Foreldreoversikt |
+| Hjem-skjerm-app (fullskjerm), publisering på GitHub Pages | |
+| Veiledning for foreldre | |
 
 ## 3. Slik opplever barnet det
 
-1. Barnet trykker på ikonet på hjem-skjermen, og spillet åpner i fullskjerm.
-2. **Er det flere profiler**, ser barnet figurene og trykker på sin. Med bare én profil går det rett videre.
-3. **Rommet:** figuren, hylla med gullegg, diplomer på veggen og to store spillknapper: 🐦 Flakse-fuglen og 🥚 Labyrinten.
-4. Barnet spiller en runde på 3–5 minutter.
-5. Barnet kommer tilbake til rommet og ser at det nye egget, stjernene eller diplomet havner på plass, med lyd og en liten feiring.
+1. Barnet trykker på ikonet på Hjem-skjermen. Startskjermen viser «Spill og lær» og en stor ▶-knapp, som også låser opp lyden.
+2. **Er det flere profiler**, trykker barnet på sin figur. Med bare én går det rett videre.
+3. **Rommet:** figuren, stjerner, egg, diplomer på veggen og seks spillkort med bilde.
+4. Barnet spiller en runde på 3–5 minutter (8–10 oppgaver, eller til egget er funnet i Labyrinten).
+5. Tilbake i rommet havner det nye egget på hylla, med lyd og feiring. Nye diamanter, kroner og diplomer vises stort og leses opp.
 
 Alt kan brukes uten å lese. Store bilder, få knapper, og alt som betyr noe, leses opp.
 
 ## 4. Rommet
 
-- **Tegnes i 2D** (HTML, SVG og CSS) med varm, kloss-aktig stil. Det skal være inspirert av Minecraft uten å kopiere.
-- **Hylla:** ett egg per fullført runde (gull, sølv eller bronse etter stjernene), med flere hyller etter hvert.
-- **Diplomer på veggen.** Barnet trykker på et diplom, og det leses opp hva det klarte.
-- **Stjerner i rommet:** antall stjerner synes, som en teller eller en krukke som fylles.
-- **Spillknappene:** store kort med bilde, ikke tekst. Trykk én gang for å høre navnet og to ganger for å starte. Det hindrer at spill startes ved et uhell.
-- **Senere:** ting barnet låser opp og kan plassere i rommet, for eksempel en lampe, et kjæledyr eller en rakett.
+- **Tegnet i 2D** (HTML og CSS) med varm, kloss-aktig stil.
+- **Diplomer:** fire rammer på veggen (matte, norsk, staving, stjerne-diplomer) med antall. Trykk åpner alle i gruppa, og de leses opp.
+- **Hylla:** ett egg per fullført runde (gull, sølv eller bronse etter stjernene). Ti egg blir til en diamant, og ti diamanter til en krone, så rommet aldri blir fullt.
+- **Spillkortene:** store kort med bilde. Trykk én gang for å høre navnet og to ganger for å starte, så ingenting startes ved et uhell.
+- **Krukker** for matte og norsk viser fremgangen.
+- **Senere:** ting barnet låser opp og kan plassere i rommet.
 
-## 5. Flakse-fuglen (første nye spill)
+## 5. Spillene
 
-**Styring:** ett trykk hvor som helst på skjermen, og fuglen flakser opp. Den synker sakte.
+Felles regler: oppgaven leses alltid opp, feil svar gir «Ikke helt. Prøv igjen!» til riktig er valgt, bare første forsøk
+teller, og ingen kan tape.
 
-**Selve spillet:**
-- Øverst står en oppgave som også leses opp, for eksempel «3 + 4» eller 🐟 «Hvilken bokstav starter ordet med?».
-- Fuglen flyr mot en vegg med tre åpninger. Hver åpning har et svar, med tall, bokstav eller bilde.
-- **Riktig åpning:** pling, en stjerne, og fuglen flyr videre. Neste oppgave kommer.
-- **Feil åpning:** fuglen flyr gjennom, men det spilles en «oi»-lyd, riktig svar lyser opp og leses opp, og den samme *typen* oppgave kommer snart igjen.
-- **Treffer fuglen veggen:** den spretter litt tilbake og fortsetter. Den dør aldri, og det er aldri «game over».
-- **Fart:** rolig fra start, og litt raskere ved mange riktige på rad.
-
-**Runde og belønning:**
-- En runde er 10 oppgaver. Til slutt kommer et gullegg flyvende inn.
-- Stjerner etter antall riktige av 10: 1 stjerne for 0–5, 2 stjerner for 6–8 og 3 stjerner for 9–10.
-
-**Skjerm:** fungerer både på høykant og liggende, men er best liggende. Tegnes med Canvas 2D.
-
-## 6. Labyrinten som enspiller
-
-Labyrinten slik den er i dag, men alt kjører i nettleseren:
-- labyrinten lages på enheten,
-- dører med oppgaver,
-- rev med revespørsmål,
-- knirk og knurrelyder,
-- kart,
-- egget.
-
-Oppgavene ved dørene og fra reven hentes fra læringsmotoren. Å finne egget gir et gullegg i rommet. Stjerner gis for få feil svar og for å ikke bli tatt av reven.
-
-## 7. Læringsmotoren (felles for alle spill)
-
-**Ferdigheter.** Hver har en ID, et nivå og en oppgavegenerator:
-
-| Matte | Norsk (lese og skrive) |
+| Spill | Kort fortalt |
 |---|---|
-| Telle bilder til 5, så til 10 | Bokstavnavn: stor og liten bokstav |
-| Tallrekkefølge: før og etter | Første lyd i ord (med bilde) |
-| Størst og minst | Ord til bilde: korte ord som SOL, BIL og IS |
-| Pluss innenfor 5, så 10 | Manglende bokstav (S _ L) |
-| Minus innenfor 5, så 10 | Rim |
-| Tiervenner | Stavelser |
-| Pluss og minus innenfor 20 | Bygge ord med bokstavbrikker (fra Slangen) |
+| 🐦 Flakse-fuglen | Fly gjennom åpningen med riktig svar. Fuglen glir selv inn i nærmeste åpning, så den aldri krasjer. Feil åpning blir murt igjen på neste vegg. |
+| 🧱 Labyrinten | 3D-labyrint med dører som åpnes med oppgaver, en rev som fanger barnet med et revespørsmål, kart og et egg som skifter farge etter hvordan det går. |
+| 🐍 Slangen | Trykk der slangen skal gå, og spis skiltet med riktig svar. Slangen kan ikke krasje. |
+| 🧩 Ordbyggeren | Stav ordet med bokstavbrikker (dra eller trykk). |
+| 🧮 Tallbyggeren | Dra tall på plass i regnestykker og tallrekker (3 + ☐ = 7). |
+| 🚂 Ordtoget | Hør setningen og legg ordbrikkene i riktig rekkefølge. |
+
+Flakse-fuglen, Labyrinten og Slangen bruker flervalgsoppgaver (matte og norsk). De tre byggespillene deler motor
+(`brikker.js`), og Ordbyggeren og Ordtoget har hvert sitt fag (staving og setninger).
+
+## 6. Læringsmotoren (felles for alle spill)
+
+**Fire fag**, hvert med ferdigheter i læringsrekkefølge (full liste i veiledningen):
+- **Matte:** telling, før og etter, størst, pluss og minus til 5, 10 og 20, tiervenner, dobling, tallrekker, store tall.
+  3.–4. trinn: veksling, gange og dele, hundrere/tiere/enere, tall og pluss/minus opp til 1000, gangetabellen.
+- **Norsk:** store og små bokstaver, første lyd, lese korte og lange ord, alfabetet, bokstaven som mangler, rim, stavelser.
+  3.–4. trinn: leseforståelse (setning til bilde, kort tekst med spørsmål; teksten leses ikke opp).
+- **Staving** (Ordbyggeren): lydrette ord fra korte til lange, så rettskriving (ng, kj/sj, stumme bokstaver, sammensatte ord).
+- **Setninger** (Ordtoget): tre til fem ord, etter hvert med et ekstra ord å velge bort.
 
 **Tilpasning:**
 - For hver ferdighet huskes de siste 10 svarene.
-- Spilleren flyttes et hakk opp ved 8 av 10 riktige, og et hakk ned ved under 5 av 10.
-- Oppgavene velges omtrent slik:
-  - 70 % på nivået spilleren er på,
-  - 20 % repetisjon av noe spilleren kan,
-  - 10 % smakebit på det neste.
-- Ferdigheter spilleren ofte bommer på, kommer oftere.
-- Det blandes matte og norsk. Senere kan foreldrene få velge fag.
+- Et hakk opp ved 8 av 10 riktige, og et hakk ned ved under 5 av 10.
+- Oppgavene velges omtrent 70 % på nivået, 20 % repetisjon av de nærmeste ferdighetene under (oftest det barnet bommer på) og 10 % smakebit på det neste.
+- **Startnivå** (1.–4. trinn) velges i voksenmenyen.
+- Foreldrene kan velge matte og norsk, bare matte eller bare norsk.
 
-**Oppgaveformat** (felles for alle spill): `{ ferdighet, spørsmål, bilde, alternativer[], riktig, opplesning }`. Dagens oppgavegenerator i `tasks.js` brukes som utgangspunkt og merkes med ferdighet og nivå.
+**Tale** (besluttet 28.10.2026 etter lydprøver):
+- Ferdiglagde lydfiler med Piper, stemmen `no_NO-talesyntese-medium` (CC0, Nasjonalbiblioteket), sakte og tydelig for barn.
+- Alt som sies, lages på forhånd av et skript. Store regnestykker settes sammen av biter («Hva er» + «347» + «pluss» + «200»), og tallene 0–1000 finnes som egne filer.
+- Enhetens stemme brukes bare som reserve hvis en fil mangler.
+- Bokstavlyder (/sss/) tas opp senere (steg 6). Til da sies bokstavnavnet.
 
-**Lyd** (besluttet 28.10.2026 etter lydprøver):
-- **Ferdiglagde lydfiler med Piper:** stemmen `no_NO-talesyntese-medium` (CC0, Nasjonalbiblioteket), med innstillingene `--length-scale 1.7 --noise-scale 0.5 --noise-w 0.6 --sentence-silence 0.6`. Det gir sakte og tydelig tale for barn, og stemmen høres lik ut på alle enheter.
-- **Alle setninger lages på forhånd** av et skript: spørsmål, beskjeder, diplomer, tall og ord. Filene hentes bare når de trengs.
-- **Enhetens stemme brukes bare som reserve** hvis en fil mangler. Den var nesten uforståelig på Linux, men bedre på iPhone og iPad.
-- Hele spørsmål leses av den valgte stemmen.
-- Bokstavlyder, som /sss/ og ikke «ess», tas opp senere som lydfiler.
-- Til opptakene er klare, lager vi oppgaver som ikke trenger enkeltlyder.
-
-## 8. Belønninger
+## 7. Belønninger
 
 | Belønning | Hvordan |
 |---|---|
-| Stjerner | 1–3 per runde (se over) |
-| Gullegg | Ett per fullført runde i hvilket som helst spill |
-| Diplomer | Milepæler, for eksempel: første egg · 5 egg · 10 egg · 3 stjerner i en runde · 50 riktige i matte · 50 riktige i norsk · ny ferdighet låst opp · rømte fra reven 5 ganger |
+| Stjerner | 1–3 per runde etter riktige på første forsøk: 0–5 av 10 gir 1, 6–8 gir 2, 9–10 gir 3 |
+| Egg | Ett per fullført runde: gull (3 stjerner), sølv (2) eller bronse (1). Ti egg blir en diamant, ti diamanter en krone |
+| Diplomer | For hver ferdighet barnet mestrer («Du kan pluss opp til 10!»), og milepæler: første egg, 5, 10 og 25 egg, første gullegg, fem gullegg, 50 og 200 riktige i matte og norsk, rømt fra reven fem ganger |
 
-Diplomene viser *hva barnet har lært*, for eksempel «Du kan pluss innenfor 10!», ikke bare at det har spilt mye. Diplomer for nye ferdigheter er de viktigste.
+Diplomene viser *hva barnet har lært*, ikke bare at det har spilt mye.
 
-## 9. Profiler
+## 8. Profiler
 
-- Flere profiler på samme enhet. Hver har en figur og en farge, som 🦉 Lilla ugle, og ikke noe navn.
+- Flere profiler på samme enhet. Hver har et dyr og en farge, som 🦉 lilla ugle, og ikke noe navn.
 - Med én profil vises aldri valget.
-- En ny profil lages fra profilvalget. Det åpnes med et lite «+» som må holdes inne i 3 sekunder, slik at det er tungt å gjøre ved et uhell.
+- Nye profiler lages fra voksenmenyen eller profilvalget (et «+» som holdes inne).
 
-## 10. Lagring og sikkerhetskopi
+## 9. Lagring og sikkerhetskopi
 
-- Alt lagres i nettleserens `localStorage`, med versjonsnummer slik at det tåler senere endringer.
-- **Per profil:** figur, ferdighetsnivåer, siste svar per ferdighet, egg, stjerner, diplomer, og en enkel logg per dag over hvor mye barnet har spilt og hvor mye som var riktig.
-- Spillet ber nettleseren om varig lagring (`navigator.storage.persist`).
-- **Hjem-skjermen er viktig:** Safari på iPhone og iPad kan slette lagrede data for nettsider som ikke er brukt på 7 dager. Når spillet er lagt på hjem-skjermen, gjelder ikke det.
-- **Voksenmeny:** en liten ⚙️-knapp i rommet som må holdes inne i 3 sekunder. Den har:
-  - «Lagre sikkerhetskopi» (fil),
-  - «Hent sikkerhetskopi»,
-  - lyd av og på,
-  - slette en profil.
-
-  Den er ingen foreldreside, bare det minste som trengs for å ikke miste fremgangen.
+- Alt lagres i nettleserens `localStorage` (nøkkelen `gullegget`, fra det første navnet), med versjonsnummer.
+- **Per profil:** figur, nivå per fag, siste svar per ferdighet, egg, stjerner, diplomer og en logg per dag.
+- Spillet ber om varig lagring (`navigator.storage.persist`).
+- **Hjem-skjermen er viktig:** Safari kan slette data for nettsider som ikke er brukt på 7 dager. Det gjelder ikke apper på Hjem-skjermen. Appen har egen lagring, atskilt fra Safari.
+- **Voksenmeny** (⚙️ holdes inne i 3 sekunder): bytt, ny og slett figur, fag, startnivå, lyd, sikkerhetskopi (lagre og hent), Hjem-skjerm-hint, veiledning og «Om spillet».
 - **Utbygging senere:** formatet gjør det mulig å laste opp fremgangen til en server når familiekontoer kommer.
 
-## 11. Teknisk oppbygning
+## 10. Teknisk oppbygning
 
-- **Statisk nettside,** ren HTML og JavaScript uten byggesteg, som i dag. Three.js brukes bare i labyrinten.
-- **Foreslått struktur:**
-
-Endret i steg 2: spillene er **moduler som lastes inn i rommet**, ikke egne sider. På iPhone og iPad må lyd låses opp med et trykk etter hver sidelasting. Med egne sider ville feiringen være stum når barnet kommer tilbake til rommet. Nå er lyden låst opp hele tiden, og rommet deler ut belønningene på ett sted.
+- **Statisk nettside,** ren HTML og JavaScript (ES-moduler) uten byggesteg. Three.js brukes bare i labyrinten.
+- **Spillene er moduler som lastes inn i rommet,** ikke egne sider. På iPhone og iPad må lyd låses opp med et trykk etter hver sidelasting, så egne sider ville gitt stum feiring i rommet.
 
 ```
 public/
-  index.html          rommet + profilvalg + voksenmeny (var rom.html i steg 2–3)
-  spill/flakse.js     Flakse-fuglen (lastes inn i rommet)
-  spill/labyrint.js   labyrinten, enspiller (lastes inn i rommet)
-  veiledning.html     skrives om for den nye løsningen
-  manifest.json       hjem-skjerm-app (navn, ikon, fullskjerm)
-  ikoner/             app-ikoner
-  lyd/                innspilte bokstavlyder (senere)
-  kjerne/
-    laering.js        ferdigheter, tilpasning, oppgavevalg
-    oppgaver.js       oppgavegeneratorer (fra tasks.js)
-    lagring.js        profiler, fremgang, sikkerhetskopi
-    lyd.js            lydeffekter (Web Audio) og opplesning
-    belonning.js      stjerner, egg, diplomer
+  index.html            startskjerm, rommet, profilvalg og voksenmeny
+  veiledning.html       veiledning for foreldre
+  manifest.webmanifest  hjem-skjerm-app (navn, ikon, fullskjerm, høykant)
+  ikoner/               app-ikoner
+  lyd/tale/             ferdiglaget tale (mp3 og manifest.json)
+  kjerne/               oppgaver, læringsmotor, belønninger, lagring, lyd, tale, ui
+  spill/                flakse, labyrint (+ labyrint-kart), slange, brikker, ordbygger, tallbygger, ordtog
+test/                   Node-tester (npm test)
+verktoy/                lag-tale.py, fraser.mjs, lag-ikoner.py
 ```
 
-- **Det som fjernes:** `server.js` og socket.io (finnes i git-historikken), flerspiller, storskjerm og QR.
-- **GitHub Pages** (valgt 28.10.2026; brukeren bruker det fra før):
-  - **Publisering:** en GitHub Actions-arbeidsflyt publiserer bare `public/` ved hver push til `main`. Resten av repoet, som `PLAN.md` og gamle serverfiler, kommer ikke med.
-  - **Adresse:** `https://christiandaland.github.io/Labyrint/`. Siden ligger i en undermappe, så **alle stier må være relative** (`kjerne/lyd.js`, ikke `/kjerne/lyd.js`).
-  - **`.nojekyll`** legges i `public/`, så GitHub ikke behandler filene som Jekyll og hopper over noen av dem.
-  - **Alle filtyper er tillatt** (lyd, `.webmanifest`), og trafikken er omtrent 100 GB i måneden.
-  - **Server senere:** når den kommer, kan den ligge et annet sted (for eksempel Render) og kalles fra siden.
-  - **Render-tjenesten** for det gamle flerspillerspillet kan slettes når den nye versjonen er ute.
+- **GitHub Pages** (valgt 28.10.2026):
+  - En GitHub Actions-arbeidsflyt kjører testene og publiserer bare `public/` ved hver push til `main`.
+  - **Adresse:** `https://christiandaland.github.io/Labyrint/`. Den må ikke endres, ellers slutter installerte ikoner å virke. Alle stier er relative.
+  - **Server senere:** når den kommer, kan den ligge et annet sted og kalles fra siden.
 
-## 12. iPhone og iPad
+## 11. iPhone og iPad
 
-- **Hjem-skjerm-app:** fullskjerm uten Safari-menyer, og lagringen blir varig.
-- **Store berøringsflater:** minst 64 px. Ingen dobbelttrykk-zoom eller markering av tekst.
-- **Skjermretning:** hvert spill fungerer både på høykant og liggende, og velger den beste visningen selv.
-- **Lyd:** starter ved første trykk. Bryteren for lydløs på iPhone demper lydeffektene, men det står i veiledningen.
-- **Ytelse:** labyrinten er testet i 3D. Flakse-fuglen i 2D er lett.
+- **Hjem-skjerm-app:** fullskjerm uten Safari-menyer, og varig lagring.
+- **Store berøringsflater** og ingen dobbelttrykk-zoom eller markering av tekst.
+- **Bare høykant på telefon og nettbrett.** Safari kan ikke låse retningen, så «Snu skjermen» dekker alt (og leses opp) når enheten holdes på tvers, og spillene står stille. PC kan bruke begge retninger.
+- **Lyd:** låses opp med ▶ på startskjermen. På iOS 16.4 og nyere spilles lyden selv om lydløs-bryteren er på.
 
-## 13. Personvern
+## 12. Personvern
 
 - Ingen navn, ingen innlogging, ingen sporing og ingen analyseverktøy.
 - Alle data ligger på enheten. GitHub Pages leverer bare filer. GitHub logger besøk etter sin personvernerklæring, men spillet setter ingen informasjonskapsler og sender ingenting.
-- Når vi senere legger til server og kontoer, må dette vurderes på nytt (se tidligere diskusjon om familiekode og godkjente enheter).
+- Repoet og nettsiden er offentlige: ingenting om konkrete barn, familier eller testere skal stå der.
+- Når vi senere legger til server og kontoer, må dette vurderes på nytt.
 
-## 14. Rekkefølge
+## 13. Senere
 
-| Steg | Innhold | Kan testes med barn? |
-|---|---|---|
-| 1 | Grunnmur: struktur, lagring, profiler, lyd, læringsmotor (uten grafikk) | Nei (testes av oss) |
-| 2 | Rommet med egg, stjerner og diplomer | Ja, rommet kan vises |
-| 3 | Flakse-fuglen | **Ja: første ekte test** |
-| 4 | Labyrinten som enspiller | Ja |
-| 5 | Hjem-skjerm-app, publisering på GitHub Pages, ny veiledning | Ja, på egen iPad |
-| 6 | Innspilte bokstavlyder og oppgaver som bruker dem | Ja |
-
-Etter steg 3 og 5 tester vi med barn og justerer før vi går videre.
-
-## 15. Senere
-
-- Slangen: stave ord (spise bokstavene i riktig rekkefølge) og telle i rekker.
+- Innspilte bokstavlyder (steg 6), og oppgaver som bruker dem.
+- Slangen med staving: spise bokstavene i riktig rekkefølge.
 - Spiseren, Hopperen og Klossene.
 - Ting å bygge og plassere i rommet.
 - Forme bokstaver med fingeren.
-- Egne oppgaver tilbake, med enkel redigering i voksenmenyen.
+- Egne oppgaver, med enkel redigering i voksenmenyen.
+- En innstilling for barn som leser selv («les opp alt» eller «bare ved trykk»).
+- Engelsk som eget fag.
 - Server med familiekontoer og godkjente enheter. Fremgangen følger barnet mellom enheter, og det kommer en foreldreoversikt.
 - Skoler: grupper, bildekode og «åpne klassen».
 
-## 16. Åpne spørsmål
+## 14. Åpne spørsmål
 
-1. Følges en bestemt ABC-bok eller rekkefølge for bokstavene? Det påvirker rekkefølgen i norsk-ferdighetene.
-2. Passer 10 oppgaver per runde i Flakse-fuglen, omtrent 3–5 minutter, for hvor lenge barn holder fokus?
-3. Skal labyrinten med i første test, eller vente til Flakse-fuglen er prøvd?
-4. Er en figur med farge, uten navn, nok for profilene, eller vil barn gjerne kalle figuren noe? Da lagres det bare på enheten.
+1. Følges en bestemt ABC-bok eller rekkefølge for bokstavene? Det påvirker rekkefølgen i norsk-ferdighetene (`LETTER_ORDER`).
+2. Passer rundelengden (8–10 oppgaver, 3–5 minutter) for hvor lenge barn holder fokus?
+3. Er en figur med farge, uten navn, nok for profilene, eller vil barn gjerne kalle figuren noe? Da lagres det bare på enheten.
+4. Er den sammensatte talen i store regnestykker («Hva er … 347 … pluss … 200») grei å forstå, eller bør stykkene leses som hele setninger?
+
+## Historikk
+
+- 28.10.2026: planen godkjent. Bygget i rekkefølgen grunnmur (steg 1), rommet (2), Flakse-fuglen og tale (3),
+  hjem-skjerm-app, publisering og veiledning (5), Labyrinten som enspiller (4). Det gamle flerspillerspillet ble fjernet.
+- Samme kveld: Slangen, Ordbyggeren, Tallbyggeren og Ordtoget, eggtyper og diamanter, 1.–4. trinn med startnivå,
+  og nytt navn: Spill og lær (© 2026 Løland Gård Gaming).

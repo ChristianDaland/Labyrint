@@ -3,10 +3,10 @@
 // («Prøv igjen»); etter HINT_AFTER feil på samme rute vinker riktig brikke. Oppgaven regnes som riktig bare
 // uten feil. Spillet som bruker motoren, lager oppgavene (puslespill) og bestemmer hva som sies.
 //
-// Puslespill: { skill, key, pic, q, parts: [{ text } | { slot, ghost }], tiles, speak, done }
+// Puslespill: { skill, key, pic, q, parts: [{ text } | { slot }], tiles, speak, done }
 //   key: brukes til å unngå samme oppgave to ganger i en runde (og helst fra forrige runde)
 //   pic: bilde (emoji) eller null; q: kort tekst over rutene eller null
-//   parts: tekst (f.eks. «+») og ruter med riktig svar (`ghost`: svaret vises svakt, å kopiere)
+//   parts: tekst (f.eks. «+») og ruter med riktig svar. Rutene vises alltid tomme, så svaret ikke avsløres.
 //   tiles: brikkene (svarene pluss eventuelle ekstra), stokket; speak/done: biter som sies (tale.js)
 
 import { recordAnswer } from '../kjerne/laering.js';
@@ -132,7 +132,7 @@ export function startBrikkespill({ root, profile, store, onExit, game, round, th
     $('.bk-q').hidden = !t.q; $('.bk-q').textContent = t.q || '';
     let k = 0;
     $('.bk-slots').innerHTML = t.parts.map(p => 'slot' in p
-      ? `<div class="bk-slot" data-i="${k++}">${p.ghost ? p.slot : ''}</div>`
+      ? `<div class="bk-slot" data-i="${k++}"></div>`
       : `<span class="bk-sym">${p.text}</span>`).join('');
     $('.bk-tray').innerHTML = t.tiles.map(ch => `<button class="bk-tile">${ch}</button>`).join('');
     root.querySelectorAll('.bk-tile').forEach(addDrag);

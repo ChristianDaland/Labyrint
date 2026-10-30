@@ -41,7 +41,7 @@ export const today = (now = new Date()) =>
 // Startnivå per trinn, valgt i voksenmenyen: ferdigheten barnet starter på i hvert fag.
 // Læringsmotoren justerer videre opp og ned derfra.
 export const GRADE_START = {
-  1: { matte: 'telle5', norsk: 'storliten', stave: 'stavkopi', setning: 'setntre' },
+  1: { matte: 'telle5', norsk: 'storliten', stave: 'stavkort', setning: 'setntre' },
   2: { matte: 'pluss10', norsk: 'alfabet', stave: 'stavvelg', setning: 'setnfire' },
   3: { matte: 'pluss100', norsk: 'stavelser', stave: 'stavdobbel', setning: 'setnvelg' },
   4: { matte: 'plassverdi', norsk: 'lesbilde', stave: 'stavng', setning: 'setnlang' },

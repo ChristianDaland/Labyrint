@@ -18,7 +18,7 @@ export default function start({ root, profile, store, onExit }) {
     makePuzzle: () => {
       const t = makeTask(chooseSkill(profile.learning, 'stave').id);
       return { skill: t.skill, key: t.word, pic: t.pic, q: null, tiles: t.tiles,
-        parts: [...t.word].map(ch => ({ slot: ch, ghost: t.ghost })), speak: T.task(t), done: T.word(t.word) };
+        parts: [...t.word].map(ch => ({ slot: ch })), speak: T.task(t), done: T.word(t.word) };
     },
   });
 }

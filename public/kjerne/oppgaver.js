@@ -230,12 +230,12 @@ const SPELL_WORDS = {
 export const ALL_SPELL_WORDS = Object.values(SPELL_WORDS).flat().map(([w]) => w);
 const EXTRA_LETTERS = 'AEIOUSLMNRTKBDGPFH';
 
-// Staveoppgave: { skill, kind: 'stave', q, word, pic, tiles, ghost, speak }. `tiles` er bokstavene i ordet pluss
-// `extra` bokstaver som ikke er i ordet, stokket. `ghost`: bokstavene vises svakt i rutene (å kopiere).
-function spell(skill, list, { ghost = false, extra = 0 } = {}) {
+// Staveoppgave: { skill, kind: 'stave', q, word, pic, tiles, speak }. `tiles` er bokstavene i ordet pluss
+// `extra` bokstaver som ikke er i ordet, stokket. Rutene er alltid tomme: barnet må lytte til ordet.
+function spell(skill, list, { extra = 0 } = {}) {
   const [w, pic] = pick(SPELL_WORDS[list]), W = up(w);
   const tiles = shuffle([...W, ...shuffle([...EXTRA_LETTERS].filter(c => !W.includes(c))).slice(0, extra)]);
-  return { skill, kind: 'stave', q: 'Stav ordet', word: W, pic, tiles, ghost, speak: `Stav ordet ${w}.` };
+  return { skill, kind: 'stave', q: 'Stav ordet', word: W, pic, tiles, speak: `Stav ordet ${w}.` };
 }
 
 // ─── Ferdighetene, i læringsrekkefølge per fag ─────────────────────────
@@ -401,7 +401,6 @@ export const SENTENCE_SKILLS = [
 
 // Staving: brukes bare i Ordbyggeren (oppgavene er ikke flervalg), så de står utenfor SKILLS
 export const SPELL_SKILLS = [
-  { id: 'stavkopi', subject: 'stave', diploma: 'Du kan bygge ord!', make: s => spell(s, 'kort', { ghost: true }) },
   { id: 'stavkort', subject: 'stave', diploma: 'Du kan stave korte ord!', make: s => spell(s, 'kort') },
   { id: 'stavvelg', subject: 'stave', diploma: 'Du finner de riktige bokstavene!', make: s => spell(s, 'kort', { extra: 2 }) },
   { id: 'stavfire', subject: 'stave', diploma: 'Du kan stave ord med fire bokstaver!', make: s => spell(s, 'fire', { extra: 2 }) },
