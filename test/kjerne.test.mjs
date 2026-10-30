@@ -401,6 +401,16 @@ test('labyrinten: egget kan aldri nås uten dører, og de fleste dørene ligger 
   assert.ok(req / 60 >= 4, `i snitt ${req / 60} dører på veien`);
 });
 
+test('labyrinten: maleriet henger på en vegg ved egget, rett overfor inngangen i en blindvei', () => {
+  for (let r = 0; r < 60; r++) {
+    const l = makeLevel(), g = l.grid, ex = Math.floor(l.egg.x), ez = Math.floor(l.egg.z), { dx, dz } = l.painting;
+    assert.equal(Math.abs(dx) + Math.abs(dz), 1);
+    assert.equal(g[ez + dz][ex + dx], 1, 'maleriet henger ikke på en vegg');
+    const open = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([x, z]) => g[ez + z][ex + x] === 0);
+    if (open.length === 1) assert.deepEqual([-dx, -dz], open[0]);
+  }
+});
+
 test('reven jager når den ser spilleren, og løper unna etter frislipp', () => {
   let fled = 0, deadEnds = 0;
   for (let r = 0; r < 40; r++) {

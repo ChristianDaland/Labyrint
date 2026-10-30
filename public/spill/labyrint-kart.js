@@ -66,7 +66,8 @@ function generateMaze(n) {
   return g;
 }
 
-// Ekstra åpninger gir sløyfer, men bare der hver dør på veien fortsatt er eneste vei fram
+// Ekstra åpninger gir sløyfer, men bare der hver dør på veien fortsatt er eneste vei fram.
+// Veggene rundt egget står (maleriet henger på en av dem, se paintingWall).
 function addLoops(g, pathDoors, egg, count) {
   const W = g.length;
   const doorsNeeded = () => pathDoors.every(d => {
@@ -77,19 +78,30 @@ function addLoops(g, pathDoors, egg, count) {
   });
   for (let i = 0, tries = 0; i < count && tries < 400; tries++) {
     const x = 1 + rand(W - 2), z = 1 + rand(W - 2);
-    if ((x % 2) === (z % 2) || g[z][x] !== 1) continue;
+    if ((x % 2) === (z % 2) || g[z][x] !== 1 || Math.abs(x - egg.x) + Math.abs(z - egg.z) === 1) continue;
     g[z][x] = 0;
     if (doorsNeeded()) i++; else g[z][x] = 1;
   }
 }
 
-// Ny labyrint: { grid, start, egg, doors: [{id, x, z}], fox: {x, z} }
+// Veggen i eggets rute der maleriet henger: rett overfor åpningen man kommer inn fra (nærmest start),
+// så det er det første man ser ved egget. Gir retningen fra ruta til veggen, {dx, dz}.
+export function paintingWall(grid, ex, ez) {
+  const dist = bfs(grid, 1, 1);
+  const open = DIRS.filter(([dx, dz]) => grid[ez + dz][ex + dx] === 0);
+  const [ix, iz] = open.sort((a, b) => dist[ez + a[1] * 2][ex + a[0] * 2] - dist[ez + b[1] * 2][ex + b[0] * 2])[0];
+  const [dx, dz] = grid[ez - iz][ex - ix] ? [-ix, -iz] : DIRS.find(([dx, dz]) => grid[ez + dz][ex + dx]);
+  return { dx, dz };
+}
+
+// Ny labyrint: { grid, start, egg, painting: {dx, dz}, doors: [{id, x, z}], fox: {x, z} }
 export function makeLevel(cfg = CONFIG) {
   const n = cfg.size, grid = generateMaze(n);
   let dist = bfs(grid, 1, 1), max = 0;
   const cells = [];
   for (let z = 1; z < grid.length; z += 2) for (let x = 1; x < grid.length; x += 2) { cells.push({ x, z }); max = Math.max(max, dist[z][x]); }
-  const egg = pick(cells.filter(c => dist[c.z][c.x] >= max * 0.6));
+  const walled = c => DIRS.some(([dx, dz]) => grid[c.z + dz][c.x + dx]);
+  const egg = pick(cells.filter(c => dist[c.z][c.x] >= max * 0.6 && walled(c)));
 
   // Dørene jevnt fordelt på veien (gangene ligger på oddetallsplassene i veien: rute, gang, rute, …)
   const route = pathTo(dist, egg.x, egg.z), L = route.length - 1;
@@ -118,7 +130,7 @@ export function makeLevel(cfg = CONFIG) {
   const foxCell = pick(cells.filter(c => dist[c.z][c.x] >= max * 0.35 && eggDist[c.z][c.x] >= maxEgg * 0.35)) || cells[cells.length - 1];
 
   return { grid, start: { x: 1.5, z: 1.5, a: grid[1][2] === 0 ? 0 : Math.PI / 2 }, egg: { x: egg.x + 0.5, z: egg.z + 0.5 },
-    doors, fox: { x: foxCell.x + 0.5, z: foxCell.z + 0.5 } };
+    painting: paintingWall(grid, egg.x, egg.z), doors, fox: { x: foxCell.x + 0.5, z: foxCell.z + 0.5 } };
 }
 
 // ─── Reven ──────────────────────────────────────────────────────────────

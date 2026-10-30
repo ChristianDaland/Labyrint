@@ -147,7 +147,7 @@ export default async function start({ root, profile, store, onExit }) {
   const input = { up: false, down: false, left: false, right: false };
   const fox = newFox(lvl.fox);
   const pending = new Map(); // dør → oppgave som ikke er besvart (samme oppgave igjen hvis man går bort og kommer tilbake)
-  const st = { pos, fox, task: null, right: 0, total: 0, foxEscapes: 0, done: false, opened: 0, auto: test ? test[1] || 'riktig' : null };
+  const st = { pos, fox, egg: lvl.egg, task: null, right: 0, total: 0, foxEscapes: 0, done: false, opened: 0, auto: test ? test[1] || 'riktig' : null };
   if (test) window.__labyrint = st;
   let safeUntil = performance.now() + 3000, dismissed = null, lastAsk = 0, walkPhase = 0, showMap = false;
 
@@ -227,6 +227,21 @@ export default async function start({ root, profile, store, onExit }) {
   eggMesh.scale.y = 1.3; eggGroup.add(eggMesh);
   const glow = new THREE.PointLight(0xffc040, 2.5, 3, 1.5); glow.position.y = 0.3; eggGroup.add(glow);
   eggGroup.position.set(lvl.egg.x, 0, lvl.egg.z); scene.add(eggGroup);
+
+  // Maleri i gullramme på veggen bak egget (veggen velges i labyrint-kart.js, paintingWall)
+  {
+    const { dx, dz } = lvl.painting, art = new THREE.Group();
+    const pic = new THREE.TextureLoader().load(new URL('./maleri.jpg', import.meta.url).href);
+    pic.colorSpace = THREE.SRGBColorSpace;
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0xc9962e, metalness: 0.6, roughness: 0.35 }));
+    frame.position.z = 0.02; art.add(frame);
+    const canvas = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), new THREE.MeshLambertMaterial({ map: pic }));
+    canvas.position.z = 0.041; art.add(canvas);
+    art.position.set(lvl.egg.x + dx * 0.5, 0.8, lvl.egg.z + dz * 0.5);
+    art.rotation.y = Math.atan2(-dx, -dz); // fremsiden mot ruta med egget
+    scene.add(art);
+  }
 
   // Reven (lavpolygon, lysende øyne)
   const foxGroup = new THREE.Group();
