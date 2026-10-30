@@ -4,7 +4,8 @@
 import { SKILL_BY_ID } from './oppgaver.js';
 
 // seenEggs/seenDiplomas: hvor mange rommet allerede har vist, så nye kan feires når man kommer tilbake
-export const newRewards = () => ({ eggs: [], stars: 0, diplomas: [], foxEscapes: 0, seenEggs: 0, seenDiplomas: 0 });
+// letters: fargelagte bokstaver fra Bokstavmaling, { A: dataURL (lite PNG-bilde), … }, vises på alfabetplakaten i rommet
+export const newRewards = () => ({ eggs: [], stars: 0, diplomas: [], foxEscapes: 0, seenEggs: 0, seenDiplomas: 0, letters: {} });
 
 // 1–3 stjerner etter andelen riktige (av 10: 0–5 → 1, 6–8 → 2, 9–10 → 3)
 export function starsFor(right, total) {
@@ -29,7 +30,7 @@ export const treasure = n => ({ crowns: Math.floor(n / 100), diamonds: Math.floo
 // Diplomene henger i en ramme per gruppe på veggen
 export const DIPLOMA_GROUPS = ['matte', 'norsk', 'stave', 'ekstra'];
 export function diplomaGroup(d) {
-  if (d.id.startsWith('kan-')) { const s = SKILL_BY_ID[d.id.slice(4)]?.subject; return s === 'setning' ? 'norsk' : s || 'ekstra'; }
+  if (d.id.startsWith('kan-')) { const s = SKILL_BY_ID[d.id.slice(4)]?.subject; return s === 'setning' || s === 'alfabet' ? 'norsk' : s || 'ekstra'; }
   if (d.id.startsWith('matte')) return 'matte';
   if (d.id.startsWith('norsk')) return 'norsk';
   return 'ekstra';

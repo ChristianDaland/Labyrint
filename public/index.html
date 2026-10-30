@@ -210,6 +210,18 @@
   #celebrate h2 { font-size: clamp(26px, 6vw, 40px); max-width: 18ch; margin: 0 auto 20px; }
   @keyframes pop { from { transform: scale(.3) rotate(-10deg); opacity: 0; } to { transform: none; opacity: 1; } }
 
+  /* Alfabetplakaten: alle 29 bokstavene, de fargelagte (Bokstavmaling) som bilder og resten som konturer */
+  .poster { justify-self: center; display: grid; grid-template-columns: repeat(15, 1fr); gap: 2px; width: min(100%, 520px);
+    padding: 6px 8px; border-radius: 8px; background: var(--cream); border: 5px solid var(--wood-3); box-shadow: 0 5px 0 rgba(0,0,0,.25); }
+  .poster span, .pcell { aspect-ratio: 1; display: grid; place-items: center; font: 400 15px 'Lilita One', sans-serif;
+    color: transparent; -webkit-text-stroke: 1px rgba(122,75,42,.55); }
+  .poster img, .pcell img { width: 100%; height: 100%; object-fit: contain; }
+  #posterView .big { width: min(680px, 100%); text-align: center; color: var(--cream); }
+  #posterView h2 { font-size: clamp(24px, 5.5vw, 36px); margin-bottom: 14px; }
+  #posterView .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; margin-bottom: 16px;
+    background: var(--cream); border-radius: 12px; padding: 12px; }
+  .pcell { border: 0; background: #fff8ea; border-radius: 10px; font-size: 34px; -webkit-text-stroke: 2px rgba(122,75,42,.5); }
+
   /* Diplomene i en gruppe (åpnes fra rammen på veggen) */
   #dipList .big { width: min(640px, 100%); text-align: center; color: var(--cream); }
   #dipList h2 { font-size: clamp(24px, 5.5vw, 36px); margin-bottom: 18px; }
@@ -274,6 +286,7 @@
   </header>
   <section class="scene bricks">
     <div class="wall" id="wall" aria-label="Diplomer"></div>
+    <button class="poster" id="poster" aria-label="Alfabetplakaten"></button>
     <div class="shelves" id="shelves" aria-label="Egg"></div>
   </section>
   <section class="jars">
@@ -288,6 +301,14 @@
     <div class="frame" id="celFrame"></div>
     <h2 id="celText"></h2>
     <button class="bigok" id="celOk" aria-label="OK">✔</button>
+  </div>
+</div>
+
+<div id="posterView" class="overlay hidden">
+  <div class="big">
+    <h2>Alfabetplakaten</h2>
+    <div class="grid" id="pvGrid"></div>
+    <button class="bigok" id="pvOk" aria-label="Lukk">✔</button>
   </div>
 </div>
 
@@ -363,7 +384,7 @@
 <script type="module">
 import { createStore, requestPersist, downloadBackup, ANIMALS, COLORS, profileName, profileEmoji, profileColor } from './kjerne/lagring.js';
 import { progress, setGrade } from './kjerne/laering.js';
-import { SKILL_BY_ID } from './kjerne/oppgaver.js';
+import { SKILL_BY_ID, ALPHABET } from './kjerne/oppgaver.js';
 import { finishRound, eggKind, countEggs, treasure, DIPLOMA_GROUPS, diplomaGroup } from './kjerne/belonning.js';
 import { holdButton } from './kjerne/ui.js';
 import { T } from './kjerne/tale.js';
@@ -383,6 +404,9 @@ const GAMES = [
   { id: 'ordbygger', emoji: '🧩', name: 'Ordbyggeren', module: './spill/ordbygger.js', ready: true },
   { id: 'tallbygger', emoji: '🧮', name: 'Tallbyggeren', module: './spill/tallbygger.js', ready: true },
   { id: 'ordtog', emoji: '🚂', name: 'Ordtoget', module: './spill/ordtog.js', ready: true },
+  { id: 'bokstavrekka', emoji: '🔡', name: 'Bokstavrekka', module: './spill/bokstavrekka.js', ready: true },
+  { id: 'prikk', emoji: '✏️', name: 'Prikk til prikk', module: './spill/prikk.js', ready: true },
+  { id: 'maling', emoji: '🎨', name: 'Bokstavmaling', module: './spill/maling.js', ready: true },
 ];
 
 function show(id) {
@@ -494,6 +518,20 @@ function openDiplomas(group, list) {
   }
   $('#dipList').classList.remove('hidden');
 }
+// Alfabetplakaten stor: trykk på en bokstav for å høre «A som i ape»
+$('#poster').onclick = () => {
+  const p = store.active(), letters = p.rewards.letters || {};
+  lyd.say(T.poster(Object.keys(letters).length));
+  const g = $('#pvGrid'); g.innerHTML = '';
+  for (const L of ALPHABET) {
+    const b = document.createElement('button');
+    b.className = 'pcell'; b.innerHTML = letters[L] ? `<img src="${letters[L]}" alt="${L}">` : L;
+    b.setAttribute('aria-label', L); b.onclick = () => lyd.say(T.letterWord(L));
+    g.append(b);
+  }
+  $('#posterView').classList.remove('hidden');
+};
+$('#pvOk').onclick = () => { lyd.stopSpeaking(); $('#posterView').classList.add('hidden'); };
 $('#dlOk').onclick = () => { lyd.stopSpeaking(); $('#dipList').classList.add('hidden'); };
 
 function openRoom(greet) {
@@ -522,6 +560,10 @@ function renderRoom(p, markNew) {
     f.onclick = () => openDiplomas(g, list.map(x => x.d));
     wall.append(f);
   }
+
+  // Alfabetplakaten
+  const letters = p.rewards.letters || {};
+  $('#poster').innerHTML = [...ALPHABET].map(L => letters[L] ? `<img src="${letters[L]}" alt="${L}">` : `<span>${L}</span>`).join('');
 
   // Hylla: diamanter og kroner (10 egg = 1 diamant, 10 diamanter = 1 krone), og de løse eggene (0–9)
   // med tomme plasser opp til 10, så barnet ser hvor mange egg som mangler til neste diamant

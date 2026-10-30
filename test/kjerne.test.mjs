@@ -2,12 +2,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, SKILL_BY_ID, skillsOf, makeTask, makeMathPuzzle } from '../public/kjerne/oppgaver.js';
+import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, ALPHA_SKILLS, LETTER_WORDS, SKILL_BY_ID, skillsOf, makeTask, makeMathPuzzle, makeAlphaRow } from '../public/kjerne/oppgaver.js';
+import { PICTURES, resample, outward, inside, labelSpots } from '../public/spill/prikk.js';
+import { nextLetter } from '../public/spill/maling.js';
 import { newLearning, newStats, chooseSkill, recordAnswer, nextTask, progress, today, WINDOW, REVIEW_SPAN, GRADE_START, setGrade } from '../public/kjerne/laering.js';
 import { starsFor, finishRound, awardSkills, newRewards, eggKind, countEggs, treasure, diplomaGroup } from '../public/kjerne/belonning.js';
 import { createStore, newProfile, profileName, KEY, VERSION } from '../public/kjerne/lagring.js';
 import * as lyd from '../public/kjerne/lyd.js';
-import { T, allPhrases, spoken } from '../public/kjerne/tale.js';
+import { T, allPhrases, spoken, DOT_PICTURE_NAMES } from '../public/kjerne/tale.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { ANIMALS, COLORS } from '../public/kjerne/lagring.js';
 
@@ -214,8 +216,8 @@ test('statistikk per fag og per dag', () => {
   const p = profile(), d = new Date(2026, 9, 28, 12);
   recordAnswer(p, 'pluss5', true, d); recordAnswer(p, 'rim', false, d); recordAnswer(p, 'rim', true, d);
   recordAnswer(p, 'stavkort', true, d);
-  assert.deepEqual(p.stats.right, { matte: 1, norsk: 1, stave: 1, setning: 0 });
-  assert.deepEqual(p.stats.wrong, { matte: 0, norsk: 1, stave: 0, setning: 0 });
+  assert.deepEqual(p.stats.right, { matte: 1, norsk: 1, stave: 1, setning: 0, alfabet: 0 });
+  assert.deepEqual(p.stats.wrong, { matte: 0, norsk: 1, stave: 0, setning: 0, alfabet: 0 });
   assert.deepEqual(p.stats.days['2026-10-28'], { right: 3, wrong: 1 });
   assert.equal(today(d), '2026-10-28');
   assert.deepEqual(recordAnswer(p, 'finnes-ikke', true), []);
@@ -321,8 +323,8 @@ test('eldre lagring uten nye felt fylles ut', () => {
   const p = createStore(st).profiles()[0];
   assert.equal(p.rewards.eggs.length, 1);
   assert.deepEqual(p.rewards.diplomas, []);
-  assert.deepEqual(p.stats.right, { matte: 0, norsk: 0, stave: 0, setning: 0 });
-  assert.deepEqual(p.learning.level, { matte: 0, norsk: 0, stave: 0, setning: 0 });
+  assert.deepEqual(p.stats.right, { matte: 0, norsk: 0, stave: 0, setning: 0, alfabet: 0 });
+  assert.deepEqual(p.learning.level, { matte: 0, norsk: 0, stave: 0, setning: 0, alfabet: 0 });
   assert.equal(p.settings.subject, 'begge');
 });
 
@@ -463,4 +465,47 @@ test('skatten: 10 egg blir en diamant, 10 diamanter en krone; diplomene i gruppe
   assert.deepEqual(['kan-pluss10', 'kan-rim', 'kan-stavkort', 'matte50', 'norsk200', 'egg5', 'rev5', 'stjerner3', 'gull5'].map(g),
     ['matte', 'norsk', 'stave', 'matte', 'norsk', 'ekstra', 'ekstra', 'ekstra', 'ekstra']);
   assert.deepEqual(T.diplomaGroup('stave', 1), ['Stave-diplomer.', 'Du har', '1', 'diplom.']);
+});
+
+// ─── Alfabetet ──────────────────────────────────────────────────────────
+test('alfabetet: rekkefølgen per nivå, og Bokstavrekka', () => {
+  const AB = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ';
+  assert.equal(makeTask('alfaAJ').letters.join(''), 'ABCDEFGHIJ');
+  assert.equal(makeTask('alfaAT').letters.join(''), AB.slice(0, 20));
+  assert.equal(makeTask('alfaAA').letters.join(''), AB);
+  assert.equal(makeTask('alfasma').letters.join(''), AB.toLowerCase());
+  for (let i = 0; i < 200; i++) { const b = makeTask('alfabak').letters.join(''); assert.equal(b.length, 12); assert.ok([...AB].reverse().join('').includes(b), b); }
+  for (const s of ALPHA_SKILLS) for (let i = 0; i < 300; i++) {
+    const r = makeAlphaRow(s.id), answers = r.parts.filter(p => 'slot' in p).map(p => p.slot);
+    assert.ok('text' in r.parts[0], `${s.id}: første bokstav vises`);
+    assert.equal(answers.length, s.id === 'alfaAJ' ? 1 : 2, s.id);
+    const rest = [...r.tiles];
+    for (const a of answers) { assert.ok(rest.includes(a)); rest.splice(rest.indexOf(a), 1); }
+    assert.equal(rest.length, 2);
+    assert.ok(rest.every(c => !r.row.includes(c)), `${s.id}: ekstra bokstav finnes i rekka`);
+    assert.ok(r.tiles.every(c => (c === c.toLowerCase()) === (s.id === 'alfasma')), `${s.id}: samme type bokstaver`);
+  }
+  assert.equal(Object.keys(LETTER_WORDS).join(''), AB);
+  assert.equal(diplomaGroup({ id: 'kan-alfaAA' }), 'norsk');
+});
+
+test('Prikk til prikk: bildene og jevne prikker; Bokstavmaling tar neste bokstav', () => {
+  assert.equal(PICTURES.length, DOT_PICTURE_NAMES.length);
+  for (const pic of PICTURES) for (const n of [10, 12, 20, 29].filter(n => n <= (pic.max || 99))) {
+    const dots = resample(pic.pts, n);
+    assert.equal(dots.length, n);
+    assert.ok(dots.every(([x, y]) => x >= 0 && x <= 1 && y >= 0 && y <= 1), pic.emoji);
+    const gaps = dots.map((d, i) => Math.hypot(dots[(i + 1) % n][0] - d[0], dots[(i + 1) % n][1] - d[1]));
+    assert.ok(Math.min(...gaps) > 0.02, `${pic.emoji}: prikkene for tett`);
+    const out = outward(dots, pic.pts);
+    out.forEach(([nx, ny], i) => // retningen ut peker ut av bildet
+      assert.ok(!inside([dots[i][0] + nx * 0.03, dots[i][1] + ny * 0.03], pic.pts), `${pic.emoji} ${n}: bokstav ${i} inni`));
+    const L = labelSpots(dots, out); // bokstavene overlapper ikke hverandre
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++)
+      assert.ok(Math.hypot(L[i][0] - L[j][0], L[i][1] - L[j][1]) > 0.05, `${pic.emoji} ${n}: bokstav ${i} og ${j} for tett`);
+  }
+  assert.equal(nextLetter({}), 'A');
+  assert.equal(nextLetter({ A: 'x', B: 'x' }), 'C');
+  const all = Object.fromEntries([...'ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ'].map(L => [L, 'x']));
+  assert.match(nextLetter(all), /^[A-ZÆØÅ]$/);
 });

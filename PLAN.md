@@ -1,7 +1,7 @@
 # Plan: Spill og lær (først kalt Gull-egget)
 
 Status (30.10.2026): versjon 1 er bygget og publisert på https://christiandaland.github.io/Labyrint/.
-Seks spill med felles læringsmotor for 1.–4. trinn. Tekniske detaljer står i `CLAUDE.md`.
+Ni spill med felles læringsmotor for 1.–4. trinn. Tekniske detaljer står i `CLAUDE.md`.
 
 **Neste:**
 1. Test med barn på ekte iPhone og iPad, og juster etter det.
@@ -27,8 +27,9 @@ Bestemt:
 | Med | Ikke med ennå |
 |---|---|
 | Startskjerm og rommet med stjerner, egg, diamanter, kroner og diplomer | Innspilte bokstavlyder (steg 6) |
-| Seks spill: Flakse-fuglen, Labyrinten, Slangen, Ordbyggeren, Tallbyggeren, Ordtoget | Spiseren, Hopperen, Klossene |
-| Felles læringsmotor med fire fag og startnivå 1.–4. trinn | Å forme bokstaver med fingeren |
+| Ni spill: Flakse-fuglen, Labyrinten, Slangen, Ordbyggeren, Tallbyggeren, Ordtoget, Bokstavrekka, Prikk til prikk, Bokstavmaling | Spiseren, Hopperen, Klossene |
+| Felles læringsmotor med fem fag og startnivå 1.–4. trinn | Å forme bokstaver med fingeren (tegne dem, ikke male) |
+| Alfabetplakat i rommet med bokstavene barnet har malt | |
 | Profiler (dyr og farge) på samme enhet | Egne oppgaver, med redigering i voksenmenyen |
 | Lagring på enheten, med sikkerhetskopi | Server, kontoer, synkronisering mellom enheter |
 | Ferdiglaget norsk tale for alt som sies | Foreldreoversikt |
@@ -39,7 +40,7 @@ Bestemt:
 
 1. Barnet trykker på ikonet på Hjem-skjermen. Startskjermen viser «Spill og lær» og en stor ▶-knapp, som også låser opp lyden.
 2. **Er det flere profiler**, trykker barnet på sin figur. Med bare én går det rett videre.
-3. **Rommet:** figuren, stjerner, egg, diplomer på veggen og seks spillkort med bilde.
+3. **Rommet:** figuren, stjerner, egg, diplomer på veggen, alfabetplakaten og ni spillkort med bilde.
 4. Barnet spiller en runde på 3–5 minutter (8–10 oppgaver, eller til egget er funnet i Labyrinten).
 5. Tilbake i rommet havner det nye egget på hylla, med lyd og feiring. Nye diamanter, kroner og diplomer vises stort og leses opp.
 
@@ -67,19 +68,23 @@ teller, og ingen kan tape.
 | 🧩 Ordbyggeren | Stav ordet med bokstavbrikker (dra eller trykk). |
 | 🧮 Tallbyggeren | Dra tall på plass i regnestykker og tallrekker (3 + ☐ = 7). |
 | 🚂 Ordtoget | Hør setningen og legg ordbrikkene i riktig rekkefølge. |
+| 🔡 Bokstavrekka | Dra inn bokstavene som mangler i en rekke (F G ☐ I ☐). |
+| ✏️ Prikk til prikk | Trykk bokstavene i alfabetisk rekkefølge, så kommer et bilde fram. |
+| 🎨 Bokstavmaling | Mal en stor bokstav med fingeren; den havner på alfabetplakaten i rommet. Gir ikke egg. |
 
-Flakse-fuglen, Labyrinten og Slangen bruker flervalgsoppgaver (matte og norsk). De tre byggespillene deler motor
-(`brikker.js`), og Ordbyggeren og Ordtoget har hvert sitt fag (staving og setninger).
+Flakse-fuglen, Labyrinten og Slangen bruker flervalgsoppgaver (matte og norsk). De fire byggespillene deler motor
+(`brikker.js`). Ordbyggeren, Ordtoget og alfabetspillene har egne fag (staving, setninger og alfabetet).
 
 ## 6. Læringsmotoren (felles for alle spill)
 
-**Fire fag**, hvert med ferdigheter i læringsrekkefølge (full liste i veiledningen):
+**Fem fag**, hvert med ferdigheter i læringsrekkefølge (full liste i veiledningen):
 - **Matte:** telling, før og etter, størst, pluss og minus til 5, 10 og 20, tiervenner, dobling, tallrekker, store tall.
   3.–4. trinn: veksling, gange og dele, hundrere/tiere/enere, tall og pluss/minus opp til 1000, gangetabellen.
 - **Norsk:** store og små bokstaver, første lyd, lese korte og lange ord, alfabetet, bokstaven som mangler, rim, stavelser.
   3.–4. trinn: leseforståelse (setning til bilde, kort tekst med spørsmål; teksten leses ikke opp).
 - **Staving** (Ordbyggeren): lydrette ord fra korte til lange, så rettskriving (ng, kj/sj, stumme bokstaver, sammensatte ord).
 - **Setninger** (Ordtoget): tre til fem ord, etter hvert med et ekstra ord å velge bort.
+- **Alfabetet** (Bokstavrekka og Prikk til prikk): A–J, A–T, hele A–Å, små bokstaver, baklengs.
 
 **Tilpasning:**
 - For hver ferdighet huskes de siste 10 svarene.
@@ -132,7 +137,8 @@ public/
   ikoner/               app-ikoner
   lyd/tale/             ferdiglaget tale (mp3 og manifest.json)
   kjerne/               oppgaver, læringsmotor, belønninger, lagring, lyd, tale, ui
-  spill/                flakse, labyrint (+ labyrint-kart), slange, brikker, ordbygger, tallbygger, ordtog
+  spill/                flakse, labyrint (+ labyrint-kart), slange, brikker, ordbygger, tallbygger, ordtog,
+                        bokstavrekka, prikk, maling
 test/                   Node-tester (npm test)
 verktoy/                lag-tale.py, fraser.mjs, lag-ikoner.py
 ```
@@ -182,3 +188,4 @@ verktoy/                lag-tale.py, fraser.mjs, lag-ikoner.py
   hjem-skjerm-app, publisering og veiledning (5), Labyrinten som enspiller (4). Det gamle flerspillerspillet ble fjernet.
 - Samme kveld: Slangen, Ordbyggeren, Tallbyggeren og Ordtoget, eggtyper og diamanter, 1.–4. trinn med startnivå,
   og nytt navn: Spill og lær (© 2026 Løland Gård Gaming).
+- 30.10.2026: alfabetet som eget fag med Bokstavrekka, Prikk til prikk og Bokstavmaling, og alfabetplakat i rommet.

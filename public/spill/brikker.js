@@ -24,6 +24,7 @@ const CSS = `
     display: flex; flex-direction: column; }
   .bk.matte { background: radial-gradient(circle at 50% 30%, #e6f4ff, #b9dcf5 70%); }
   .bk.ord { background: radial-gradient(circle at 50% 30%, #eefbe6, #c6e8b4 70%); }
+  .bk.alfa { background: radial-gradient(circle at 50% 30%, #f6ecff, #dcc8f2 70%); }
   /* Ordbrikker: bredde etter ordet, mindre skrift */
   .bk.ord .bk-tile { font-size: calc(var(--s) * .44); padding: 0 14px; }
   .bk.ord .bk-slot { width: auto; min-width: calc(var(--s) * 1.5); padding: 0 6px; font-size: calc(var(--s) * .44); }

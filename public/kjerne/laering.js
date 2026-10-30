@@ -11,14 +11,14 @@ export const WINDOW = 10, UP = 8, DOWN = 5;
 export const REVIEW_SPAN = 5; // repetisjon bare fra de siste ferdighetene under nivået (ikke «telle til 5» i 4. klasse)
 export const SUBJECTS = ['matte', 'norsk'];
 
-// «stave» (staving) og «setning» er egne fag som bare Ordbyggeren og Ordtoget bruker
-const zero = () => ({ matte: 0, norsk: 0, stave: 0, setning: 0 });
+// «stave» (staving), «setning» og «alfabet» er egne fag som bare Ordbyggeren, Ordtoget og alfabetspillene bruker
+const zero = () => ({ matte: 0, norsk: 0, stave: 0, setning: 0, alfabet: 0 });
 export const newLearning = () => ({ level: zero(), recent: {} });
 export const newStats = () => ({ days: {}, right: zero(), wrong: zero() });
 
 const errorRate = arr => arr && arr.length ? 1 - arr.reduce((a, b) => a + b, 0) / arr.length : 0.5;
 
-// Ferdigheten neste oppgave skal øve på. `subject` er 'matte', 'norsk', 'stave', 'setning' eller 'begge' (matte og norsk).
+// Ferdigheten neste oppgave skal øve på. `subject` er 'matte', 'norsk', 'stave', 'setning', 'alfabet' eller 'begge' (matte og norsk).
 export function chooseSkill(learning, subject = 'begge', rnd = Math.random) {
   const s = skillsOf(subject).length ? subject : rnd() < 0.5 ? 'matte' : 'norsk';
   const list = skillsOf(s), cur = Math.min(learning.level[s], list.length - 1);
@@ -41,10 +41,10 @@ export const today = (now = new Date()) =>
 // Startnivå per trinn, valgt i voksenmenyen: ferdigheten barnet starter på i hvert fag.
 // Læringsmotoren justerer videre opp og ned derfra.
 export const GRADE_START = {
-  1: { matte: 'telle5', norsk: 'storliten', stave: 'stavkort', setning: 'setntre' },
-  2: { matte: 'pluss10', norsk: 'alfabet', stave: 'stavvelg', setning: 'setnfire' },
-  3: { matte: 'pluss100', norsk: 'stavelser', stave: 'stavdobbel', setning: 'setnvelg' },
-  4: { matte: 'plassverdi', norsk: 'lesbilde', stave: 'stavng', setning: 'setnlang' },
+  1: { matte: 'telle5', norsk: 'storliten', stave: 'stavkort', setning: 'setntre', alfabet: 'alfaAJ' },
+  2: { matte: 'pluss10', norsk: 'alfabet', stave: 'stavvelg', setning: 'setnfire', alfabet: 'alfaAA' },
+  3: { matte: 'pluss100', norsk: 'stavelser', stave: 'stavdobbel', setning: 'setnvelg', alfabet: 'alfasma' },
+  4: { matte: 'plassverdi', norsk: 'lesbilde', stave: 'stavng', setning: 'setnlang', alfabet: 'alfabak' },
 };
 export function setGrade(profile, grade) {
   for (const [subject, id] of Object.entries(GRADE_START[grade])) {

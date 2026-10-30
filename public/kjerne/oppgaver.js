@@ -412,7 +412,44 @@ export const SPELL_SKILLS = [
   { id: 'stavstum', subject: 'stave', diploma: 'Du kan ord med stumme bokstaver!', make: s => spell(s, 'stum', { extra: 2 }) },
   { id: 'stavsammen', subject: 'stave', diploma: 'Du kan stave sammensatte ord!', make: s => spell(s, 'sammensatt', { extra: 1 }) },
 ];
-const ALL_SKILLS = [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS];
+// ─── Alfabetet (eget fag, brukes av Bokstavrekka og Prikk til prikk) ────
+// Alfabetoppgave: { skill, kind: 'alfabet', letters }: bokstaver i riktig rekkefølge (29, med Æ, Ø og Å til slutt).
+function alphaSeq(skill, { to = ALPHABET.length, lower = false, back = false, chunk = 0 } = {}) {
+  let seq = [...ALPHABET].slice(0, to);
+  if (chunk) { const start = rand(seq.length - chunk + 1); seq = seq.slice(start, start + chunk); }
+  if (back) seq.reverse();
+  if (lower) seq = seq.map(c => c.toLowerCase());
+  return { skill, kind: 'alfabet', letters: seq };
+}
+export const ALPHA_SKILLS = [
+  { id: 'alfaAJ', subject: 'alfabet', diploma: 'Du kan alfabetet fra A til J!', make: s => alphaSeq(s, { to: 10 }) },
+  { id: 'alfaAT', subject: 'alfabet', diploma: 'Du kan alfabetet fra A til T!', make: s => alphaSeq(s, { to: 20 }) },
+  { id: 'alfaAA', subject: 'alfabet', diploma: 'Du kan hele alfabetet!', make: s => alphaSeq(s) },
+  { id: 'alfasma', subject: 'alfabet', diploma: 'Du kan alfabetet med små bokstaver!', make: s => alphaSeq(s, { lower: true }) },
+  { id: 'alfabak', subject: 'alfabet', diploma: 'Du kan alfabetet baklengs!', make: s => alphaSeq(s, { back: true, chunk: 12 }) },
+];
+
+// Bokstavrekka: fem bokstaver på rad fra alfabetoppgaven, der én (A–J) eller to mangler. Den første vises alltid.
+export function makeAlphaRow(skillId) {
+  const { letters } = makeTask(skillId), n = Math.min(5, letters.length);
+  const start = rand(letters.length - n + 1), row = letters.slice(start, start + n);
+  const blanks = shuffle([...Array(n).keys()].slice(1)).slice(0, skillId === 'alfaAJ' ? 1 : 2);
+  const pool = [...ALPHABET].map(c => row[0] === row[0].toLowerCase() ? c.toLowerCase() : c).filter(c => !row.includes(c));
+  const answers = blanks.map(i => row[i]);
+  return { skill: skillId, parts: row.map((c, i) => blanks.includes(i) ? { slot: c } : { text: c }),
+    tiles: shuffle([...answers, ...shuffle(pool).slice(0, 2)]), speak: blanks.length === 1 ? 'Hvilken bokstav mangler?' : 'Hvilke bokstaver mangler?', row };
+}
+
+// Ord til hver bokstav, for Bokstavmaling («A som i ape») og plakaten: [ord, bilde]
+export const LETTER_WORDS = {
+  A: ['ape', '🐒'], B: ['bil', '🚗'], C: ['cello', '🎻'], D: ['delfin', '🐬'], E: ['eple', '🍎'], F: ['fisk', '🐟'], G: ['gris', '🐷'],
+  H: ['hus', '🏠'], I: ['is', '🍦'], J: ['jordbær', '🍓'], K: ['katt', '🐱'], L: ['løve', '🦁'], M: ['mus', '🐭'], N: ['nese', '👃'],
+  O: ['ost', '🧀'], P: ['pingvin', '🐧'], Q: ['quiz', '❓'], R: ['rev', '🦊'], S: ['sol', '☀️'], T: ['tog', '🚂'], U: ['ugle', '🦉'],
+  V: ['vott', '🧤'], W: ['wienerpølse', '🌭'], X: ['xylofon', '🎶'], Y: ['yoghurt', '🥛'], Z: ['zoo', '🦒'], Æ: ['ærfugl', '🦆'],
+  Ø: ['øre', '👂'], Å: ['åtte', '8️⃣'],
+};
+
+const ALL_SKILLS = [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS, ...ALPHA_SKILLS];
 export const SKILL_BY_ID = Object.fromEntries(ALL_SKILLS.map(s => [s.id, s]));
 export const skillsOf = subject => ALL_SKILLS.filter(s => s.subject === subject);
 

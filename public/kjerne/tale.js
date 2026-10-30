@@ -3,10 +3,11 @@
 // alle bitene som trengs. Nye setninger legges inn her, så de kommer med neste gang lydfilene lages.
 
 import { ANIMALS, COLORS, profileName } from './lagring.js';
-import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, ALL_SPELL_WORDS, ALL_SENTENCES, EXTRA_WORDS, sentenceWords, ALPHABET, skillsOf, skillLabel, makeTask, makeMathPuzzle } from './oppgaver.js';
+import { SKILLS, SPELL_SKILLS, SENTENCE_SKILLS, ALPHA_SKILLS, LETTER_WORDS, ALL_SPELL_WORDS, ALL_SENTENCES, EXTRA_WORDS, sentenceWords, ALPHABET, skillsOf, skillLabel, makeTask, makeMathPuzzle } from './oppgaver.js';
 import { MILESTONES, EGG_KINDS, EGG_NAMES, eggKind } from './belonning.js';
 
-export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen', ordbygger: 'Ordbyggeren', tallbygger: 'Tallbyggeren', ordtog: 'Ordtoget' };
+export const GAME_NAMES = { flakse: 'Flakse-fuglen', labyrint: 'Labyrinten', slange: 'Slangen', ordbygger: 'Ordbyggeren', tallbygger: 'Tallbyggeren', ordtog: 'Ordtoget',
+  bokstavrekka: 'Bokstavrekka', prikk: 'Prikk til prikk', maling: 'Bokstavmaling' };
 const MAX_NUMBER = 1000; // tall som finnes som lydfil (større tall leses av enhetens stemme)
 const stars = n => (n === 1 ? 'stjerne.' : 'stjerner.');
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -76,6 +77,16 @@ export const T = {
   // Tallbyggeren
   mathStart: () => ['Dra tallene på plass, eller trykk på dem.'],
 
+  // Bokstavrekka, Prikk til prikk og Bokstavmaling
+  alphaRowStart: () => ['Finn bokstavene som mangler.', 'Dra dem på plass, eller trykk på dem.'],
+  dotsStart: first => ['Trykk på bokstavene i rekkefølge.', 'Begynn på', first + '.'],
+  dotsDone: name => [`Se, ${name}!`],
+  paint: L => ['Fargelegg bokstaven', L + '.', `${L} som i ${LETTER_WORDS[L][0]}.`],
+  letterWord: L => [`${L} som i ${LETTER_WORDS[L][0]}.`],
+  paintReady: () => ['Trykk på haken når du er ferdig.'],
+  paintDone: n => ['Så fint!', 'Du har fargelagt', String(n), n === 1 ? 'bokstav.' : 'bokstaver.'],
+  poster: n => ['Alfabetplakaten.', 'Du har fargelagt', String(n), n === 1 ? 'bokstav.' : 'bokstaver.'],
+
   // Ordtoget
   sentenceStart: () => ['Lag setningen med ordene.', 'Dra dem på plass, eller trykk på dem.'],
   sentence: s => [s],
@@ -90,6 +101,8 @@ export const T = {
   rotate: () => ['Snu skjermen, så den står på høykant.'],
 };
 const RIGHT = ['Riktig!', 'Flott!', 'Supert!', 'Bra!'];
+// Bildene i Prikk til prikk (spill/prikk.js har formene), som «Se, en fisk!»
+export const DOT_PICTURE_NAMES = ['en stjerne', 'et hjerte', 'en fisk', 'et hus', 'en rakett', 'et tre', 'et egg', 'en diamant', 'en båt', 'en krone'];
 
 // Alle oppgavesetningene og svarene en ferdighet kan gi. Oppgavene lages tilfeldig fra små tallområder og
 // ordlister, så mange trekk finner alle (testen i test/kjerne.test.mjs sjekker at ingen mangler).
@@ -114,7 +127,11 @@ export function allPhrases(samples) {
   }
   for (let n = 0; n <= MAX_NUMBER; n++) { add(T.starsHave(n)); add(T.newEggs(Array(n).fill({ stars: 3 }))); add(T.roundDone(n)); }
   for (const m of MILESTONES) add(T.newDiploma(m.text));
-  for (const s of [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS]) add(T.newDiploma(s.diploma));
+  for (const s of [...SKILLS, ...SPELL_SKILLS, ...SENTENCE_SKILLS, ...ALPHA_SKILLS]) add(T.newDiploma(s.diploma));
+  for (const L of ALPHABET) { add(T.letter(L.toLowerCase())); add(T.paint(L)); add(T.dotsStart(L)); add(T.dotsStart(L.toLowerCase())); }
+  for (let n = 0; n <= 29; n++) { add(T.paintDone(n)); add(T.poster(n)); }
+  for (const name of DOT_PICTURE_NAMES) add(T.dotsDone(name));
+  add(T.alphaRowStart()); add(T.paintReady()); add(['Hvilken bokstav mangler?', 'Hvilke bokstaver mangler?']);
   for (const s of ALL_SENTENCES) { out.add(`Lag setningen: ${s}`); add(T.sentence(s)); for (const w of sentenceWords(s)) add(T.word(w)); }
   for (const w of EXTRA_WORDS) add(T.word(w));
   add(T.sentenceStart());

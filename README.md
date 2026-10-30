@@ -11,8 +11,8 @@ Ingen innlogging og ingen navn. All fremgang lagres på enheten.
 Utviklet av Løland Gård Gaming. Kontakt: christian.daland@gmail.com
 
 ## Oppbygning
-- `public/` er hele nettsiden (statisk, ingen server). `index.html` er startskjermen og rommet. De seks spillene
-  (Flakse-fuglen, Labyrinten, Slangen, Ordbyggeren, Tallbyggeren og Ordtoget) ligger i `spill/`,
+- `public/` er hele nettsiden (statisk, ingen server). `index.html` er startskjermen og rommet. De ni spillene
+  (Flakse-fuglen, Labyrinten, Slangen, Ordbyggeren, Tallbyggeren, Ordtoget, Bokstavrekka, Prikk til prikk og Bokstavmaling) ligger i `spill/`,
   felles kode (oppgaver, læringsmotor, belønninger, lagring, lyd, tale) i `kjerne/`.
 - `public/lyd/tale/` inneholder ferdiglaget norsk tale (Piper, stemmen no_NO-talesyntese).
   Lages på nytt med `uv run --with piper-tts --with lameenc python verktoy/lag-tale.py` når tekst endres.
